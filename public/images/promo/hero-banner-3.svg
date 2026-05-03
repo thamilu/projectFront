@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img" aria-label="Hero banner 3">
+  <defs>
+    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111827" />
+      <stop offset="1" stop-color="#f97316" />
+    </linearGradient>
+    <radialGradient id="r3" cx="40%" cy="65%" r="70%">
+      <stop offset="0" stop-color="#fdba74" stop-opacity="0.55" />
+      <stop offset="1" stop-color="#fdba74" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="500" fill="url(#g3)" />
+  <rect width="1200" height="500" fill="url(#r3)" />
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.14">
+    <path d="M750 60 L1140 60 L1140 250" stroke-width="3" />
+    <path d="M720 90 L1110 90 L1110 280" stroke-width="2" />
+    <path d="M690 120 L1080 120 L1080 310" stroke-width="1.5" />
+  </g>
+  <g fill="#ffffff" fill-opacity="0.92" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI" >
+    <text x="70" y="190" font-size="44" font-weight="800">Fast delivery, real-time tracking</text>
+    <text x="70" y="240" font-size="20" font-weight="500" fill-opacity="0.85">From checkout to doorstep with confidence.</text>
+    <rect x="70" y="280" width="240" height="52" rx="12" fill="#ffffff" fill-opacity="0.14" stroke="#ffffff" stroke-opacity="0.22" />
+    <text x="92" y="314" font-size="18" font-weight="700">View highlights</text>
+  </g>
+</svg>

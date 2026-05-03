@@ -1,0 +1,168 @@
+﻿
+> ecommerce-enterprise-frontend@1.0.0 lint
+> eslint . --ext .js,.ts,.tsx
+
+
+G:\Project\eshop_front\app\api\auth\me\route.ts
+  67:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  72:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\app\api\get-token\route.ts
+  24:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  34:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\app\api\orders\[id]\stream\route.ts
+  19:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\app\api\product-images\[imageId]\route.ts
+   3:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   3:94  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   5:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  15:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\app\api\product-images\product\[productId]\primary\[imageId]\route.ts
+  13:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\app\api\seller\products\route.ts
+   6:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\app\products\[slug]\product-detail-client.tsx
+  175:51  warning  Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+  305:22  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+G:\Project\eshop_front\app\seller\dashboard\SellerDashboardClient.tsx
+   29:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  284:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\app\seller\dashboard\page.tsx
+  26:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\app\seller\products\create\page.tsx
+  990:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\app\seller\products\page.tsx
+   38:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   40:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   40:84  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   44:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   45:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   58:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   60:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   60:87  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   65:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   77:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   79:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   79:87  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   86:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:87  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  134:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\app\seller\profile\page.tsx
+   62:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   96:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\app\seller\store\create\page.tsx
+  38:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\app\sitemap.ts
+  51:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\components\CategoryRequestModal.tsx
+  32:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\components\Seo\SafeJsonLd.tsx
+  10:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\components\home\AddToCartButton.tsx
+  6:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\components\layout\sidebar.tsx
+  14:96   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:104  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\components\search\advanced-search.tsx
+  54:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  63:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\components\ui\toast.tsx
+  231:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  234:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\features\auth\api\__tests__\auth-api-new.test.ts
+  26:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  50:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\features\auth\components\RegisterForm.tsx
+  64:79   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  64:112  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\features\auth\hooks\use-auth.ts
+   35:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   61:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   87:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  128:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\features\payments\components\payment-element.tsx
+  198:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\features\products\components\product-card.tsx
+   67:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   98:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   99:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  116:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  117:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\features\products\components\product-grid.tsx
+  15:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\features\reviews\hooks\use-reviews.ts
+  19:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\features\seller\api\seller-api.ts
+  17:21  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+  26:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  30:7   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  32:21  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\hooks\queries\use-seller.ts
+  25:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\hooks\use-auth-nextauth.ts
+  70:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\hooks\useKeycloakAuth.ts
+  46:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  64:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\hooks\useWishlistToggle.ts
+  51:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+G:\Project\eshop_front\lib\api\api-client.ts
+  24:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 94 problems (0 errors, 94 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

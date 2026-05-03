@@ -1,0 +1,44 @@
+[
+  {
+    "file": "G:\\Project\\eshop_front\\app\\(shop)\\products\\page.example.tsx",
+    "line": 57,
+    "message": "'Product' is defined but never used. Allowed unused vars must match /^_/u.",
+    "ruleId": "@typescript-eslint/no-unused-vars"
+  },
+  {
+    "file": "G:\\Project\\eshop_front\\app\\products\\[slug]\\page.tsx",
+    "line": 25,
+    "message": "'error' is defined but never used. Allowed unused caught errors must match /^_/u.",
+    "ruleId": "@typescript-eslint/no-unused-vars"
+  },
+  {
+    "file": "G:\\Project\\eshop_front\\app\\products\\[slug]\\page.tsx",
+    "line": 97,
+    "message": "'error' is defined but never used. Allowed unused caught errors must match /^_/u.",
+    "ruleId": "@typescript-eslint/no-unused-vars"
+  },
+  {
+    "file": "G:\\Project\\eshop_front\\app\\seller\\page.tsx",
+    "line": 50,
+    "message": "'setRetryKey' is assigned a value but never used. Allowed unused vars must match /^_/u.",
+    "ruleId": "@typescript-eslint/no-unused-vars"
+  },
+  {
+    "file": "G:\\Project\\eshop_front\\components\\layout\\cart-preview.tsx",
+    "line": 8,
+    "message": "'X' is defined but never used. Allowed unused vars must match /^_/u.",
+    "ruleId": "@typescript-eslint/no-unused-vars"
+  },
+  {
+    "file": "G:\\Project\\eshop_front\\components\\ui\\command.tsx",
+    "line": 4,
+    "message": "'DialogProps' is defined but never used. Allowed unused vars must match /^_/u.",
+    "ruleId": "@typescript-eslint/no-unused-vars"
+  },
+  {
+    "file": "G:\\Project\\eshop_front\\features\\products\\components\\product-filters.client.example.tsx",
+    "line": 84,
+    "message": "'watch' is assigned a value but never used. Allowed unused vars must match /^_/u.",
+    "ruleId": "@typescript-eslint/no-unused-vars"
+  }
+]

@@ -1,0 +1,29 @@
+{
+  "version": 1.1,
+  "atDirectives": [
+    {
+      "name": "@theme",
+      "description": "Used to configure Tailwind theme tokens."
+    },
+    {
+      "name": "@plugin",
+      "description": "Used to register a Tailwind plugin."
+    },
+    {
+      "name": "@custom-variant",
+      "description": "Used to define a custom variant in Tailwind."
+    },
+    {
+      "name": "@apply",
+      "description": "When you find that you've created a common utility pattern in your HTML that you'd like to extract to a new component, you can use the `@apply` directive to inline any existing utility classes into the structure of your custom CSS."
+    },
+    {
+      "name": "@config",
+      "description": "Used to specify the config file path for Tailwind v4."
+    },
+    {
+       "name": "@tailwind",
+       "description": "Use the `@tailwind` directive to insert Tailwind's `base`, `components`, `utilities` and `screens` styles into your CSS."
+    }
+  ]
+}

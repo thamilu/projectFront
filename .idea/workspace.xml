@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="64337230-e3af-489d-a2db-0fdffc33e668" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/API_DOCUMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/BACKEND_FRONTEND_MAPPING.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DEPLOYMENT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ESHOP_API_ENDPOINTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/FILE_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/IMPLEMENTATION_COMPLETE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LOGIN_ISSUE_SOLUTION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/SECURITY_ARCHITECTURE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/SECURITY_DOCUMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/SECURITY_QUICK_REFERENCE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/SETUP_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/TECHNICAL_DOCUMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/admin/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/admin/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/admin/users/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/admin/users/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/auth/login/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/auth/login/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/auth/register/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/auth/register/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/delivery/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/delivery/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/farmer/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/farmer/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/products/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/products/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/retail/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/retail/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/seller/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/seller/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/wholesale/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/wholesale/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/layout/sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/layout/sidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/navigation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/navigation.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/features/auth/api/auth-api-new.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/features/auth/api/auth-api-new.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/features/auth/api/auth-api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/features/auth/api/auth-api.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/features/auth/hooks/use-auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/features/auth/hooks/use-auth.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/features/cart/hooks/use-cart.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/features/cart/hooks/use-cart.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/features/products/hooks/use-products.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/features/products/hooks/use-products.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/axios.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/axios.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/store/auth-store.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/auth-store.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/index.ts" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 3
+}]]></component>
+  <component name="ProjectId" id="36PMbYTtkpbFD4Qmlsl4bHv8dpQ" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="64337230-e3af-489d-a2db-0fdffc33e668" name="Changes" comment="" />
+      <created>1764903825050</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1764903825050</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
+  </component>
+</project>

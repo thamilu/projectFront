@@ -1,0 +1,79 @@
+  6:22  error  'act' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  19:10  error  'notFound' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  58:6   error  'Product' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  44:14  error  'err' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  26:3  error  'TrendingUp' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  27:3  error  'DollarSign' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  28:3  error  'Users' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  30:8  error  'axios' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+   11:3   error  'TrendingDown' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   13:3   error  'CreditCard' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+   15:3   error  'Calendar' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  232:60  error  'index' is defined but never used. Allowed unused args must match /^_/u         @typescript-eslint/no-unused-vars
+  289:67  error  'index' is defined but never used. Allowed unused args must match /^_/u         @typescript-eslint/no-unused-vars
+  16:15  error  'JWT' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  18:10  error  'AUTH_ERRORS' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  272:14  error  'parseError' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  408:14  error  'jsonError' is defined but never used. Allowed unused caught errors must match /^_/u   @typescript-eslint/no-unused-vars
+  32:28  error  'req' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  255:14  error  'parseError' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  395:14  error  'jsonError' is defined but never used. Allowed unused caught errors must match /^_/u   @typescript-eslint/no-unused-vars
+  10:27  error  'req' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  64:20  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  10:24  error  'ArrowLeft' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  25:12  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u            @typescript-eslint/no-unused-vars
+  47:11  error  'discountPercent' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  86:12  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u            @typescript-eslint/no-unused-vars
+  99:12  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u            @typescript-eslint/no-unused-vars
+   7:29  error  'CardDescription' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  16:52  error  'ArrowLeft' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  42:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u   @typescript-eslint/no-unused-vars
+  72:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u   @typescript-eslint/no-unused-vars
+  35:9  error  'categoryId' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  36:9  error  'brandId' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  37:9  error  'minPrice' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  38:9  error  'maxPrice' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+   4:21  error  'useSearchParams' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  15:44  error  'Filter' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  73:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u   @typescript-eslint/no-unused-vars
+  16:58  error  'TrendingUp' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   4:52  error  'CardDescription' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+   8:50  error  'CheckCircle' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  21:17  error  'session' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  26:48  error  'CheckCircle' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  26:61  error  'XCircle' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+  26:70  error  'Clock' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+  98:10  error  'error' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  98:17  error  'setError' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  153:9  error  'handleRetry' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  28:10  error  'selected' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  72:9   error  'bulkDelete' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  85:14  error  'err' is defined but never used. Allowed unused caught errors must match /^_/u         @typescript-eslint/no-unused-vars
+  17:10  error  'Store' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+  39:5   error  'setValue' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   6:21  error  'useState' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  10:43  error  'Mail' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  6:11  error  'Product' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  116:13  error  'children' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  5:32  error  'Tag' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+  6:8   error  'RegisterPrompt' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  8:23  error  'X' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   61:11  error  'logout' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  119:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u   @typescript-eslint/no-unused-vars
+  136:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u   @typescript-eslint/no-unused-vars
+  6:10  error  'useAuthStore' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  12:23  error  'useState' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  58:14  error  'err' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  322:47  error  'login' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  323:11  error  'pathname' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  26:11  error  'CommandDialogProps' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  17:77  error  'side' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  74:10  error  'generateStateToken' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  50:5  error  'register' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  96:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  69:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+   33:10  error  'Slider' is defined but never used. Allowed unused vars must match /^_/u                    @typescript-eslint/no-unused-vars
+  174:9   error  'watchedMinPrice' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  176:9   error  'watchedMaxPrice' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  24:10  error  'Separator' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+✖ 78 problems (78 errors, 0 warnings)

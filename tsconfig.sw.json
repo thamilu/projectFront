@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["esnext", "webworker"],
+    "target": "ES2020",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "outDir": "./public",
+    "rootDir": "./sw",
+    "noEmit": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true
+  },
+  "include": ["sw/**/*"],
+  "exclude": ["node_modules"]
+}

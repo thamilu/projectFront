@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="shimmer" x1="-100%" y1="0" x2="100%" y2="0">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="50%" stop-color="#e2e8f0" />
+      <stop offset="100%" stop-color="#f8fafc" />
+      <animate attributeName="x1" from="-100%" to="100%" dur="1.5s" repeatCount="indefinite" />
+      <animate attributeName="x2" from="0%" to="200%" dur="1.5s" repeatCount="indefinite" />
+    </linearGradient>
+    <linearGradient id="icon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cbd5e1" />
+      <stop offset="100%" stop-color="#94a3b8" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background with shimmer effect -->
+  <rect width="100%" height="100%" fill="url(#shimmer)" />
+  
+  <!-- Inner geometric subtle accents -->
+  <rect x="5%" y="6%" width="90%" height="88%" rx="24" fill="none" stroke="#f1f5f9" stroke-width="2"/>
+  
+  <!-- Premium Shopping Bag Icon / Image Placeholder Icon -->
+  <g transform="translate(350, 240)">
+    <!-- Mountain / Image Icon -->
+    <rect x="0" y="0" width="100" height="100" rx="16" fill="url(#icon-grad)" opacity="0.15"/>
+    <path d="M25 70 L45 45 L60 60 L75 35 L90 60" fill="none" stroke="url(#icon-grad)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="35" cy="35" r="8" fill="url(#icon-grad)" opacity="0.6"/>
+  </g>
+  
+  <!-- Clean Typography -->
+  <text x="50%" y="62%" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="'Inter', -apple-system, sans-serif" font-weight="500" letter-spacing="0.05em" font-size="18">PRODUCT IMAGE</text>
+  <text x="50%" y="68%" dominant-baseline="middle" text-anchor="middle" fill="#94a3b8" font-family="'Inter', -apple-system, sans-serif" font-weight="400" font-size="14">Image is coming soon</text>
+</svg>
