@@ -46,6 +46,11 @@ export const apiClient = axios.create({
  */
 export const axiosInstance = apiClient;
 
+// Simple client-side session cache to avoid redundant /api/auth/session calls
+let cachedSession: any = null;
+let lastSessionFetch = 0;
+const SESSION_CACHE_MS = 2000; // Cache for 2 seconds
+
 // Shared request interceptor to attach access token from NextAuth session
 const authRequestInterceptor = async (config: InternalAxiosRequestConfig) => {
   // If no-auth flag is present, skip session attachment
@@ -55,14 +60,19 @@ const authRequestInterceptor = async (config: InternalAxiosRequestConfig) => {
   }
 
   if (typeof window !== 'undefined') {
-    // Client-side: use session from SessionProvider
-    const { getSession } = await import('next-auth/react');
-    const session = await getSession();
-    if (session?.accessToken && !config.headers.Authorization) {
-      config.headers.Authorization = `Bearer ${session.accessToken}`;
+    // Client-side: use cached session if fresh
+    const now = Date.now();
+    if (!cachedSession || now - lastSessionFetch > SESSION_CACHE_MS) {
+      const { getSession } = await import('next-auth/react');
+      cachedSession = await getSession();
+      lastSessionFetch = now;
+    }
+    
+    if (cachedSession?.accessToken && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${cachedSession.accessToken}`;
     }
   } else {
-    // Server-side: attach token from NextAuth session
+    // Server-side: attach token from NextAuth session (Server session is typically cached per-request by NextAuth)
     try {
       const { getServerSession } = await import('next-auth');
       const { authOptions } = await import('@/lib/auth-config');

@@ -33,6 +33,7 @@ interface ComboboxProps {
   emptyText?: string
   className?: string
   disabled?: boolean
+  allowCustomValue?: boolean
 }
 
 export function Combobox({
@@ -43,14 +44,17 @@ export function Combobox({
   searchPlaceholder = "Search...",
   emptyText = "No results found.",
   className,
-  disabled = false
+  disabled = false,
+  allowCustomValue = false
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const [searchValue, setSearchValue] = React.useState("")
 
   // Find the selected label
   const selectedLabel = React.useMemo(() => {
     if (value === undefined || value === null || value === "") return undefined
-    return options.find((option) => String(option.value) === String(value))?.label
+    const option = options.find((option) => String(option.value) === String(value))
+    return option ? option.label : String(value) // Return value itself if it's a custom value
   }, [value, options])
 
   return (
@@ -63,23 +67,43 @@ export function Combobox({
           className={cn("w-full justify-between", !value && "text-muted-foreground", className)}
           disabled={disabled}
         >
-          {selectedLabel || placeholder}
+          <span className="truncate">{selectedLabel || placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput 
+            placeholder={searchPlaceholder} 
+            value={searchValue} 
+            onValueChange={setSearchValue} 
+          />
           <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandEmpty>
+              {allowCustomValue && searchValue ? (
+                <button
+                  className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                  onClick={() => {
+                    onSelect(searchValue)
+                    setOpen(false)
+                    setSearchValue("")
+                  }}
+                >
+                  Use custom value: "{searchValue}"
+                </button>
+              ) : (
+                emptyText
+              )}
+            </CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label} // Search by label
+                  value={option.label}
                   onSelect={() => {
                     onSelect(option.value)
                     setOpen(false)
+                    setSearchValue("")
                   }}
                 >
                   <Check

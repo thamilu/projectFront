@@ -174,7 +174,7 @@ export default function SellerStorePage() {
             </div>
             <div>
               <span className="text-muted-foreground font-semibold">Address: </span>
-              <span>{store.address || 'N/A'}</span>
+              <span>{`${store.addressLine1}, ${store.city}, ${store.state} ${store.pincode || ''}`}</span>
             </div>
             <div>
               <span className="text-muted-foreground font-semibold">Rating: </span>
@@ -190,8 +190,15 @@ export default function SellerStorePage() {
               description: store.description,
               email: store.email || '',
               phone: store.phone || '',
-              address: store.address || '',
+              addressLine1: store.addressLine1 || '',
+              addressLine2: store.addressLine2 || '',
+              city: store.city || '',
+              district: store.district || '',
+              state: store.state || '',
+              pincode: store.pincode || '',
+              country: store.country || 'India',
               logoUrl: store.logoUrl || '',
+              googleMapsUrl: store.googleMapsUrl || '',
             }}
             onSubmit={handleSubmit}
             isPending={updateStore.isPending}

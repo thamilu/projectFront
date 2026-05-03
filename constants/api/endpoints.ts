@@ -26,7 +26,7 @@ export const API_ENDPOINTS = {
 
   // Users - Versioned (/api/v1/users)
   USERS: {
-    PROFILE: '/api/v1/users/profile',
+    PROFILE: '/api/v1/users/me',
     ADDRESSES: '/api/v1/users/addresses',
   },
 

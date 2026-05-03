@@ -104,6 +104,8 @@ export interface Store {
   id: string;
   storeName: string;
   description: string;
+  email?: string;
+  phone?: string;
   addressLine1?: string;
   addressLine2?: string;
   city?: string;
@@ -111,5 +113,9 @@ export interface Store {
   state?: string;
   pincode?: string;
   country?: string;
+  logoUrl?: string;
   googleMapsUrl?: string;
+  isVerified?: boolean;
+  rating?: number;
+  totalRatings?: number;
 }

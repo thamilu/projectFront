@@ -1,8 +1,9 @@
 import React from 'react';
-import { UseFormRegister, FieldErrors, FieldValues, Path } from 'react-hook-form';
+import { UseFormRegister, FieldErrors, FieldValues, Path, useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { AddressFields } from '@/components/shared/AddressFields';
 import { FormError } from '@/components/ui/form-error';
 
 interface FieldSpec<T> {
@@ -27,117 +28,74 @@ export function StoreDetailsFields<T extends FieldValues>(props: {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor={storeName.id}>{storeName.label}</Label>
-        <Input
-          id={storeName.id}
-          placeholder={storeName.placeholder}
-          {...register(storeName.id as Path<T>)}
-        />
-        {getError(storeName.id) && <FormError message={getError(storeName.id)} />}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor={storeName.id} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
+            {storeName.label}
+          </Label>
+          <Input
+            id={storeName.id}
+            placeholder={storeName.placeholder}
+            {...register(storeName.id as Path<T>)}
+            className="h-10 bg-background/50 border-muted-foreground/20 focus:border-primary transition-all shadow-sm"
+          />
+          {getError(storeName.id) && <FormError message={getError(storeName.id)} />}
+        </div>
+
+        {phone && (
+          <div className="space-y-1.5">
+            <Label htmlFor={phone.id} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
+              {phone.label}
+            </Label>
+            <Input
+              id={phone.id}
+              placeholder={phone.placeholder}
+              {...register(phone.id as Path<T>)}
+              className="h-10 bg-background/50 border-muted-foreground/20 focus:border-primary transition-all shadow-sm"
+            />
+            {getError(phone.id) && <FormError message={getError(phone.id)} />}
+          </div>
+        )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor={description.id}>{description.label}</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor={description.id} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
+          {description.label}
+        </Label>
         <Textarea
           id={description.id}
           placeholder={description.placeholder}
           rows={3}
           {...register(description.id as Path<T>)}
+          className="bg-background/50 border-muted-foreground/20 focus:border-primary transition-all shadow-sm min-h-[80px]"
         />
         {getError(description.id) && <FormError message={getError(description.id)} />}
       </div>
 
-      {/* ─── Shop / Warehouse Address Section ─── */}
-      <div className="border-t pt-6">
-        <h3 className="text-lg font-semibold mb-4">Shop / Warehouse Location</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2 space-y-2">
-            <Label htmlFor="storeAddressLine1">Street Address</Label>
-            <Input
-              id="storeAddressLine1"
-              placeholder="Building, Street, Area"
-              {...register('storeAddressLine1' as Path<T>)}
-            />
-            {getError('storeAddressLine1') && <FormError message={getError('storeAddressLine1')} />}
-          </div>
-
-          <div className="md:col-span-2 space-y-2">
-            <Label htmlFor="storeAddressLine2">Landmark / Area (Optional)</Label>
-            <Input
-              id="storeAddressLine2"
-              placeholder="Near XYZ Landmark"
-              {...register('storeAddressLine2' as Path<T>)}
-            />
-            {getError('storeAddressLine2') && <FormError message={getError('storeAddressLine2')} />}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="storeCity">City</Label>
-            <Input
-              id="storeCity"
-              placeholder="City"
-              {...register('storeCity' as Path<T>)}
-            />
-            {getError('storeCity') && <FormError message={getError('storeCity')} />}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="storeDistrict">District</Label>
-            <Input
-              id="storeDistrict"
-              placeholder="District"
-              {...register('storeDistrict' as Path<T>)}
-            />
-            {getError('storeDistrict') && <FormError message={getError('storeDistrict')} />}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="storeState">State</Label>
-            <Input
-              id="storeState"
-              placeholder="State"
-              {...register('storeState' as Path<T>)}
-            />
-            {getError('storeState') && <FormError message={getError('storeState')} />}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="storePincode">Pincode</Label>
-            <Input
-              id="storePincode"
-              placeholder="6-digit Pincode"
-              {...register('storePincode' as Path<T>)}
-            />
-            {getError('storePincode') && <FormError message={getError('storePincode')} />}
-          </div>
-
-          <div className="md:col-span-2 space-y-2">
-            <Label htmlFor="googleMapsUrl">Google Maps Location URL (Optional)</Label>
-            <Input
-              id="googleMapsUrl"
-              placeholder="https://goo.gl/maps/..."
-              {...register('googleMapsUrl' as Path<T>)}
-            />
-            {getError('googleMapsUrl') && <FormError message={getError('googleMapsUrl')} />}
-            <p className="text-xs text-muted-foreground mt-1">
-              Tip: Go to Google Maps, find your shop, click Share, and copy the link.
-            </p>
-          </div>
-        </div>
+      <div className="pt-2">
+        <AddressFields 
+          namePrefix="store" 
+          title="Store Location" 
+          showTitle 
+          description=""
+        />
       </div>
 
-      {phone && (
-        <div className="space-y-2">
-          <Label htmlFor={phone.id}>{phone.label}</Label>
-          <Input
-            id={phone.id}
-            placeholder={phone.placeholder}
-            {...register(phone.id as Path<T>)}
-          />
-          {getError(phone.id) && <FormError message={getError(phone.id)} />}
-        </div>
-      )}
+      <div className="space-y-1.5">
+        <Label htmlFor="googleMapsUrl" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
+          Google Maps URL (Optional)
+        </Label>
+        <Input
+          id="googleMapsUrl"
+          placeholder="https://goo.gl/maps/..."
+          {...register('googleMapsUrl' as Path<T>)}
+          className="h-10 bg-background/50 border-muted-foreground/20 focus:border-primary transition-all shadow-sm"
+        />
+        {getError('googleMapsUrl') && <FormError message={getError('googleMapsUrl')} />}
+        <p className="text-[10px] text-muted-foreground italic ml-1">
+          Tip: Share your shop location link from Google Maps for easier discovery.
+        </p>
+      </div>
     </div>
   );
 }

@@ -42,6 +42,8 @@ const PUBLIC_ROUTES = [
   APP_ROUTES.TERMS,
   APP_ROUTES.PRIVACY,
   APP_ROUTES.SEARCH,
+  APP_ROUTES.CART,
+  APP_ROUTES.UNAUTHORIZED,
 ];
 
 /**
@@ -54,18 +56,26 @@ function generateNonce(): string {
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  logger.debug('[proxy] Request received', { pathname });
-
   // CRITICAL: Skip proxy for static assets and public Auth API routes
   const isStaticPrefix = STATIC_PREFIXES.some(prefix => pathname.startsWith(prefix));
   const isStaticFile = STATIC_FILE_REGEX.test(pathname);
 
-  if (
-    pathname === APP_ROUTES.AUTH_LOGIN ||
-    pathname === APP_ROUTES.AUTH_REGISTER ||
-    isStaticPrefix ||
-    isStaticFile
-  ) {
+  if (isStaticPrefix || isStaticFile) {
+    return NextResponse.next();
+  }
+
+  // Only log non-static requests to reduce overhead
+  logger.debug('[proxy] Request received', { pathname });
+
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const isAuth = !!token;
+
+  // Redirect authenticated users away from login/register
+  if (pathname === APP_ROUTES.AUTH_LOGIN || pathname === APP_ROUTES.AUTH_REGISTER) {
+    if (isAuth) {
+      logger.info('[proxy] Authenticated user visiting auth page, redirecting to home', { pathname });
+      return NextResponse.redirect(new URL(APP_ROUTES.HOME, req.url));
+    }
     return NextResponse.next();
   }
 
@@ -80,13 +90,11 @@ export async function proxy(req: NextRequest) {
       pathname === route || pathname.startsWith(`${route}/`) || pathname.startsWith(`${route}?`)
   );
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-
-  if (isPublicRoute && !token) {
+  if (isPublicRoute && !isAuth) {
     return response;
   }
 
-  if (!token) {
+  if (!isAuth) {
     logger.info('[proxy] Redirecting to login', { pathname });
     const loginUrl = new URL(APP_ROUTES.AUTH_LOGIN, req.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
@@ -119,17 +127,23 @@ export async function proxy(req: NextRequest) {
   }
 
   // Role-based access control
-  const rawRoles = (token as any).roles || [];
+  const rawRoles = (token as any)?.roles || [];
   const roles = Array.isArray(rawRoles) ? rawRoles.map(r => String(r).toUpperCase()) : [];
+  
   const isSeller = roles.includes('SELLER');
   const isDeliveryAgent = roles.includes('DELIVERY_AGENT');
+  const isAdmin = roles.includes('ADMIN');
 
+  // Protect Seller Routes
   if (pathname.startsWith(APP_ROUTES.SELLER.BASE) && !pathname.startsWith(APP_ROUTES.SELLER.REGISTER) && !isSeller) {
+    logger.warn('[proxy] Non-seller attempting to access seller route', { pathname });
     return NextResponse.redirect(new URL(APP_ROUTES.SELLER.REGISTER, req.url));
   }
 
-  if (pathname.startsWith(APP_ROUTES.DELIVERY.DASHBOARD) && !isDeliveryAgent) {
-    return NextResponse.redirect(new URL('/unauthorized', req.url));
+  // Protect Delivery Routes
+  if (pathname.startsWith(APP_ROUTES.DELIVERY.BASE) && !isDeliveryAgent) {
+    logger.warn('[proxy] Non-delivery agent attempting to access delivery route', { pathname });
+    return NextResponse.redirect(new URL(APP_ROUTES.UNAUTHORIZED, req.url));
   }
 
   // Allow sellers and delivery agents to view the consumer home page if they choose

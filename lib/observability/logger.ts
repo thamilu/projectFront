@@ -274,7 +274,9 @@ class Logger {
    * logger.debug('Processing user request', { userId, action });
    */
   debug(message: string, context?: LogContext): void {
-    this.write(this.formatEntry('debug', message, context));
+    if (this.shouldLog('debug')) {
+      this.write(this.formatEntry('debug', message, context));
+    }
   }
 
   /**
@@ -289,7 +291,9 @@ class Logger {
    * logger.info('User logged in', { userId, loginMethod: 'keycloak' });
    */
   info(message: string, context?: LogContext): void {
-    this.write(this.formatEntry('info', message, context));
+    if (this.shouldLog('info')) {
+      this.write(this.formatEntry('info', message, context));
+    }
   }
 
   /**
@@ -304,7 +308,9 @@ class Logger {
    * logger.warn('Token near expiration', { userId, expiresIn: 60 });
    */
   warn(message: string, context?: LogContext): void {
-    this.write(this.formatEntry('warn', message, context));
+    if (this.shouldLog('warn')) {
+      this.write(this.formatEntry('warn', message, context));
+    }
   }
 
   /**
@@ -323,7 +329,9 @@ class Logger {
    * });
    */
   error(message: string, context?: LogContext): void {
-    this.write(this.formatEntry('error', message, context));
+    if (this.shouldLog('error')) {
+      this.write(this.formatEntry('error', message, context));
+    }
   }
 
   /**

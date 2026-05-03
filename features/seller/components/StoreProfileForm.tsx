@@ -1,12 +1,35 @@
 'use client';
 
+import React from 'react';
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Store as StoreIcon, 
+  Save, 
+  X, 
+  Loader2, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Globe,
+  Info
+} from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Store, Save } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { AddressFields } from '@/components/shared/AddressFields';
 import { storeCreateSchema, type StoreCreateFormData } from '@/features/seller/schemas';
-import { StoreDetailsFields } from '@/features/seller/components/StoreDetailsFields';
 
 interface StoreProfileFormProps {
   initialData?: Partial<StoreCreateFormData>;
@@ -23,98 +46,126 @@ export function StoreProfileForm({
   onSubmit,
   isPending,
   onCancel,
-  submitLabel = 'Save Store',
-  title = 'Store Information',
-  description = 'Provide details about your business that customers will see',
+  submitLabel = 'Save Store Profile',
+  title = 'Public Store Presence',
+  description = 'This information is visible to customers on your store page.',
 }: StoreProfileFormProps) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<StoreCreateFormData>({
-    resolver: zodResolver(storeCreateSchema),
+  const methods = useForm<StoreCreateFormData>({
+    resolver: zodResolver(storeCreateSchema) as any,
     mode: 'onTouched',
     defaultValues: {
       storeName: initialData?.storeName || '',
       description: initialData?.description || '',
       email: initialData?.email || '',
       phone: initialData?.phone || '',
-      address: initialData?.address || '',
+      addressLine1: initialData?.addressLine1 || '',
+      addressLine2: initialData?.addressLine2 || '',
+      city: initialData?.city || '',
+      district: initialData?.district || '',
+      state: initialData?.state || '',
+      pincode: initialData?.pincode || '',
+      country: initialData?.country || 'India',
       logoUrl: initialData?.logoUrl || '',
+      googleMapsUrl: initialData?.googleMapsUrl || '',
     },
   });
 
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Store className="text-primary h-5 w-5" />
-            <CardTitle>{title}</CardTitle>
-          </div>
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <StoreDetailsFields
-            register={register}
-            errors={errors}
-            storeName={{
-              name: 'storeName',
-              id: 'storeName',
-              label: 'Store Name *',
-              placeholder: 'e.g., Tech Haven Electronics',
-              required: true,
-              inputClassName: 'h-12 text-lg',
-            }}
-            email={{
-              name: 'email',
-              id: 'email',
-              label: 'Contact Email',
-              placeholder: 'shop@example.com',
-            }}
-            phone={{
-              name: 'phone',
-              id: 'phone',
-              label: 'Contact Phone',
-              placeholder: '+91 1234567890',
-              inputClassName: 'h-12 text-lg',
-            }}
-            description={{
-              name: 'description',
-              id: 'description',
-              label: 'Store Description *',
-              placeholder: 'Tell customers about your store and what you sell...',
-              required: true,
-              inputClassName: 'min-h-30 resize-none p-4 text-base',
-            }}
-            address={{
-              name: 'address',
-              id: 'address',
-              label: 'Business Address',
-              placeholder: 'Enter your business address',
-              inputClassName: 'min-h-24 resize-none p-4 text-base',
-            }}
-          />
+  const { register, handleSubmit, formState: { errors } } = methods;
 
-          <div className="flex justify-end gap-4 border-t pt-4">
-            {onCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                disabled={isPending}
-              >
-                Cancel
+  return (
+    <FormProvider {...methods}>
+      <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
+        <Card className="border-none shadow-2xl bg-background/50 backdrop-blur-md overflow-hidden">
+          <div className="h-2 bg-linear-to-r from-primary to-primary/40" />
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                <StoreIcon className="h-6 w-6" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">{title}</CardTitle>
+                <CardDescription className="text-base">{description}</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            {/* Core Details Section */}
+            <section className="space-y-6">
+              <div className="flex items-center gap-2 text-sm font-semibold text-primary uppercase tracking-wider">
+                <Info className="h-4 w-4" /> Basic Information
+              </div>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="storeName">Store Display Name</Label>
+                  <Input id="storeName" {...register('storeName')} className="bg-background/50 h-12" placeholder="e.g. Acme Electronics" />
+                  {errors.storeName && <p className="text-xs text-destructive">{errors.storeName.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Public Contact Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input id="email" {...register('email')} className="pl-10 bg-background/50 h-12" placeholder="support@yourstore.com" />
+                  </div>
+                  {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Customer Support Phone</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input id="phone" {...register('phone')} className="pl-10 bg-background/50 h-12" placeholder="+91 98765 43210" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="googleMapsUrl">Google Maps URL</Label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input id="googleMapsUrl" {...register('googleMapsUrl')} className="pl-10 bg-background/50 h-12 text-xs" placeholder="https://maps.app.goo.gl/..." />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Store Description</Label>
+                <Textarea 
+                  id="description" 
+                  {...register('description')} 
+                  className="bg-background/50 min-h-32 p-4 text-base resize-none" 
+                  placeholder="Tell your customers about your brand story and product values..." 
+                />
+                {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
+              </div>
+            </section>
+
+            <section className="space-y-6 pt-6 border-t">
+              <AddressFields 
+                showTitle 
+                title="Store Location Details" 
+                description="The physical location of your shop or warehouse."
+              />
+            </section>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-4 pt-8 border-t">
+              {onCancel && (
+                <Button type="button" variant="outline" onClick={onCancel} disabled={isPending} className="px-6 h-12">
+                  <X className="mr-2 h-4 w-4" /> Cancel
+                </Button>
+              )}
+              <Button type="submit" disabled={isPending} className="px-8 h-12 shadow-lg shadow-primary/20">
+                {isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                {isPending ? 'Processing...' : submitLabel}
               </Button>
-            )}
-            <Button type="submit" disabled={isPending}>
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isPending ? 'Saving...' : submitLabel}
-              {!isPending && submitLabel.includes('Save') && <Save className="ml-2 h-4 w-4" />}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </form>
+            </div>
+          </CardContent>
+        </Card>
+      </form>
+    </FormProvider>
   );
 }
