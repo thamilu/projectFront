@@ -6,17 +6,21 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Save, User } from 'lucide-react';
+import { 
+  Loader2, Save, User, Edit, ArrowLeft, Globe, Phone, MapPin, 
+  Building2, CreditCard, ShieldCheck, BadgeCheck, Store, 
+  ExternalLink, X, Mail, Fingerprint, Briefcase
+} from 'lucide-react';
 import { useMyStore, useUpdateStore } from '@/hooks/queries/use-seller';
 import { APP_ROUTES } from '@/constants/routes/app-routes';
-import { SellerIdentityType } from '@/types';
+import { SellerIdentityType, SellerStatus } from '@/features/seller/types';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,13 +28,16 @@ import {
   sellerProfileUpdateSchema,
   type SellerProfileUpdateFormData,
 } from '@/features/seller/schemas';
+import { cn } from '@/lib/utils';
 
 export default function SellerProfilePage() {
   const router = useRouter();
+  const [isEditing, setIsEditing] = useState(false);
   const { data: profile, isLoading } = useMyStore();
   const { mutateAsync: updateProfile, isPending: saving } = useUpdateStore();
-  const businessTypesText =
-    profile?.businessTypes?.length ? profile.businessTypes.join(', ') : '—';
+  
+  const isBusiness = profile?.identityType === SellerIdentityType.BUSINESS;
+  const businessTypesText = profile?.businessTypes?.join(', ') || 'None';
 
   const {
     register,
@@ -38,275 +45,317 @@ export default function SellerProfilePage() {
     formState: { errors },
     reset,
   } = useForm<SellerProfileUpdateFormData>({
-    resolver: zodResolver(sellerProfileUpdateSchema),
+    resolver: zodResolver(sellerProfileUpdateSchema) as any,
   });
 
   // Populate form when profile loads
   useEffect(() => {
     if (profile) {
       reset({
-        displayName: profile.displayName,
+        shopName: profile.shopName || profile.displayName || '',
+        shopHandle: profile.shopHandle || '',
+        shopLogoUrl: profile.shopLogoUrl || '',
         businessName: profile.businessName || '',
-        taxId: profile.taxId || '',
         description: profile.description || '',
-        pan: profile.pan || '',
-        aadhaar: profile.aadhar || '',
-        bankAccountNumber: profile.bankAccountNumber || '',
-        bankIfscCode: profile.bankIfscCode || '',
-        businessPan: profile.businessPan || '',
-        authorizedSignatory: profile.authorizedSignatory || '',
+        panNumber: profile.kyc?.panNumber || '',
+        aadhar: profile.kyc?.aadhar || '',
+        gstin: profile.kyc?.gstin || '',
+        businessPhone: profile.businessMobileNumber || '',
+        storeAddressLine1: profile.storeAddressLine1 || profile.addressLine1 || '',
+        storeAddressLine2: profile.storeAddressLine2 || profile.addressLine2 || '',
+        storeCity: profile.storeCity || profile.city || '',
+        storeDistrict: profile.storeDistrict || profile.district || '',
+        storeState: profile.storeState || profile.state || '',
+        storePincode: profile.storePincode || profile.pincode || '',
+        storeCountry: profile.storeCountry || profile.country || 'India',
+        googleMapsUrl: profile.googleMapsUrl || '',
       });
     }
   }, [profile, reset]);
 
-  // Handle explicitly missing profile
-  if (!isLoading && !profile) {
+  if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Profile Not Found</CardTitle>
-            <CardDescription>
-              We couldn't find your seller profile. Please complete the onboarding process.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button onClick={() => router.push(APP_ROUTES.SELLER.REGISTER)}>
-              Complete Onboarding
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="flex h-[80vh] items-center justify-center bg-[#05070a]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
   }
+
+  if (!profile) return null;
 
   const onSubmit = async (data: SellerProfileUpdateFormData) => {
     try {
-      await updateProfile(data);
-      toast.success('Profile updated successfully');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // Filter out empty, null, or undefined values to avoid backend validation/null-overwrite issues
+      const filteredData = Object.fromEntries(
+        Object.entries(data).filter(([_, value]) => value !== '' && value !== null && value !== undefined)
+      );
+      
+      await updateProfile(filteredData as any);
+      toast.success('Configuration Synchronized');
+      setIsEditing(false);
     } catch (error: any) {
-      console.error('[SellerProfile] Update failed:', error);
-      toast.error('Failed to update profile', {
-        description: error.message || 'Please try again',
-      });
+      const message = error?.message || error?.response?.data?.message || 'Sync Error';
+      toast.error(message);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-          <span className="text-gray-600">Loading profile...</span>
-        </div>
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  };
+
+  const DataNode = ({ label, value, icon: Icon, color = "blue" }: { label: string; value: string | undefined; icon: any; color?: string }) => (
+    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] transition-all min-w-0">
+      <div className={cn(
+        "p-2 rounded-lg shrink-0",
+        color === "blue" ? "bg-blue-500/10 text-blue-500" : "bg-emerald-500/10 text-emerald-500"
+      )}>
+        <Icon className="h-4 w-4" />
       </div>
-    );
-  }
+      <div className="min-w-0">
+        <p className="text-[9px] font-black uppercase tracking-widest text-white/60 mb-0.5 truncate">{label}</p>
+        <p className="text-xs font-bold text-white/90 truncate" title={value}>{value || 'N/A'}</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 py-12 dark:from-gray-950 dark:to-gray-900">
-      <div className="container mx-auto max-w-3xl px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Seller Profile</h1>
-          <p className="text-muted-foreground mt-2">Manage your seller information</p>
+    <div className="min-h-screen bg-[#05070a] text-slate-300 py-8 px-4">
+      
+      <div className="container mx-auto max-w-4xl">
+        
+        {/* Compact Navigation Bar */}
+        <div className="flex justify-between items-center mb-6 bg-white/[0.02] p-2 pl-5 rounded-2xl border border-white/[0.05] backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <Fingerprint className="h-5 w-5 text-blue-500" />
+            <h1 className="text-sm font-black text-white tracking-widest uppercase italic">Seller Console</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isEditing ? (
+              <Button size="sm" onClick={() => setIsEditing(true)} className="bg-blue-600 hover:bg-blue-700 h-8 rounded-xl px-4 text-xs">
+                <Edit className="h-3 w-3 mr-1.5" />
+                Edit
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => setIsEditing(false)} className="border-white/10 hover:bg-white/5 text-white/50 h-8 rounded-xl px-4 text-xs">
+                <X className="h-3 w-3 mr-1.5" />
+                Cancel
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => router.push(APP_ROUTES.SELLER.DASHBOARD)} className="h-8 w-8 p-0 text-white/30 hover:text-white">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-purple-600">
-                <User className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <CardTitle>Profile Information</CardTitle>
-                <CardDescription>
-                  {profile?.status === 'ACTIVE' ? (
-                    <span className="text-green-600">Active Seller</span>
-                  ) : (
-                    <span className="text-gray-600">Status: {profile?.status}</span>
-                  )}
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Display Name */}
-              <div className="space-y-2">
-                <Label htmlFor="displayName">
-                  Display Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="displayName"
-                  placeholder="Store display name"
-                  {...register('displayName')}
-                />
-                {errors.displayName && (
-                  <p className="text-sm text-red-500">{errors.displayName.message}</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {/* Aadhaar */}
-                <div className="space-y-2">
-                  <Label htmlFor="aadhaar">Aadhaar Number</Label>
-                  <Input
-                    id="aadhaar"
-                    placeholder="12 digit Aadhaar number"
-                    {...register('aadhaar')}
-                  />
-                  {errors.aadhaar && (
-                    <p className="text-sm text-red-500">{errors.aadhaar.message}</p>
-                  )}
-                </div>
-
-                {/* PAN */}
-                <div className="space-y-2">
-                  <Label htmlFor="pan">PAN Number</Label>
-                  <Input
-                    id="pan"
-                    placeholder="Permanent Account Number"
-                    className="uppercase"
-                    {...register('pan')}
-                  />
-                  {errors.pan && (
-                    <p className="text-sm text-red-500">{errors.pan.message}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Business Name */}
-              <div className="space-y-2">
-                <Label htmlFor="businessName">Business Name (optional)</Label>
-                <Input
-                  id="businessName"
-                  placeholder="Legal business name"
-                  {...register('businessName')}
-                />
-                {errors.businessName && (
-                  <p className="text-sm text-red-500">{errors.businessName.message}</p>
-                )}
-              </div>
-
-
-
-              {/* Tax ID */}
-              {profile?.identityType === SellerIdentityType.BUSINESS && (
-                <div className="space-y-2">
-                  <Label htmlFor="taxId">Tax ID (optional)</Label>
-                  <Input
-                    id="taxId"
-                    placeholder="Tax identification number"
-                    {...register('taxId')}
-                  />
-                  {errors.taxId && <p className="text-sm text-red-500">{errors.taxId.message}</p>}
-                </div>
-              )}
-
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description">Store Description (optional)</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Tell customers about your store..."
-                  rows={4}
-                  {...register('description')}
-                />
-                {errors.description && (
-                  <p className="text-sm text-red-500">{errors.description.message}</p>
-                )}
-              </div>
-
-              {/* Bank Details Section */}
-              <div className="border-t pt-6">
-                <h3 className="mb-4 text-lg font-semibold">Bank Account Details</h3>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="bankAccountNumber">Account Number</Label>
-                    <Input
-                      id="bankAccountNumber"
-                      placeholder="Enter account number"
-                      {...register('bankAccountNumber')}
-                    />
-                    {errors.bankAccountNumber && (
-                      <p className="text-sm text-red-500">{errors.bankAccountNumber.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="bankIfscCode">IFSC Code</Label>
-                    <Input
-                      id="bankIfscCode"
-                      placeholder="e.g. SBIN0123456"
-                      className="uppercase"
-                      {...register('bankIfscCode')}
-                    />
-                    {errors.bankIfscCode && (
-                      <p className="text-sm text-red-500">{errors.bankIfscCode.message}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button type="submit" disabled={saving}>
-                  {saving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Changes
-                    </>
-                  )}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => router.push(APP_ROUTES.SELLER.DASHBOARD)}>
-                  Back to Dashboard
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Profile Metadata */}
-        {profile && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Account Information</CardTitle>
+        {isEditing ? (
+          /* PRECISE EDIT INTERFACE */
+          <Card className="rounded-3xl bg-white/[0.02] border-white/[0.05] shadow-2xl overflow-hidden animate-in fade-in duration-300">
+            <CardHeader className="p-6 border-b border-white/[0.05]">
+              <CardTitle className="text-lg font-black text-white">Update Configuration</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Identity Type:</span>
-                <span className="font-medium">{profile.identityType}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Business Types:</span>
-                <span className="font-medium">{businessTypesText}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Member Since:</span>
-                <span className="font-medium">
-                  {new Date(profile.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Last Updated:</span>
-                <span className="font-medium">
-                  {new Date(profile.updatedAt).toLocaleDateString()}
-                </span>
-              </div>
-              {profile.bankAccountNumber && (
-                <div className="flex justify-between border-t pt-2">
-                  <span className="text-muted-foreground">Bank Account:</span>
-                  <span className="font-medium">
-                    {profile.bankAccountNumber.replace(/.(?=.{4})/g, '*')}
-                  </span>
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
+                
+                {/* Account Info - Read Only in Form */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-white/[0.03] rounded-2xl border border-white/[0.05]">
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-[9px] font-black uppercase text-white/60 tracking-widest">Account Email</p>
+                    <p className="text-xs font-bold text-white/80 truncate">{profile.email}</p>
+                  </div>
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-[9px] font-black uppercase text-white/60 tracking-widest">Identity Type</p>
+                    <p className="text-xs font-bold text-white/80 truncate">{profile.identityType}</p>
+                  </div>
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-[9px] font-black uppercase text-white/60 tracking-widest">Business Type</p>
+                    <p className="text-xs font-bold text-white/80 truncate">{businessTypesText}</p>
+                  </div>
                 </div>
-              )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">Shop Name</Label>
+                    <Input {...register('shopName')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1] text-white" />
+                    {errors.shopName && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.shopName.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">Shop Handle</Label>
+                    <Input {...register('shopHandle')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1] font-mono text-blue-500 font-bold" />
+                    {errors.shopHandle && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.shopHandle.message}</p>}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">Logo URL</Label>
+                  <Input {...register('shopLogoUrl')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1]" />
+                  {errors.shopLogoUrl && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.shopLogoUrl.message}</p>}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">PAN Number</Label>
+                    <Input {...register('panNumber')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1] uppercase font-mono tracking-widest" />
+                    {errors.panNumber && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.panNumber.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">Aadhaar Number</Label>
+                    <Input {...register('aadhar')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1] font-mono" />
+                    {errors.aadhar && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.aadhar.message}</p>}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">Support Phone</Label>
+                  <Input {...register('businessPhone')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1]" />
+                  {errors.businessPhone && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.businessPhone.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">About Store</Label>
+                  <Textarea rows={3} {...register('description')} className="bg-white/[0.03] border-white/[0.1] rounded-xl text-xs resize-none" />
+                  {errors.description && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.description.message}</p>}
+                </div>
+
+                <div className="pt-4 border-t border-white/[0.05] space-y-6">
+                  <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Store Location</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">Physical Address (Line 1)</Label>
+                      <Input {...register('storeAddressLine1')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1]" placeholder="Building, Street, Area..." />
+                      {errors.storeAddressLine1 && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.storeAddressLine1.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">Address Line 2</Label>
+                      <Input {...register('storeAddressLine2')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1]" placeholder="Near landmark, floor..." />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">City</Label>
+                      <Input {...register('storeCity')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1]" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">District</Label>
+                      <Input {...register('storeDistrict')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1]" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">State</Label>
+                      <Input {...register('storeState')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1]" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">Pincode</Label>
+                      <Input {...register('storePincode')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1]" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">Country</Label>
+                      <Input {...register('storeCountry')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1]" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-1">Maps Link</Label>
+                      <Input {...register('googleMapsUrl')} className="h-9 rounded-xl bg-white/[0.03] border-white/[0.1]" placeholder="https://maps..." />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-white/[0.05]">
+                  <Button type="submit" disabled={saving} size="sm" className="bg-blue-600 hover:bg-blue-700 h-10 px-8 rounded-xl font-bold tracking-widest text-[10px]">
+                    {saving ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Save className="h-3 w-3 mr-1.5" />}
+                    SAVE PROFILE
+                  </Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
+        ) : (
+          /* PRESTIGE COMPACT VIEW */
+          <div className="space-y-6 animate-in fade-in duration-500">
+            
+            {/* Identity Card */}
+            <Card className="rounded-[2rem] bg-gradient-to-b from-white/[0.04] to-transparent border-white/[0.05] shadow-2xl backdrop-blur-2xl">
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="relative group">
+                    <div className="h-24 w-24 rounded-full bg-[#0a0c10] border-2 border-white/[0.05] p-1 shadow-2xl overflow-hidden">
+                      {profile.shopLogoUrl && !profile.shopLogoUrl.includes('adfs') ? (
+                        <img 
+                          src={profile.shopLogoUrl} 
+                          className="h-full w-full rounded-full object-cover" 
+                          alt="L" 
+                          onError={(e) => {(e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${profile.shopName}&background=0D8ABC&color=fff&size=256`}}
+                        />
+                      ) : (
+                        <div className="h-full w-full rounded-full bg-gradient-to-br from-blue-600/20 to-blue-900/10 flex items-center justify-center text-2xl font-black text-blue-500 italic">
+                          {getInitials(profile.shopName)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="absolute bottom-1 right-2 bg-emerald-500 p-1.5 rounded-lg border-2 border-[#05070a] shadow-lg">
+                      <BadgeCheck className="h-3 w-3 text-white" />
+                    </div>
+                  </div>
+
+                  <div className="flex-1 text-center md:text-left space-y-1">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2">
+                      <h2 className="text-2xl font-black tracking-tight text-white italic">{profile.shopName}</h2>
+                      <div className="bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border border-blue-500/20 w-fit mx-auto md:mx-0">
+                        {profile.status}
+                      </div>
+                    </div>
+                    <p className="text-lg font-mono font-bold text-blue-500 tracking-wider opacity-80">@{profile.shopHandle}</p>
+                    <p className="text-[11px] text-white/40 italic leading-relaxed max-w-lg">
+                      "{profile.description || "System configuration active."}"
+                    </p>
+                  </div>
+                </div>
+
+                {/* Data Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-8 pt-6 border-t border-white/[0.05]">
+                  <DataNode label="Account Email" value={profile.email} icon={Mail} />
+                  <DataNode label="Business Type" value={businessTypesText} icon={Briefcase} />
+                  <DataNode label="Identity Type" value={profile.identityType} icon={User} />
+                  <DataNode label="Support Contact" value={profile.businessMobileNumber} icon={Phone} />
+                  
+                  <DataNode label="PAN Identifier" value={profile.kyc?.panNumber} icon={ShieldCheck} color="emerald" />
+                  <DataNode label="Aadhaar UID" value={profile.kyc?.aadhar} icon={CreditCard} color="emerald" />
+                  <DataNode label="Network Domain" value={`${profile.shopHandle}.eshop.com`} icon={Globe} color="emerald" />
+                  <DataNode label="System Status" value={profile.status} icon={BadgeCheck} color="emerald" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Address Card */}
+            <Card className="rounded-[1.5rem] bg-white/[0.02] border-white/[0.05] p-6 flex flex-col md:flex-row justify-between items-center gap-6 shadow-xl overflow-hidden group">
+               <div className="text-center md:text-left">
+                  <h3 className="text-[8px] font-black text-white/60 uppercase tracking-[0.3em] mb-2">Geolocation</h3>
+                  <h4 className="text-xl font-black text-white italic tracking-tight">
+                    {profile.storeAddressLine1 || profile.addressLine1}
+                    {(profile.storeAddressLine2 || profile.addressLine2) && (
+                      <span className="text-white/40 font-medium not-italic ml-2">
+                        , {profile.storeAddressLine2 || profile.addressLine2}
+                      </span>
+                    )}
+                  </h4>
+                  <p className="text-xs text-white/40 font-bold tracking-tight">
+                    {profile.storeCity || profile.city} / {profile.storeDistrict || profile.district || 'Global'} / {profile.storeState || profile.state} / {profile.storePincode || profile.pincode} / {profile.storeCountry || profile.country || 'India'}
+                  </p>
+               </div>
+
+               {profile.googleMapsUrl && (
+                <Button size="sm" variant="outline" className="h-10 px-6 rounded-xl border-white/10 bg-white/5 hover:bg-blue-600 hover:text-white transition-all shadow-xl" asChild>
+                  <a href={profile.googleMapsUrl} target="_blank">
+                    <Globe className="h-4 w-4 mr-2" />
+                    <span className="text-[10px] font-black tracking-widest">MAPS</span>
+                  </a>
+                </Button>
+               )}
+            </Card>
+
+          </div>
         )}
       </div>
     </div>

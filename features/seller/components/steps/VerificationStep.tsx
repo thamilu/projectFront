@@ -68,12 +68,12 @@ export function VerificationStep() {
             
             <div className="grid gap-6 md:grid-cols-2">
               <StepInput
-                id="aadhaarNumber"
+                id="aadhar"
                 label="Aadhaar Number (12 Digits)"
                 icon={User}
                 placeholder="1234 5678 9012"
-                {...register('aadhaarNumber')}
-                error={errors.aadhaarNumber?.message}
+                {...register('aadhar')}
+                error={errors.aadhar?.message}
                 maxLength={12}
               />
               

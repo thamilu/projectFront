@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { PersonalInfoStep } from '@/features/seller/components/steps/PersonalInfoStep';
 import { PermanentAddressStep } from '@/features/seller/components/steps/PermanentAddressStep';
 import { IdentityStep } from '@/features/seller/components/steps/IdentityStep';
-import { VerificationStep } from '@/features/seller/components/steps/VerificationStep';
+import { KycStep } from '@/features/seller/components/steps/KycStep';
 import { StoreStep } from '@/features/seller/components/steps/StoreStep';
 import { TermsStep } from '@/features/seller/components/steps/TermsStep';
 import { Stepper } from '@/components/ui/stepper';
@@ -43,6 +43,7 @@ export function SellerRoleUpgradeForm({
   const methods = useForm<SellerOnboardingValues>({
     resolver: zodResolver(sellerOnboardingSchema) as any,
     mode: 'onBlur',
+    shouldUnregister: false,
     defaultValues: {
       firstName: '',
       lastName: '',
@@ -52,7 +53,7 @@ export function SellerRoleUpgradeForm({
       preferredLanguage: '',
       alternatePhone: '',
       panNumber: '',
-      aadhaarNumber: '',
+      aadhar: '',
       gstin: '',
       businessPan: '',
       identityType: SellerIdentityType.INDIVIDUAL,
@@ -75,18 +76,18 @@ export function SellerRoleUpgradeForm({
       phone: '',
       businessPhone: '',
       description: '',
+      shopHandle: '',
+      shopLogoUrl: '',
       acceptedTerms: false,
     },
   });
 
-  const { formState: { errors }, trigger, getValues, reset } = methods;
-
   // Log form errors for debugging
   useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      console.warn('Seller Registration Validation Errors:', errors);
+    if (Object.keys(methods.formState.errors).length > 0) {
+      console.warn('Seller Registration Validation Errors:', methods.formState.errors);
     }
-  }, [errors]);
+  }, [methods.formState.errors]);
 
   // Pre-populate Step 1 (Personal Address) from user profile
   useEffect(() => {
@@ -97,24 +98,15 @@ export function SellerRoleUpgradeForm({
         
         if (data) {
           console.log('Prefilling seller data from profile:', data);
-          reset({
-            ...getValues(),
-            firstName: data.firstName || '',
-            lastName: data.lastName || '',
-            email: data.email || user?.email || '',
-            phone: data.phone || data.personalMobileNumber || (user as any)?.phone || '',
-            gender: data.gender || '',
-            dateOfBirth: data.dateOfBirth || '',
-            preferredLanguage: data.preferredLanguage || '',
-            alternatePhone: data.alternatePhone || '',
-            addressLine1: data.addressLine1 || '',
-            addressLine2: data.addressLine2 || '',
-            city: data.city || '',
-            district: data.district || '',
-            state: data.state || '',
-            pincode: data.pincode || '',
-            country: data.country || 'India',
-          });
+          const currentValues = methods.getValues();
+          methods.reset({
+            ...currentValues,
+            ...data, // Spread data safely
+            firstName: data.firstName || currentValues.firstName || '',
+            lastName: data.lastName || currentValues.lastName || '',
+            email: data.email || user?.email || currentValues.email || '',
+            phone: data.phone || data.personalMobileNumber || (user as any)?.phone || currentValues.phone || '',
+          }, { keepDefaultValues: true });
         }
       } catch (error) {
         console.error('Failed to prefill seller registration data', error);
@@ -124,19 +116,20 @@ export function SellerRoleUpgradeForm({
     if (user && status === 'IDLE') {
       prefillData();
     }
-  }, [user, reset, getValues, status]);
+  }, [user, methods.reset, methods.getValues, status]);
 
   const onSubmit = async (data: SellerOnboardingValues) => {
     console.log('Attempting final submission with data:', data);
     setIsSubmitting(true);
     try {
-      await apiClient.post(API_ENDPOINTS.SELLERS.REGISTER, data);
+      const response = await apiClient.post(API_ENDPOINTS.SELLERS.REGISTER, data);
+      console.log('Registration success response:', response.data);
       toast.success('Registration successful! Redirecting...');
       setStatus('PENDING');
       if (onSuccess) onSuccess();
     } catch (error: any) {
-      console.error('Seller registration API error:', error);
-      toast.error(error.response?.data?.message || 'Registration failed. Please check your data.');
+      console.error('Seller registration API error details:', error);
+      toast.error(error.message || 'Registration failed. Please check your data.');
     } finally {
       setIsSubmitting(false);
     }
@@ -144,23 +137,43 @@ export function SellerRoleUpgradeForm({
 
   const next = async () => {
     const fields = getFieldsForStep(currentStep);
-    const isValid = await trigger(fields as any);
+    const isValid = await methods.trigger(fields as any);
     
     if (isValid) {
       if (currentStep < STEPS.length - 1) {
         setCurrentStep((s) => s + 1);
       } else {
         // Final submission - trigger WHOLE form validation to catch hidden errors
-        const isFormValid = await trigger();
+        const isFormValid = await methods.trigger();
         if (isFormValid) {
-          await onSubmit(getValues());
+          await onSubmit(methods.getValues());
         } else {
-          console.error('Whole Form Validation Failed. Errors:', methods.formState.errors);
+          // Direct Zod validation to catch "ghost" errors
+          const currentValues = methods.getValues();
+          const result = await sellerOnboardingSchema.safeParseAsync(currentValues);
+          
+          if (!result.success) {
+            const zodErrors = result.error.flatten().fieldErrors;
+            console.error('Zod Validation Result:', result.success);
+            console.error('Flattened Zod Errors:', zodErrors);
+            console.error('Current Form Values:', currentValues);
+            
+            // Set errors back to form
+            Object.entries(zodErrors).forEach(([field, messages]) => {
+              if (messages && messages.length > 0) {
+                methods.setError(field as any, { type: 'manual', message: messages[0] });
+              }
+            });
+          }
+
+          const { errors: currentErrors } = methods.formState;
+          console.error('Whole Form Validation Failed. Errors:', currentErrors);
           toast.error('Please check all steps for missing or incorrect information.');
         }
       }
     } else {
-      console.warn(`Step ${currentStep} validation failed. Errors:`, methods.formState.errors);
+      const { errors: stepErrors } = methods.formState;
+      console.warn(`Step ${currentStep} validation failed. Errors:`, stepErrors);
       toast.error('Please fix the errors in this step before proceeding.');
     }
   };
@@ -198,7 +211,7 @@ export function SellerRoleUpgradeForm({
                 {currentStep === 0 && <PersonalInfoStep />}
                 {currentStep === 1 && <PermanentAddressStep />}
                 {currentStep === 2 && <IdentityStep />}
-                {currentStep === 3 && <VerificationStep />}
+                {currentStep === 3 && <KycStep />}
                 {currentStep === 4 && <StoreStep />}
                 {currentStep === 5 && <TermsStep />}
               </div>
@@ -244,15 +257,19 @@ export function SellerRoleUpgradeForm({
 function getFieldsForStep(step: number): string[] {
   switch (step) {
     case 0:
-      return ['phone'];
+      return ['firstName', 'lastName', 'email', 'phone', 'gender', 'dateOfBirth', 'preferredLanguage', 'alternatePhone'];
     case 1:
-      return ['addressLine1', 'city', 'district', 'state', 'pincode'];
+      return ['addressLine1', 'addressLine2', 'city', 'district', 'state', 'pincode', 'country'];
     case 2:
       return ['identityType', 'businessTypes'];
     case 3:
-      return ['panNumber', 'aadhaarNumber', 'gstin', 'businessPan'];
+      return ['panNumber', 'aadhar', 'gstin', 'businessPan'];
     case 4:
-      return ['shopName', 'storeAddressLine1', 'storeCity', 'storeDistrict', 'storeState', 'storePincode'];
+      return [
+        'shopName', 'shopHandle', 'shopLogoUrl', 'description', 'businessPhone',
+        'storeAddressLine1', 'storeAddressLine2', 'storeCity', 'storeDistrict', 'storeState', 'storePincode', 'storeCountry',
+        'googleMapsUrl'
+      ];
     case 5:
       return ['acceptedTerms'];
     default:

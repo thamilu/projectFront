@@ -4,8 +4,9 @@ export enum SellerIdentityType {
 }
 
 export enum SellerBusinessType {
-  RETAILER = 'RETAILER',
+  FARMER = 'FARMER',
   WHOLESALER = 'WHOLESALER',
+  RETAILER = 'RETAILER',
   MANUFACTURER = 'MANUFACTURER',
   DISTRIBUTOR = 'DISTRIBUTOR',
   BRAND_OWNER = 'BRAND_OWNER',
@@ -23,10 +24,16 @@ export interface SellerProfile {
   userId: string;
   identityType: SellerIdentityType;
   shopName: string;
+  displayName?: string; // Legacy support
+  shopHandle?: string;
+  shopLogoUrl?: string;
   businessName?: string;
   businessTypes: SellerBusinessType[];
   description?: string;
   status: SellerStatus;
+  createdAt: string;
+  updatedAt: string;
+  email?: string;
   
   // New Dual Address System
   addressLine1?: string;
@@ -54,7 +61,11 @@ export interface SellerProfile {
     idType: string;
     idNumber: string;
     verified: boolean;
+    panNumber?: string;
+    aadhar?: string;
+    gstin?: string;
   };
+  bankAccountNumber?: string; // Quick access for profile view
   documents?: Array<{
     id: string;
     type: string;
@@ -103,6 +114,7 @@ export interface SellerRegisterRequest {
 export interface Store {
   id: string;
   storeName: string;
+  shopHandle?: string;
   description: string;
   email?: string;
   phone?: string;
@@ -113,6 +125,7 @@ export interface Store {
   state?: string;
   pincode?: string;
   country?: string;
+  address?: string;
   logoUrl?: string;
   googleMapsUrl?: string;
   isVerified?: boolean;

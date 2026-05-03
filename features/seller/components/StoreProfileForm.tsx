@@ -65,7 +65,8 @@ export function StoreProfileForm({
       state: initialData?.state || '',
       pincode: initialData?.pincode || '',
       country: initialData?.country || 'India',
-      logoUrl: initialData?.logoUrl || '',
+      shopHandle: initialData?.shopHandle || '',
+      shopLogoUrl: initialData?.shopLogoUrl || '',
       googleMapsUrl: initialData?.googleMapsUrl || '',
     },
   });
@@ -107,6 +108,22 @@ export function StoreProfileForm({
                     <Input id="email" {...register('email')} className="pl-10 bg-background/50 h-12" placeholder="support@yourstore.com" />
                   </div>
                   {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="shopHandle">Shop Handle (Unique ID)</Label>
+                  <Input id="shopHandle" {...register('shopHandle')} className="bg-background/50 h-12 font-mono text-sm" placeholder="my-awesome-shop" />
+                  <p className="text-[10px] text-muted-foreground ml-1">
+                    Public URL: <span className="text-primary">eshop.com/shop/{(methods.watch('shopHandle') || 'handle')}</span>
+                  </p>
+                  {errors.shopHandle && <p className="text-xs text-destructive">{errors.shopHandle.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="shopLogoUrl">Shop Logo URL</Label>
+                  <Input id="shopLogoUrl" {...register('shopLogoUrl')} className="bg-background/50 h-12" placeholder="https://..." />
+                  {errors.shopLogoUrl && <p className="text-xs text-destructive">{errors.shopLogoUrl.message}</p>}
                 </div>
               </div>
 

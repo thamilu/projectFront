@@ -153,17 +153,47 @@ export default function SellerStorePage() {
 
       {!isEditing ? (
         <Card className="border-2 border-primary/20">
-          <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
-            <StoreIcon className="text-primary h-8 w-8" />
-            <div className="flex-1">
-              <CardTitle>{store.storeName}</CardTitle>
-              <p className="text-muted-foreground text-sm">{store.email || '—'}</p>
+          <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-4 border-b border-white/[0.05]">
+            <div className="relative">
+              {store.logoUrl ? (
+                <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl group-hover:border-primary/40 transition-colors">
+                  <img 
+                    src={store.logoUrl} 
+                    alt={store.storeName} 
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      // Fallback if image fails
+                      (e.target as any).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(store.storeName)}&background=0D8ABC&color=fff&size=128`;
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center border-2 border-primary/20 shadow-xl">
+                  <StoreIcon className="text-primary h-8 w-8" />
+                </div>
+              )}
+              {store.isVerified && (
+                <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-[#05070a] shadow-lg">
+                  <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                </div>
+              )}
             </div>
-            <div className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
-              {store.isVerified ? 'Verified' : 'Unverified'}
+            
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-2xl font-black italic tracking-tight">{store.storeName}</CardTitle>
+                <div className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
+                  store.isVerified 
+                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                    : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                }`}>
+                  {store.isVerified ? 'Verified' : 'Unverified'}
+                </div>
+              </div>
+              <p className="text-muted-foreground text-xs font-mono mt-1">{store.email || 'contact@eshop.com'}</p>
             </div>
           </CardHeader>
-          <CardContent className="mt-4 grid gap-4 md:grid-cols-2 text-sm">
+          <CardContent className="mt-6 grid gap-6 md:grid-cols-2 text-sm leading-relaxed">
             <div>
               <span className="text-muted-foreground font-semibold">Description: </span>
               <span>{store.description}</span>
@@ -173,8 +203,12 @@ export default function SellerStorePage() {
               <span>{store.phone || 'N/A'}</span>
             </div>
             <div>
-              <span className="text-muted-foreground font-semibold">Address: </span>
-              <span>{`${store.addressLine1}, ${store.city}, ${store.state} ${store.pincode || ''}`}</span>
+              <span className="text-muted-foreground font-semibold">Shop Handle: </span>
+              <span className="font-mono text-primary">{store.shopHandle || 'N/A'}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground font-semibold">Store Address: </span>
+              <span>{store.address || 'N/A'}</span>
             </div>
             <div>
               <span className="text-muted-foreground font-semibold">Rating: </span>
@@ -197,7 +231,8 @@ export default function SellerStorePage() {
               state: store.state || '',
               pincode: store.pincode || '',
               country: store.country || 'India',
-              logoUrl: store.logoUrl || '',
+              shopLogoUrl: store.logoUrl || '',
+              shopHandle: store.shopHandle || '',
               googleMapsUrl: store.googleMapsUrl || '',
             }}
             onSubmit={handleSubmit}
