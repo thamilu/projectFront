@@ -161,9 +161,9 @@ export default function CreateProductPage() {
     watch,
     setValue,
     reset,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormData>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(productFormSchema) as any,
     defaultValues: {
       name: '',
@@ -642,7 +642,7 @@ export default function CreateProductPage() {
         toast.success('Product created successfully!');
         localStorage.removeItem(PERSISTENCE_KEY); // Clear persisted data
         router.push(APP_ROUTES.SELLER.PRODUCTS);
-      } catch (error) {
+      } catch (error: any) {
         if (error instanceof ProductPayloadValidationError) {
           requestLogger.warn('Product create payload validation failed', {
             issues: error.issues,
@@ -652,16 +652,31 @@ export default function CreateProductPage() {
         }
 
         const normalizedError = normalizeProductCreateError(error);
+        
+        // HARDENED ERROR CORRECTION: Map backend validation errors to form fields
+        const backendErrors = error?.response?.data?.errors;
+        if (backendErrors && typeof backendErrors === 'object') {
+          Object.entries(backendErrors).forEach(([field, messages]) => {
+            const message = Array.isArray(messages) ? messages[0] : messages;
+            setError(field as any, {
+              type: 'server',
+              message: message as string,
+            });
+          });
+          toast.error('Validation Failure', {
+            description: 'Please correct the highlighted fields in the product form.',
+          });
+        } else {
+          requestLogger[normalizedError.logLevel]('Product create submission failed', {
+            category: normalizedError.category,
+            status: normalizedError.status,
+            retryable: normalizedError.retryable,
+            message: normalizedError.message,
+            error,
+          });
 
-        requestLogger[normalizedError.logLevel]('Product create submission failed', {
-          category: normalizedError.category,
-          status: normalizedError.status,
-          retryable: normalizedError.retryable,
-          message: normalizedError.message,
-          error,
-        });
-
-        toast.error(`${normalizedError.userMessage}. Ref: ${correlationId}`);
+          toast.error(`${normalizedError.userMessage}. Ref: ${correlationId}`);
+        }
       }
     },
     [categoryList, brands.data, user, createMutation, router, imageFiles]

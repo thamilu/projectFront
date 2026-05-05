@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { z } from 'zod';
 import { ArrowRight, ChevronRight, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn, isValidImageUrl } from '@/lib/utils';
 import { logger } from '@/lib/observability/logger';
 import { API_ENDPOINTS } from '@/constants/api/endpoints';
 import { serverFetch } from '@/lib/server-api-client';
@@ -135,6 +135,7 @@ function StoreCard({ shop }: { shop: ShopSummary }) {
   const name = getStoreDisplayName(shop);
   const initials = getStoreInitials(name);
   const color = getStoreAvatarColor(shop.id);
+  const hasValidLogo = isValidImageUrl(shop.logoUrl);
 
   return (
     <Link
@@ -144,9 +145,9 @@ function StoreCard({ shop }: { shop: ShopSummary }) {
     >
       {/* Avatar */}
       <div className={styles.avatarWrap}>
-        {shop.logoUrl ? (
+        {hasValidLogo ? (
           <Image
-            src={shop.logoUrl}
+            src={shop.logoUrl!}
             alt={`${name} logo`}
             fill
             sizes="56px"

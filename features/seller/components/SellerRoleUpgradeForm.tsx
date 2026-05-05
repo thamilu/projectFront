@@ -129,7 +129,19 @@ export function SellerRoleUpgradeForm({
       if (onSuccess) onSuccess();
     } catch (error: any) {
       console.error('Seller registration API error details:', error);
-      toast.error(error.message || 'Registration failed. Please check your data.');
+      
+      const details = error.response?.data?.fieldErrors || error.response?.data?.details;
+      if (details && Array.isArray(details) && details.length > 0) {
+        // Map backend field errors to react-hook-form
+        details.forEach((err: any) => {
+          if (err.field) {
+            methods.setError(err.field as any, { type: 'server', message: err.message });
+          }
+        });
+        toast.error('Registration failed: Please check the highlighted fields across all steps.');
+      } else {
+        toast.error(error.response?.data?.message || error.message || 'Registration failed. Please check your data.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -254,7 +266,7 @@ export function SellerRoleUpgradeForm({
   );
 }
 
-function getFieldsForStep(step: number): string[] {
+function getFieldsForStep(step: number): Array<import('react-hook-form').Path<SellerOnboardingValues>> {
   switch (step) {
     case 0:
       return ['firstName', 'lastName', 'email', 'phone', 'gender', 'dateOfBirth', 'preferredLanguage', 'alternatePhone'];

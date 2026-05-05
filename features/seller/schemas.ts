@@ -13,8 +13,12 @@ export const sellerOnboardingSchema = z.object({
   gender: z.string().default(''),
   dateOfBirth: z.string().default(''),
   preferredLanguage: z.string().default(''),
-  alternatePhone: z.string().default(''),
-  phone: z.string().regex(/^[+\d\s\-().]{7,25}$/, 'Invalid personal phone number'),
+  alternatePhone: z.string()
+    .regex(/^(\+?[0-9]{7,15})?$/, 'Invalid phone number format')
+    .optional().or(z.literal('')),
+  phone: z.string()
+    .regex(/^(\+?[0-9]{7,15})?$/, 'Invalid phone number format')
+    .optional().or(z.literal('')),
 
   // Step 2: Personal / Permanent Address
   addressLine1: z.string().min(5, 'Address is required').max(500),
@@ -31,7 +35,10 @@ export const sellerOnboardingSchema = z.object({
     .regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i, 'Invalid PAN format (e.g. ABCDE1234F)')
     .or(z.literal(''))
     .default(''),
-  aadhar: z.string().trim().default(''),
+  aadhar: z.string()
+    .trim()
+    .regex(/^\d{12}$/, 'Invalid Aadhar format (12 digits)')
+    .optional().or(z.literal('')),
   gstin: z.string()
     .trim()
     .regex(/^([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})?$/i, 'Invalid GSTIN format')
@@ -48,7 +55,9 @@ export const sellerOnboardingSchema = z.object({
   // Step 5: Store Setup
   shopName: z.string().min(3, 'Shop name must be at least 3 characters'),
   description: z.string().default(''),
-  businessPhone: z.string().default(''),
+  businessPhone: z.string()
+    .regex(/^(\+?[0-9]{7,15})?$/, 'Invalid phone number format')
+    .optional().or(z.literal('')),
   
   storeAddressLine1: z.string().min(5, 'Store address is required').max(500),
   storeAddressLine2: z.string().max(500).optional().or(z.literal('')),

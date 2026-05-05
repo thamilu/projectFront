@@ -74,6 +74,7 @@ export const API_ENDPOINTS = {
 
   // Sellers - Versioned (/api/v1/sellers)
   SELLERS: {
+    ROOT: '/api/v1/sellers',
     REGISTER: '/api/v1/sellers/register',
     PROFILE: '/api/v1/sellers/profile',
     PROFILE_EXISTS: '/api/v1/sellers/profile/exists',

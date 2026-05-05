@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Star } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, isValidImageUrl } from '@/lib/utils';
 import { productApi, isBackendDown } from '@/features/products/api/product-api';
 import { AddToCartButton } from '@/components/home/AddToCartButton';
 import { featuredProducts as demoProducts } from '@/constants/demoData';
@@ -39,7 +39,7 @@ export async function FeaturedProductsSection() {
     const response = await productApi.getProducts({ page: 0, size: 8, featured: true });
     featuredProducts = (response?.content || []).map((p) => ({
       ...p,
-      image: p.imageUrl || '/images/placeholder.svg',
+      image: isValidImageUrl(p.imageUrl) ? p.imageUrl : '/images/placeholder.svg',
       title: p.name,
       description: p.description,
       price: p.discountPrice || p.price,

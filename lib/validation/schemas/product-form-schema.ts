@@ -75,6 +75,23 @@ export const productFormSchema = z.object({
   warrantyUnit: z.enum(['DAYS', 'MONTHS', 'YEARS']).optional(),
   returnPolicy: z.string().optional(),
   countryOfOrigin: z.string().default('India'),
+}).refine((data) => data.sellingPrice <= data.mrp, {
+  message: 'Selling price cannot be greater than MRP',
+  path: ['sellingPrice'],
+}).refine((data) => {
+  if (data.discountType === 'PERCENTAGE') {
+    return data.discountValue <= 100;
+  }
+  if (data.discountType === 'FLAT') {
+    return data.discountValue <= data.sellingPrice;
+  }
+  return true;
+}, {
+  message: 'Invalid discount value',
+  path: ['discountValue'],
+}).refine((data) => data.maxOrderQuantity >= data.minOrderQuantity, {
+  message: 'Max order quantity must be greater than or equal to min order quantity',
+  path: ['maxOrderQuantity'],
 });
 
 export type ProductFormData = z.infer<typeof productFormSchema>;

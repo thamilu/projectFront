@@ -215,11 +215,22 @@ export function AddProductForm() {
     };
 
 
-    
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     addProductMut.mutate(payload as any, {
       onSuccess: () => {
         router.push(APP_ROUTES.SELLER.PRODUCTS);
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onError: (error: any) => {
+        const details = error?.details || error?.fieldErrors;
+        if (details && Array.isArray(details)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          details.forEach((err: any) => {
+            if (err.field) {
+              form.setError(err.field as any, { type: 'server', message: err.message });
+            }
+          });
+        }
       },
     });
   };
@@ -247,7 +258,18 @@ export function AddProductForm() {
 
             <div>
               <Label htmlFor="sku">SKU (Stock Keeping Unit)</Label>
-              <Input id="sku" placeholder="Auto-generated" {...register('sku')} />
+              <Input
+                id="sku"
+                placeholder="Auto-generated"
+                {...register('sku', {
+                  onChange: (e) => {
+                    e.target.value = e.target.value.toUpperCase();
+                  },
+                })}
+              />
+              {errors.sku && (
+                <p className="text-destructive mt-1 text-xs">{errors.sku.message}</p>
+              )}
               <p className="text-muted-foreground mt-1 text-xs">Leave empty to auto-generate</p>
             </div>
 
@@ -256,8 +278,15 @@ export function AddProductForm() {
               <Input
                 id="friendlyUrl"
                 placeholder="Auto-generated from name"
-                {...register('friendlyUrl')}
+                {...register('friendlyUrl', {
+                  onChange: (e) => {
+                    e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                  },
+                })}
               />
+              {errors.friendlyUrl && (
+                <p className="text-destructive mt-1 text-xs">{errors.friendlyUrl.message}</p>
+              )}
               <p className="text-muted-foreground mt-1 text-xs">Used in product URL</p>
             </div>
           </div>
@@ -456,12 +485,15 @@ export function AddProductForm() {
                 onChange={(e) => {
                   const tags = e.target.value
                     .split(',')
-                    .map((t) => t.trim())
+                    .map((t) => t.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''))
                     .filter(Boolean);
-                  setValue('tags', tags);
+                  setValue('tags', tags, { shouldValidate: true });
                 }}
               />
-              <p className="text-muted-foreground mt-1 text-xs">Separate tags with commas</p>
+              {errors.tags && (
+                <p className="text-destructive mt-1 text-xs">{errors.tags.message}</p>
+              )}
+              <p className="text-muted-foreground mt-1 text-xs">Separate tags with commas (only letters, numbers, hyphens allowed)</p>
             </div>
           </div>
         </CardContent>

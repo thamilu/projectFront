@@ -44,29 +44,7 @@ import { AddressFields } from '@/components/shared/AddressFields';
 import { ModernDatePicker } from '@/components/shared/ModernDatePicker';
 import { Controller } from 'react-hook-form';
 
-// --- SCHEMAS ---
-
-const profileSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email'),
-  phone: z.string().optional().or(z.literal('')),
-  alternatePhone: z.string().optional().or(z.literal('')),
-  preferredLanguage: z.string().optional().or(z.literal('')),
-  gender: z.string().optional().or(z.literal('')),
-  dateOfBirth: z.string().optional().or(z.literal('')),
-  
-  // Permanent Address
-  addressLine1: z.string().max(500).optional().or(z.literal('')),
-  addressLine2: z.string().max(500).optional().or(z.literal('')),
-  city: z.string().optional().or(z.literal('')),
-  district: z.string().optional().or(z.literal('')),
-  state: z.string().optional().or(z.literal('')),
-  pincode: z.string().optional().or(z.literal('')),
-  country: z.string().optional().or(z.literal('')),
-});
-
-type ProfileValues = z.infer<typeof profileSchema>;
+import { profileSchema, ProfileValues } from '@/lib/validation/schemas/user';
 
 // --- COMPONENT ---
 
@@ -186,7 +164,19 @@ export function ProfileForm() {
       setIsEditing(false);
     } catch (error: any) {
       console.error('Profile update failed:', error);
-      toast.error(error.response?.data?.message || 'Failed to update profile');
+      
+      const details = error.response?.data?.fieldErrors || error.response?.data?.details;
+      if (details && Array.isArray(details) && details.length > 0) {
+        // Map backend field errors to react-hook-form
+        details.forEach((err: any) => {
+          if (err.field) {
+            methods.setError(err.field as any, { type: 'server', message: err.message });
+          }
+        });
+        toast.error('Please fix the errors in the form.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to update profile');
+      }
     } finally {
       setIsSaving(false);
     }

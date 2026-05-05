@@ -110,6 +110,6 @@ export function storeCreateRequestFromForm(data: any) {
     pincode: data.pincode,
     country: data.country,
     googleMapsUrl: data.googleMapsUrl,
-    logoUrl: data.logoUrl,
+    logoUrl: data.shopLogoUrl, // FIXED: Correctly map from form key
   };
 }

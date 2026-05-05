@@ -44,6 +44,7 @@ export default function SellerProfilePage() {
     handleSubmit,
     formState: { errors },
     reset,
+    setError,
   } = useForm<SellerProfileUpdateFormData>({
     resolver: zodResolver(sellerProfileUpdateSchema) as any,
   });
@@ -85,17 +86,37 @@ export default function SellerProfilePage() {
 
   const onSubmit = async (data: SellerProfileUpdateFormData) => {
     try {
-      // Filter out empty, null, or undefined values to avoid backend validation/null-overwrite issues
-      const filteredData = Object.fromEntries(
-        Object.entries(data).filter(([_, value]) => value !== '' && value !== null && value !== undefined)
-      );
+      // Filter out values to avoid backend null-overwrite issues, but allow empty strings if explicitly changed
+      // Actually, for "Hardened" sync, we should send everything the form has, 
+      // but the backend might expect a specific Partial structure.
       
-      await updateProfile(filteredData as any);
-      toast.success('Configuration Synchronized');
+      const response = await updateProfile(data as any);
+      toast.success('Configuration Synchronized', {
+        description: 'Seller identity and store parameters updated successfully.',
+      });
       setIsEditing(false);
     } catch (error: any) {
-      const message = error?.message || error?.response?.data?.message || 'Sync Error';
-      toast.error(message);
+      console.error('[SellerProfile] Sync Error:', error);
+      
+      const responseData = error?.response?.data;
+      
+      // HARDENED ERROR CORRECTION: Map backend validation errors to form fields
+      if (responseData && responseData.errors && typeof responseData.errors === 'object') {
+        Object.entries(responseData.errors).forEach(([field, message]) => {
+          setError(field as any, {
+            type: 'server',
+            message: message as string,
+          });
+        });
+        toast.error('Validation Failure', {
+          description: 'Please correct the highlighted fields in the configuration.',
+        });
+      } else {
+        const message = responseData?.message || error?.message || 'Sync Error';
+        toast.error('System Synchronization Failed', {
+          description: message,
+        });
+      }
     }
   };
 

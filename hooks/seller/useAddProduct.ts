@@ -55,16 +55,13 @@ export function useAddProduct() {
       logger.error('Failed to add product:', { error });
 
       const errRec = error as Record<string, unknown> | undefined;
-      const details = errRec?.details as Array<Record<string, unknown>> | undefined;
+      // Backend might return field errors under `details` or `fieldErrors`
+      const details = (errRec?.details || errRec?.fieldErrors) as Array<Record<string, unknown>> | undefined;
 
-      if (details && details.length > 0) {
-        details.forEach((detail) => {
-          const field = detail.field as string | undefined;
-          const message = detail.message as string | undefined;
-          if (field && message) toast.error(`${field}: ${message}`);
-        });
-      } else {
-        const desc = (errRec?.error as string) || 'An unexpected error occurred. Please try again.';
+      // If there are field-specific errors, we let the component handle them via the mutate onError callback.
+      // We only show a toast if there are no specific field errors.
+      if (!details || details.length === 0) {
+        const desc = (errRec?.message as string) || (errRec?.error as string) || 'An unexpected error occurred. Please try again.';
         toast.error('Failed to add product', { description: desc });
       }
     },
