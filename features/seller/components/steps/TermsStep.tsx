@@ -6,8 +6,8 @@ import { motion } from 'framer-motion';
 import { CheckCircle2, ShieldAlert, FileText } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { SellerOnboardingValues } from '../../schemas';
-import { StepLayout } from '../shared/StepLayout';
+import { SellerOnboardingValues } from '@/schemas/seller.schema';
+import { StepLayout } from '@/shared/components/StepLayout';
 
 export function TermsStep() {
   const { watch, setValue, formState: { errors } } = useFormContext<SellerOnboardingValues>();

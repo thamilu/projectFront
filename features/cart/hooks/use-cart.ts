@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { cartApi } from '../api/cart-api';
-import { useCartStore } from '@/store/cart-store';
+import { useCartStore } from '@/features/cart/store/cart-store';
 import { toast } from 'sonner';
 
 // Time Complexity: O(1) for hook setup, O(n) for cart operations where n is items count

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { toast } from 'sonner';
-import { sellerProfileApi } from '@/features/seller/api/seller-profile-api';
+import { sellerApi } from '@/features/seller/api/seller-api';
 import { getLocalPendingFlag, setLocalPendingFlag } from '../utils/storage';
 import { getNormalizedRoles, type AppSession } from '../utils/auth';
 import { APP_ROUTES } from '@/constants/routes/app-routes';
@@ -47,10 +47,10 @@ export function useSellerProfileStatus(
       }
 
       try {
-        let profile = await sellerProfileApi.getMyProfile();
+        let profile = await sellerApi.getMyProfile();
 
         if (!profile) {
-          const profileExists = await sellerProfileApi.profileExists();
+          const profileExists = await sellerApi.profileExists();
           if (profileExists) {
             setLocalPendingFlag(true);
             if (!cancelled) setStatus('PENDING');
@@ -109,7 +109,7 @@ export function useSellerProfileStatus(
           setStatus(hasLocalPendingAfterError ? 'PENDING' : 'IDLE');
         } else {
           try {
-            const exists = await sellerProfileApi.profileExists();
+            const exists = await sellerApi.profileExists();
             if (exists && !cancelled) {
               setLocalPendingFlag(true);
               setStatus('PENDING');

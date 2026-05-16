@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { apiClient } from '@/lib/http/services';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const productImages: any[] = (global as Record<string, unknown>).__PRODUCT_IMAGES_STORE__ as any[] || [];
@@ -7,11 +8,11 @@ const productImages: any[] = (global as Record<string, unknown>).__PRODUCT_IMAGE
 export async function GET(request: NextRequest, context: any) {
   const paramsObj = await Promise.resolve(context?.params);
   const imageId = String(paramsObj?.imageId || '');
-  const prisma = await import('@/lib/db/prismaClient').then(m => m.getPrisma()).catch(() => undefined);
-  if (prisma) {
-    const image = await prisma.productImage.findUnique({ where: { id: imageId } });
-    if (!image) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  try {
+    const { data: image } = await apiClient.get(`/api/v1/product-images/${imageId}`);
     return NextResponse.json(image);
+  } catch (err) {
+    // Fallback to memory or 404
   }
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,10 +25,11 @@ export async function GET(request: NextRequest, context: any) {
 export async function DELETE(request: NextRequest, context: any) {
   const paramsObj = await Promise.resolve(context?.params);
   const imageId = String(paramsObj?.imageId || '');
-  const prisma = await import('@/lib/db/prismaClient').then(m => m.getPrisma()).catch(() => undefined);
-  if (prisma) {
-    await prisma.productImage.delete({ where: { id: imageId } });
+  try {
+    await apiClient.delete(`/api/v1/product-images/${imageId}`);
     return NextResponse.json({ success: true });
+  } catch (err) {
+    // Fallback to memory
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,10 +45,11 @@ export async function PUT(request: NextRequest, context: any) {
   const paramsObj = await Promise.resolve(context?.params);
   const imageId = String(paramsObj?.imageId || '');
   const body = await request.json().catch(() => ({}));
-  const prisma = await import('@/lib/db/prismaClient').then(m => m.getPrisma()).catch(() => undefined);
-  if (prisma) {
-    const updated = await prisma.productImage.update({ where: { id: imageId }, data: body });
+  try {
+    const { data: updated } = await apiClient.put(`/api/v1/product-images/${imageId}`, body);
     return NextResponse.json(updated);
+  } catch (err) {
+    // Fallback to memory
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

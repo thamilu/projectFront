@@ -16,8 +16,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { z } from 'zod'
-import { createPaymentIntent } from '@/lib/payments/stripe-client'
+import { apiClient } from '@/lib/http/services'
 import { getRequestLogger } from '@/lib/observability/logger'
+import { API_ENDPOINTS } from '@/constants/api/endpoints'
 
 const createIntentSchema = z.object({
   orderId: z.string().uuid(),
@@ -58,19 +59,14 @@ export async function POST(request: NextRequest) {
       requestId,
     })
 
-    // Create payment intent
-    const paymentIntent = await createPaymentIntent({
+    // Create payment intent via Spring Boot backend
+    const { data: resp } = await apiClient.post<any>(API_ENDPOINTS.ORDERS.UPDATE_PAYMENT(Number(validated.orderId)), {
       amount: validated.amount,
       currency: validated.currency,
-      metadata: {
-        orderId: validated.orderId,
-        userId: token.sub!,
-        userEmail: token.email || '',
-      },
-      customerId: (token as Record<string, unknown>).stripeCustomerId as string | undefined,
       description: validated.description || `Order ${validated.orderId}`,
-      receiptEmail: token.email || undefined,
-    })
+    });
+
+    const paymentIntent = resp?.data ?? resp;
 
     log.info('Payment intent created successfully', {
       paymentIntentId: paymentIntent.id,
@@ -80,8 +76,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id,
+        clientSecret: paymentIntent.clientSecret ?? paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.paymentIntentId ?? paymentIntent.id,
       },
       {
         status: 201,

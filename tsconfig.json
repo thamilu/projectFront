@@ -43,6 +43,7 @@
   ],
   "exclude": [
     "node_modules",
+    ".next",
     "**/__tests__/**",
     "**/*.test.*",
     "src/**"

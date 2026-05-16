@@ -11,9 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { getToken } from 'next-auth/jwt';
-import { authOptions } from '@/lib/auth/options';
+import { auth } from '@/auth';
 import { logger } from '@/lib/observability/logger';
 import { logoutFromKeycloak } from '@/lib/auth/token-service';
 
@@ -199,19 +197,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // -------------------------------------------------------------------------
     // 3. Session Validation
     // -------------------------------------------------------------------------
+    const session = await auth();
     const legacyAccessToken = request.cookies.get('accessToken')?.value;
     const legacyRefreshToken = request.cookies.get('refreshToken')?.value;
-    const nextAuthToken = await getToken(
-      process.env.NEXTAUTH_SECRET
-        ? { req: request, secret: process.env.NEXTAUTH_SECRET }
-        : { req: request }
-    );
+    const nextAuthToken = session as any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nextAuthAccessToken = (nextAuthToken as any)?.accessToken as string | undefined;
+    const nextAuthAccessToken = nextAuthToken?.accessToken as string | undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nextAuthRefreshToken = (nextAuthToken as any)?.refreshToken as string | undefined;
+    const nextAuthRefreshToken = nextAuthToken?.refreshToken as string | undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nextAuthIdToken = (nextAuthToken as any)?.idToken as string | undefined;
+    const nextAuthIdToken = nextAuthToken?.idToken as string | undefined;
 
     const accessToken = legacyAccessToken ?? nextAuthAccessToken;
     const refreshToken = legacyRefreshToken ?? nextAuthRefreshToken;
@@ -342,7 +337,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       keycloakLogoutUrl += `&id_token_hint=${encodeURIComponent(nextAuthIdToken)}`;
     } else {
       try {
-        const session = await getServerSession(authOptions);
+        const session = await auth();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const idToken = (session as any)?.idToken as string | undefined;
         if (idToken) {

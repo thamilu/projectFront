@@ -1,17 +1,32 @@
-// Feature: Authentication
-// Centralized exports for auth feature module
+/**
+ * Public API for Auth Feature
+ */
 
-// Components
-export * from './components/auth-guard';
-export * from './components/ProtectedRoute';
-export * from './components/user-nav';
-export * from './components/role-redirect';
-export * from './components/ModernAuthUI';
-export * from './components/login-button';
-export * from './components/logout-button';
+// Hooks
+export { useAuth } from './hooks/use-auth';
 
-// Types
-export type * from './types/auth.types';
+// Guards
+export { AuthGuard } from './components/guards/AuthGuard';
+export { ProtectedRoute } from './components/guards/ProtectedRoute';
 
-// Utils
-export * from './utils/role-mapper';
+// UI Components
+export { LogoutButton } from './components/ui/LogoutButton';
+export { ModernAuthUI } from './components/ui/ModernAuthUI';
+export { AuthStatus } from './components/ui/auth-status';
+
+// Navigation
+export { UserNav } from './components/navigation/user-nav';
+
+// Redirects
+export { RoleBasedRedirect } from './components/redirects/role-redirect';
+export { RedirectingScreen } from './components/redirects/redirecting-screen';
+
+// Store & Services
+export { useAuthStore } from './store/auth-store';
+export { authService } from './services/auth-service';
+
+// Types & Schemas
+export * from './types/auth.types';
+export * from './schemas/auth.schema';
+
+// Server-side auth utilities should be imported from '@/features/auth/server'

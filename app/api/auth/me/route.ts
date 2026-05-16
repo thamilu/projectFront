@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Current User Information Endpoint - GET /api/auth/me
  * 
  * Returns information about the currently authenticated user from NextAuth session.
@@ -11,8 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/options'; // Forced update
+import { auth } from '@/auth';
 import { getRequestLogger } from '@/lib/observability/logger';
 import { decodeJwt } from 'jose';
 
@@ -45,8 +44,8 @@ export async function GET(req: NextRequest) {
   const log = getRequestLogger(requestId);
 
   try {
-    // 1. Try NextAuth session first
-    const session = await getServerSession(authOptions);
+    // 1. Try Auth.js session first
+    const session = await auth();
     
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let user = session?.user as any;

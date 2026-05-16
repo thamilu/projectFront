@@ -4,7 +4,7 @@ import { ShieldCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SellerIdentityType } from '@/types';
-import { SellerOnboardingFormData } from '../../schemas';
+import { SellerOnboardingFormData } from '@/schemas/seller.schema';
 
 export function KycStep() {
   const {

@@ -61,7 +61,7 @@
   @media (width >= --theme(--breakpoint-md)) { max-width: 768px; }
   @media (width >= --theme(--breakpoint-lg)) { max-width: 1024px; }
   @media (width >= --theme(--breakpoint-xl)) { max-width: 1280px; }
-  @media (width >= --theme(--breakpoint-2xl)) { max-width: 1536px; }
+  @media (width >= --theme(--breakpoint-2xl)) { max-width: 1600px; }
 }
 
 /* Base Variables */
@@ -118,5 +118,46 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Root Scroll Hardening */
+html {
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+  overflow-y: auto;
+  height: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  min-height: 100%;
+}
+
+/* Utilities */
+@layer utilities {
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Enterprise Premium Design Utilities [HARDEN] */
+  .glass-premium {
+    @apply border-white/10 bg-background/65 backdrop-blur-2xl saturate-160;
+  }
+
+  .gradient-emerald {
+    @apply bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-500;
+  }
+
+  .gradient-emerald-text {
+    @apply bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-500 bg-clip-text text-transparent;
+  }
+
+  .card-hardened {
+    @apply border-white/10 bg-background/65 backdrop-blur-2xl saturate-160 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)];
   }
 }

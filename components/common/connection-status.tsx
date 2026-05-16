@@ -7,7 +7,7 @@
 import { Wifi, WifiOff } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { useWebSocketStatus, useOrderUpdates } from '@/hooks/use-realtime-updates'
+import { useWebSocketStatus, useOrderUpdates } from '@/lib/hooks/use-realtime-updates'
 
 export function ConnectionStatus() {
   const { isConnected } = useWebSocketStatus()

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://knip.dev/schema.json",
+  "entry": ["app/layout.tsx", "app/**/page.tsx", "app/api/**/route.ts", "proxy.ts"],
+  "project": ["**/*.{ts,tsx}"],
+  "ignore": ["node_modules/**", ".next/**", ".turbopack/**"],
+  "ignoreDependencies": ["@tailwindcss/postcss", "autoprefixer", "postcss", "tailwindcss-animate"],
+  "rules": {
+    "files": "error",
+    "dependencies": "error",
+    "unlistedDependencies": "error",
+    "unresolved": "error",
+    "unusedExports": "warn",
+    "unusedTypes": "warn",
+    "unusedDependencies": "warn"
+  }
+}

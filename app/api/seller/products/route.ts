@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createProductApiSchema } from "@/lib/validations/product";
+import { createProductApiSchema } from "@/schemas/product.schema";
 
 // Mock database - Replace with your actual database
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

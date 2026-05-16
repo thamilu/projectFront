@@ -1,8 +1,8 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuthStore, useAuth } from '@/features/auth';
 import { Button } from '@/components/ui/button';
 import { useCallback, useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useKeycloakAuth } from '@/hooks/useKeycloakAuth';
+// import { useKeycloakAuth } from '@/lib/hooks/useKeycloakAuth'; // DEPRECATED
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
@@ -28,15 +28,16 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useCartStore, selectCartItemCount } from '@/store/cart-store';
-import { useWishlistStore } from '@/store/wishlist-store';
+import { useCartStore, selectCartItemCount } from '@/features/cart/store/cart-store';
+import { useWishlistStore } from '@/features/wishlist/store/wishlist-store';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import CartPreview from './cart-preview';
 import CategoryMenu from './category-menu';
-import { useMemo } from 'react';
 import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { RedirectingScreen } from '@/features/auth';
+import { useMounted } from '@/shared/hooks';
 
 const DIALOG_TARGET = {
   CART: 'cart',
@@ -55,19 +56,21 @@ interface HeaderProps {
 }
 
 export default function Header({ navItems: providedNavItems }: HeaderProps) {
+  const mounted = useMounted();
   const authState = useAuthStore();
   const { user, isAuthenticated } = authState;
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const router = useRouter();
-  const kcAuth = useKeycloakAuth();
   const queryClient = useQueryClient();
-
-  // Check if user has SELLER role
-  const isSeller = useMemo(() => {
-    const roles = (session?.roles || []) as string[];
-    return roles.includes('SELLER');
-  }, [session]);
+  const { 
+    user: _authUser, 
+    isAuthenticated: _isAuthAuthenticated, 
+    isLoading: _isAuthLoading,
+    login,
+    logout,
+    isSeller
+  } = useAuth();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogTarget, setDialogTarget] = useState<DialogTarget | null>(null);
@@ -86,6 +89,7 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
   }, []);
 
   // Check authentication from both session and auth store
+  // NOTE: Only use these for rendering after 'mounted' is true to avoid hydration mismatch
   const isUserAuthenticated = isAuthenticated || status === 'authenticated';
   const currentUser = session?.user || user;
 
@@ -114,7 +118,8 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
     setIsPending(true);
     setDialogOpen(false);
     try {
-      await kcAuth.login(window.location.pathname + window.location.search);
+      // Correctly await the login process
+      await login(window.location.pathname + window.location.search);
     } catch (_error) {
       toast.error('Failed to sign in. Please try again.');
       const fallbackUrl = `${KEYCLOAK_LOGIN_URL}${KEYCLOAK_LOGIN_URL.includes('?') ? '&' : '?'}redirect=${encodeURIComponent(window.location.href)}`;
@@ -122,7 +127,7 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
     } finally {
       setIsPending(false);
     }
-  }, [kcAuth, KEYCLOAK_LOGIN_URL]);
+  }, [login, KEYCLOAK_LOGIN_URL]);
 
   const handleLogout = useCallback(async () => {
     setIsPending(true);
@@ -130,7 +135,7 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
       const { logout: storeLogout } = useAuthStore.getState();
       storeLogout();
       queryClient.clear();
-      await kcAuth.logout();
+      await logout();
       toast.success('Successfully signed out');
     } catch (_error) {
       toast.error('Sign out failed. Redirecting to login.');
@@ -141,15 +146,20 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
     } finally {
       setIsPending(false);
     }
-  }, [kcAuth, queryClient, router]);
+  }, [logout, queryClient, router]);
 
   return (
-    <header
-      className={`bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur transition-shadow duration-300 ${scrolled ? 'shadow-lg' : 'shadow-sm'}`}
+    <>
+      {isPending && <RedirectingScreen />}
+      <header
+      className={cn(
+        'sticky top-0 z-50 w-full transition-all duration-300 glass-premium',
+        scrolled ? 'shadow-[0_8px_32px_rgba(0,0,0,0.12)]' : 'shadow-none'
+      )}
     >
       {/* Top Utility Bar - Hidden on mobile and dashboard routes */}
       {!pathname?.startsWith(APP_ROUTES.SELLER.BASE) && !pathname?.startsWith(APP_ROUTES.DELIVERY.DASHBOARD) && (
-        <div className="bg-muted/50 hidden border-b lg:block">
+        <div className="bg-muted/30 hidden border-b border-white/5 lg:block">
           <div className="text-muted-foreground container mx-auto flex h-9 items-center justify-between px-4 text-xs font-medium md:px-6">
             <div className="flex items-center gap-6">
               <Link href="/help" className="hover:text-foreground transition-colors">
@@ -160,7 +170,7 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
               </Link>
             </div>
             <div className="flex items-center gap-6">
-              {isSeller ? (
+              {mounted && isSeller ? (
                 <Link
                   href={APP_ROUTES.SELLER.DASHBOARD}
                   className="font-semibold text-purple-600 transition-colors hover:text-purple-700 dark:text-purple-400"
@@ -171,7 +181,7 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
                 <Link
                     href={isSeller ? APP_ROUTES.SELLER.DASHBOARD : APP_ROUTES.SELLER.REGISTER}
                   onClick={(e) => {
-                    if (!isUserAuthenticated) {
+                    if (mounted && !isUserAuthenticated) {
                       e.preventDefault();
                       setDialogTarget(null);
                       setDialogOpen(true);
@@ -182,7 +192,7 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
                   Sell on eShop
                 </Link>
               )}
-              <div className="flex items-center gap-4 border-l pl-6">
+              <div className="flex items-center gap-4 border-l border-white/10 pl-6">
                 <span className="cursor-default">EN / INR</span>
               </div>
             </div>
@@ -208,7 +218,6 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
                 size="icon"
                 className="lg:hidden"
                 aria-label="Open menu"
-                suppressHydrationWarning
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -228,7 +237,10 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
                       aria-current={isActive ? 'page' : undefined}
-                      className={`rounded-md px-3 py-2 text-lg font-medium transition-colors ${isActive ? 'text-foreground bg-accent' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
+                      className={cn(
+                        'rounded-md px-3 py-2 text-lg font-medium transition-colors',
+                        isActive ? 'text-foreground bg-accent' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                      )}
                     >
                       {item.label}
                     </Link>
@@ -249,7 +261,7 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
                   >
                     Help & Support
                   </Link>
-                  {isSeller ? (
+                  {mounted && isSeller ? (
                     <Link
                       href={APP_ROUTES.SELLER.DASHBOARD}
                       onClick={() => setMobileMenuOpen(false)}
@@ -261,7 +273,7 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
                     <Link
                         href={isSeller ? APP_ROUTES.SELLER.DASHBOARD : APP_ROUTES.SELLER.REGISTER}
                         onClick={(e) => {
-                        if (!isUserAuthenticated) {
+                        if (mounted && !isUserAuthenticated) {
                           setMobileMenuOpen(false);
                           e.preventDefault();
                           setDialogTarget(null);
@@ -283,7 +295,7 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
           <Link
             href="/"
             aria-label="eShop home"
-            className="from-primary via-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 bg-linear-to-r bg-clip-text text-2xl font-extrabold text-transparent transition-all"
+            className="gradient-emerald-text text-2xl font-extrabold transition-all hover:opacity-80"
           >
             eShop
           </Link>
@@ -326,7 +338,10 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
                         key={item.href}
                         href={item.href}
                         aria-current={isActive ? 'page' : undefined}
-                        className={`rounded px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all ${isActive ? 'text-foreground bg-accent' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
+                        className={cn(
+                          'rounded px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all',
+                          isActive ? 'text-foreground bg-accent' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                        )}
                       >
                         {item.label}
                       </Link>
@@ -368,14 +383,13 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
                     <TooltipContent>Wishlist</TooltipContent>
                   </Tooltip>
 
-                  {isUserAuthenticated ? (
+                  {mounted && isUserAuthenticated ? (
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="ghost"
                           aria-label="Cart"
                           className="relative flex items-center gap-2 rounded-full px-3"
-                          suppressHydrationWarning
                         >
                           <span className="flex items-center gap-2">
                             <ShoppingCart className="h-5 w-5" />
@@ -408,15 +422,14 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
                 </>
               )}
 
-              {isUserAuthenticated && currentUser ? (
+              {mounted && isUserAuthenticated && currentUser ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="mr-2 rounded-full"
+                      className="mr-2 rounded-full ring-2 ring-emerald-500/20 transition-all hover:ring-emerald-500/40"
                       aria-label="Profile"
-                      suppressHydrationWarning
                     >
                       <Avatar className="h-8 w-8">
                         {currentUser?.name ? (
@@ -438,7 +451,7 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
                     </Button>
                   </DropdownMenuTrigger>
 
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="end" className="w-56 border-white/10 bg-background/80 backdrop-blur-xl">
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium">
@@ -492,15 +505,23 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
                   variant="ghost"
                   onClick={handleLogin}
                   disabled={isPending}
-                  className="hover:bg-accent mr-2 rounded-full border px-4 font-semibold"
+                  className={cn(
+                    "relative overflow-hidden rounded-full px-6 py-2 transition-all duration-300",
+                    "border border-white/10 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white dark:text-emerald-400 dark:hover:bg-emerald-600",
+                    isPending && "cursor-wait opacity-80"
+                  )}
                   aria-label="Sign In"
                 >
-                  {isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <User className="mr-2 h-4 w-4" />
-                  )}
-                  {isPending ? 'Redirecting...' : 'Sign In / Join'}
+                  <div className="flex items-center gap-2">
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <User className="h-4 w-4" />
+                    )}
+                    <span className="font-semibold">
+                      {isPending ? 'Redirecting...' : 'Sign In'}
+                    </span>
+                  </div>
                 </Button>
               )}
             </div>
@@ -510,16 +531,16 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
 
       {/* Dialog for unauthenticated wishlist/cart actions */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="w-[90%] max-w-md p-6 sm:w-full">
+        <DialogContent className="border-white/10 bg-background/80 p-6 backdrop-blur-2xl sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-2xl font-bold">
               {dialogTarget === DIALOG_TARGET.CART
                 ? 'Your eShop Cart is empty'
                 : dialogTarget === DIALOG_TARGET.WISHLIST
                   ? 'Your wishlist is empty'
                   : 'Account required'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-muted-foreground">
               {dialogTarget === DIALOG_TARGET.CART
                 ? "Shop today's deals or sign in to access your cart."
                 : dialogTarget === DIALOG_TARGET.WISHLIST
@@ -528,29 +549,29 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-3 py-4">
+          <div className="grid gap-4 py-4">
             <Button
               onClick={() => {
                 setDialogOpen(false);
                 router.push(`${APP_ROUTES.PRODUCTS}?filter=deals`);
               }}
-              className="from-primary via-primary to-primary/80 w-full bg-linear-to-r"
+              className="h-12 w-full bg-emerald-500 font-bold text-white hover:bg-emerald-600"
             >
               Shop today's deals
             </Button>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               <Button
-                variant="default"
+                variant="outline"
                 onClick={handleLogin}
                 disabled={isPending}
-                className="w-full"
+                className="h-12 w-full border-emerald-500/20 bg-emerald-500/5 font-bold text-emerald-600 hover:bg-emerald-500 hover:text-white"
               >
-                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <User className="mr-2 h-4 w-4" />}
                 {isPending ? 'Redirecting...' : 'Sign in with Keycloak'}
               </Button>
 
-              <p className="text-muted-foreground px-4 text-center text-xs">
+              <p className="text-muted-foreground text-center text-xs">
                 New user? Click above to sign in, then select "Register" on Keycloak's login page.
               </p>
             </div>
@@ -558,6 +579,7 @@ export default function Header({ navItems: providedNavItems }: HeaderProps) {
         </DialogContent>
       </Dialog>
     </header>
+    </>
   );
 }
 

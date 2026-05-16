@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
-import { useSettingsStore } from '@/store/settings-store';
+import { useSettingsStore } from '@/lib/store/settings-store';
 import { accentColors } from '@/constants';
 
 const themes = [

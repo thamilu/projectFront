@@ -205,10 +205,10 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       </head>
       <body
         className={cn(
-          'bg-background text-foreground min-h-screen font-sans',
-          'selection:bg-primary selection:text-primary-foreground',
-          'overflow-x-hidden'
+          'bg-background text-foreground font-sans',
+          'selection:bg-primary selection:text-primary-foreground'
         )}
+        suppressHydrationWarning
       >
         {/* Skip to main content for keyboard navigation (WCAG 2.4.1) */}
         <SkipToContent />

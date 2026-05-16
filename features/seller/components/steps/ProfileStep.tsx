@@ -6,8 +6,8 @@ import { motion } from 'framer-motion';
 import { User, Phone, MapPin } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { AddressFields } from '@/components/shared/AddressFields';
-import { SellerOnboardingValues } from '../../schemas';
+import { AddressFields } from '@/shared/components/AddressFields';
+import { SellerOnboardingValues } from '@/schemas/seller.schema';
 
 export function ProfileStep() {
   const { register, getValues, formState: { errors } } = useFormContext<SellerOnboardingValues>();

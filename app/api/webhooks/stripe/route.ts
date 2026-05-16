@@ -15,13 +15,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/payments/stripe-client';
 import { getRequestLogger } from '@/lib/observability/logger';
+import { apiClient } from '@/lib/http/services';
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 /**
  * Verify webhook signature and construct event
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 function constructEvent(
   body: string,
   signature: string,
@@ -39,7 +40,7 @@ function constructEvent(
 /**
  * Handle payment_intent.succeeded event
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function handlePaymentSucceeded(
   paymentIntent: any,
   log: ReturnType<typeof getRequestLogger>
@@ -56,18 +57,14 @@ async function handlePaymentSucceeded(
 
   // Update order status in database
   try {
-    const { safeFetch } = await import('@/lib/utils/fetch-utils');
-    await safeFetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/${orderId}/payment-status`, {
-      method: 'PATCH',
+    await apiClient.patch(`/orders/${orderId}/payment-status`, {
+      status: 'PAID',
+      paymentIntentId: paymentIntent.id,
+      paidAt: new Date().toISOString(),
+    }, {
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
       },
-      body: JSON.stringify({
-        status: 'PAID',
-        paymentIntentId: paymentIntent.id,
-        paidAt: new Date().toISOString(),
-      }),
     });
 
     log.info('Order payment status updated', { orderId });
@@ -97,18 +94,14 @@ async function handlePaymentFailed(paymentIntent: any, log: ReturnType<typeof ge
   });
 
   try {
-    const { safeFetch } = await import('@/lib/utils/fetch-utils');
-    await safeFetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/${orderId}/payment-status`, {
-      method: 'PATCH',
+    await apiClient.patch(`/orders/${orderId}/payment-status`, {
+      status: 'PAYMENT_FAILED',
+      paymentIntentId: paymentIntent?.id,
+      failureReason: lastPaymentErrorMsg,
+    }, {
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
       },
-      body: JSON.stringify({
-        status: 'PAYMENT_FAILED',
-        paymentIntentId: paymentIntent?.id,
-        failureReason: lastPaymentErrorMsg,
-      }),
     });
   } catch (error) {
     log.error('Failed to update order after payment failure', {
@@ -131,17 +124,13 @@ async function handlePaymentCanceled(paymentIntent: any, log: ReturnType<typeof 
   });
 
   try {
-    const { safeFetch } = await import('@/lib/utils/fetch-utils');
-    await safeFetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/${orderId}/payment-status`, {
-      method: 'PATCH',
+    await apiClient.patch(`/orders/${orderId}/payment-status`, {
+      status: 'PAYMENT_CANCELED',
+      paymentIntentId: paymentIntent?.id,
+    }, {
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
       },
-      body: JSON.stringify({
-        status: 'PAYMENT_CANCELED',
-        paymentIntentId: paymentIntent?.id,
-      }),
     });
   } catch (error) {
     log.error('Failed to update order after payment cancellation', {
@@ -167,18 +156,14 @@ async function handleChargeRefunded(charge: any, log: ReturnType<typeof getReque
   });
 
   try {
-    const { safeFetch } = await import('@/lib/utils/fetch-utils');
-    await safeFetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/${orderId}/payment-status`, {
-      method: 'PATCH',
+    await apiClient.patch(`/orders/${orderId}/payment-status`, {
+      status: 'REFUNDED',
+      refundedAt: new Date().toISOString(),
+      refundAmount: refundNumber / 100,
+    }, {
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
       },
-      body: JSON.stringify({
-        status: 'REFUNDED',
-        refundedAt: new Date().toISOString(),
-        refundAmount: refundNumber / 100,
-      }),
     });
   } catch (error) {
     log.error('Failed to update order after refund', {

@@ -16,7 +16,7 @@ import {
   Info
 } from 'lucide-react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PremiumCard } from '@/shared/components/PremiumCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,8 +28,8 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { AddressFields } from '@/components/shared/AddressFields';
-import { storeCreateSchema, type StoreCreateFormData } from '@/features/seller/schemas';
+import { AddressFields } from '@/shared/components/AddressFields';
+import { storeCreateSchema, type StoreCreateFormData } from '@/schemas/seller.schema';
 
 interface StoreProfileFormProps {
   initialData?: Partial<StoreCreateFormData>;
@@ -61,6 +61,7 @@ export function StoreProfileForm({
       addressLine1: initialData?.addressLine1 || '',
       addressLine2: initialData?.addressLine2 || '',
       city: initialData?.city || '',
+      taluk: initialData?.taluk || '',
       district: initialData?.district || '',
       state: initialData?.state || '',
       pincode: initialData?.pincode || '',
@@ -76,20 +77,13 @@ export function StoreProfileForm({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
-        <Card className="border-none shadow-2xl bg-background/50 backdrop-blur-md overflow-hidden">
-          <div className="h-2 bg-linear-to-r from-primary to-primary/40" />
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                <StoreIcon className="h-6 w-6" />
-              </div>
-              <div>
-                <CardTitle className="text-2xl">{title}</CardTitle>
-                <CardDescription className="text-base">{description}</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-8">
+        <PremiumCard
+          title={title}
+          description={description}
+          icon={<StoreIcon className="h-6 w-6" />}
+          className="animate-none" // Form handles its own entrance
+        >
+          <div className="space-y-8">
             {/* Core Details Section */}
             <section className="space-y-6">
               <div className="flex items-center gap-2 text-sm font-semibold text-primary uppercase tracking-wider">
@@ -180,8 +174,8 @@ export function StoreProfileForm({
                 {isPending ? 'Processing...' : submitLabel}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </PremiumCard>
       </form>
     </FormProvider>
   );

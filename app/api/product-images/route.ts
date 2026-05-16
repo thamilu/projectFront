@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/observability/logger';
+import { apiClient } from '@/lib/http/services';
 
 // Simple in-memory store for demo purposes
 type ImageRecord = {
@@ -114,28 +115,22 @@ export async function POST(request: NextRequest) {
       uploadRes = await uploadToCloudinary(dataUri);
     }
 
-    // Persist using Prisma if available
-    const prisma = await (await import('@/lib/db/prismaClient')).getPrisma().catch(() => undefined);
-    if (prisma) {
-      // unset existing primary if needed
-      if (isPrimary) {
-        await prisma.productImage.updateMany({ where: { productId }, data: { isPrimary: false } });
-      }
+    // Persist to Spring Boot backend
+    try {
+      const payload = {
+        productId,
+        url: uploadRes.url,
+        thumbnail: uploadRes.url,
+        altText: altText || null,
+        isPrimary,
+        width: uploadRes.width ?? 0,
+        height: uploadRes.height ?? 0,
+      };
 
-      const created = await prisma.productImage.create({
-        data: {
-          productId,
-          url: uploadRes.url,
-          thumbnail: uploadRes.url,
-          altText: altText || null,
-          displayOrder: (await prisma.productImage.count({ where: { productId } })),
-          isPrimary,
-          width: uploadRes.width ?? 0,
-          height: uploadRes.height ?? 0,
-        },
-      });
-
+      const { data: created } = await apiClient.post(`/api/v1/products/${productId}/images`, payload);
       return NextResponse.json(created, { status: 201 });
+    } catch (apiErr) {
+      logger.warn('[product-images] Backend persistence failed, using in-memory fallback', { error: apiErr });
     }
 
     const newImage: ImageRecord = {

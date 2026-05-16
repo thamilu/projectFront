@@ -20,6 +20,12 @@ export enum SellerBusinessType {
   RETAILER = 'RETAILER',
 }
 
+export const SELLER_BUSINESS_TYPE_LABELS: Record<SellerBusinessType, string> = {
+  [SellerBusinessType.FARMER]: 'Farmer / Producer',
+  [SellerBusinessType.WHOLESALER]: 'Wholesaler',
+  [SellerBusinessType.RETAILER]: 'Retailer',
+};
+
 export enum OrderStatus {
   PLACED = 'PLACED',
   CONFIRMED = 'CONFIRMED',
@@ -50,6 +56,7 @@ export interface UserDTO {
   address?: string;
   active: boolean;
   emailVerified?: boolean;
+  image?: string | null;
   createdAt: string;
   updatedAt?: string;
   // Seller-specific fields
@@ -174,6 +181,8 @@ export interface StoreDTO {
   phone?: string;
   address?: string;
   city?: string;
+  taluk?: string;
+  district?: string;
   state?: string;
   country?: string;
   postalCode?: string;

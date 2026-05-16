@@ -25,8 +25,7 @@ import {
 import { useRouter, usePathname } from 'next/navigation';
 import type { User } from '@/domain/auth/types';
 import { logger } from '@/lib/observability/logger';
-import { fetchRaw } from '@/lib/utils/fetch-utils';
-import { handleError } from '@/lib/utils/error-utils';
+import { apiClient } from '@/lib/http/services';
 import { APP_ROUTES } from '@/constants/routes/app-routes';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
@@ -73,47 +72,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const fetchSession = useCallback(async () => {
     try {
-      const response = await fetchRaw('/api/auth/me', {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await apiClient.get('/api/auth/me');
+      const data = response.data;
 
-      if (response.ok) {
-        const data = await response.json();
-
-        if (data && data.id) {
-          setUser(data as User);
-          setStatus('authenticated');
-          logger.debug('Session fetched successfully', { userId: data.id });
-        } else {
-          setUser(null);
-          setStatus('unauthenticated');
-        }
-      } else if (response.status === 401 || response.status === 404) {
+      if (data && data.id) {
+        setUser(data as User);
+        setStatus('authenticated');
+        logger.debug('Session fetched successfully', { userId: data.id });
+      } else {
+        setUser(null);
+        setStatus('unauthenticated');
+      }
+    } catch (error: any) {
+      if (error.status === 401 || error.status === 404) {
         // 401 = unauthorized; 404 = session endpoint missing (treat as unauthenticated)
         setUser(null);
         setStatus('unauthenticated');
-        if (response.status === 404) {
+        if (error.status === 404) {
           logger.warn('Session endpoint not found; treating as unauthenticated', {
-            status: response.status,
-            statusText: response.statusText,
+            status: error.status,
           });
         }
       } else {
-        // Server error - keep current state and surface as error
         logger.error('Failed to fetch session', {
-          status: response.status,
-          statusText: response.statusText,
+          status: error.status,
+          message: error.message,
         });
+        // On network error, only transition from loading -> unauthenticated
+        setStatus((prev) => (prev === 'loading' ? 'unauthenticated' : prev));
       }
-    } catch (error) {
-      logger.error('Session fetch error', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      // On network error, only transition from loading -> unauthenticated
-      setStatus((prev) => (prev === 'loading' ? 'unauthenticated' : prev));
     }
   }, []);
 
@@ -175,30 +162,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const logout = useCallback(async () => {
     try {
-      const response = await fetchRaw('/api/auth/keycloak/logout', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await apiClient.post('/api/auth/keycloak/logout');
+      const data = response.data;
 
-      if (response.ok) {
-        const data = await response.json();
+      // Clear local state
+      setUser(null);
+      setStatus('unauthenticated');
 
-        // Clear local state
-        setUser(null);
-        setStatus('unauthenticated');
-
-        // Redirect to Keycloak logout if URL provided
-        if (data.logoutUrl) {
-          window.location.href = data.logoutUrl;
-        } else {
-          router.push(APP_ROUTES.HOME);
-          router.refresh();
-        }
+      // Redirect to Keycloak logout if URL provided
+      if (data.logoutUrl) {
+        window.location.href = data.logoutUrl;
       } else {
-        throw new Error('Logout failed');
+        router.push(APP_ROUTES.HOME);
+        router.refresh();
       }
     } catch (error) {
       logger.error('Logout error', {

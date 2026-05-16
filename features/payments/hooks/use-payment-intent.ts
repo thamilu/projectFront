@@ -6,7 +6,7 @@
 
 import { useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { api as apiClient } from '@/lib/api-client'
+import { apiClient } from '@/lib/http/services'
 import {
   CreatePaymentIntentRequest,
   CreatePaymentIntentResponse,

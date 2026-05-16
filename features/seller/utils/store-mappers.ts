@@ -1,4 +1,4 @@
-import { SellerOnboardingValues, SellerProfileUpdateValues } from '../schemas';
+import { SellerOnboardingValues, SellerProfileUpdateValues, StoreCreateFormData } from '@/schemas/seller.schema';
 import { SellerRegisterRequest, SellerProfile } from '../types';
 
 /**
@@ -96,7 +96,7 @@ export function storeCreateRequestFromSellerProfile(profile: SellerProfile) {
 /**
  * Maps Store form data to the final API request format.
  */
-export function storeCreateRequestFromForm(data: any) {
+export function storeCreateRequestFromForm(data: StoreCreateFormData) {
   return {
     storeName: data.storeName,
     description: data.description,

@@ -6,7 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { searchProducts } from '@/lib/search/elasticsearch-client'
+import { apiClient } from '@/lib/http/services'
+import { API_ENDPOINTS } from '@/constants/api/endpoints'
 import { getRequestLogger } from '@/lib/observability/logger'
 
 const searchSchema = z.object({
@@ -62,43 +63,41 @@ export async function GET(request: NextRequest) {
       requestId,
     })
 
-    // Execute search
-    const results = await searchProducts({
-      query: params.q,
-      filters: {
-        categories: params.category?.split(',').filter(Boolean),
-        priceRange:
-          params.minPrice !== undefined && params.maxPrice !== undefined
-            ? { min: params.minPrice, max: params.maxPrice }
-            : undefined,
+    // Execute search via backend API
+    const { data: resp } = await apiClient.get<any>(API_ENDPOINTS.PRODUCTS.SEARCH, {
+      params: {
+        query: params.q,
+        category: params.category,
+        minPrice: params.minPrice,
+        maxPrice: params.maxPrice,
         inStock: params.inStock,
         rating: params.rating,
-        tags: params.tags?.split(',').filter(Boolean),
-      },
-      sort: params.sort,
-      from: (params.page - 1) * params.limit,
-      size: params.limit,
-    })
+        tags: params.tags,
+        sort: params.sort,
+        page: params.page - 1, // Spring Boot uses 0-based paging
+        size: params.limit,
+      }
+    });
+
+    const results = resp?.data ?? resp;
 
     log.info('Search completed', {
       query: params.q,
-      resultsCount: results.products.length,
-      totalResults: results.total,
-      took: results.took,
+      resultsCount: results.content?.length ?? 0,
+      totalResults: results.totalElements ?? 0,
       requestId,
     })
 
     return NextResponse.json(
       {
-        products: results.products,
+        products: results.content ?? [],
         pagination: {
           page: params.page,
           limit: params.limit,
-          total: results.total,
-          totalPages: Math.ceil(results.total / params.limit),
+          total: results.totalElements ?? 0,
+          totalPages: results.totalPages ?? Math.ceil((results.totalElements ?? 0) / params.limit),
         },
         aggregations: results.aggregations,
-        took: results.took,
       },
       {
         headers: {

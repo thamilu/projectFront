@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -33,7 +33,9 @@ interface ComboboxProps {
   emptyText?: string
   className?: string
   disabled?: boolean
+  loading?: boolean
   allowCustomValue?: boolean
+  onSearchChange?: (value: string) => void
 }
 
 export function Combobox({
@@ -45,7 +47,9 @@ export function Combobox({
   emptyText = "No results found.",
   className,
   disabled = false,
-  allowCustomValue = false
+  loading = false,
+  allowCustomValue = false,
+  onSearchChange
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [searchValue, setSearchValue] = React.useState("")
@@ -68,7 +72,11 @@ export function Combobox({
           disabled={disabled}
         >
           <span className="truncate">{selectedLabel || placeholder}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          {loading ? (
+            <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin opacity-50" />
+          ) : (
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
@@ -76,7 +84,10 @@ export function Combobox({
           <CommandInput 
             placeholder={searchPlaceholder} 
             value={searchValue} 
-            onValueChange={setSearchValue} 
+            onValueChange={(val) => {
+              setSearchValue(val)
+              onSearchChange?.(val)
+            }} 
           />
           <CommandList>
             <CommandEmpty>

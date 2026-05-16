@@ -1,4 +1,0 @@
-﻿
-> ecommerce-enterprise-frontend@1.0.0 lint
-> eslint . --ext .js,.ts,.tsx
-

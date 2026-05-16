@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { Settings } from 'lucide-react';
-import { useSettingsStore } from '@/store/settings-store';
+import { useSettingsStore } from '@/lib/store/settings-store';
 
 export const SettingsButton = memo(function SettingsButton() {
   const setSidebarOpen = useSettingsStore((state) => state.setSidebarOpen);

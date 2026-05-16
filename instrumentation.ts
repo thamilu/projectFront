@@ -2,13 +2,9 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     /**
      * Suppress legacy url.parse() deprecation warning (DEP0169)
-     * 
-     * This warning is triggered by the openid-client library used by next-auth.
-     * Since this is a dependency issue and standard in the current version of next-auth,
-     * we suppress it to keep the developer console clean and professional.
      */
     const originalEmit = process.emit;
-    // @ts-expect-error - process.emit types are strict but we need to override warning emission
+    // @ts-expect-error - process.emit types are strict
     process.emit = function (name, data, ...args) {
       if (
         name === 'warning' &&
@@ -20,7 +16,18 @@ export async function register() {
       return originalEmit.apply(process, [name, data, ...args]);
     };
 
-    // Register backend validation or observability here
-    // await import('./lib/observability/server');
+    // Register Server-Side Observability (OpenTelemetry / Sentry)
+    // if (process.env.NODE_ENV === 'production') {
+    //   const { init } = await import('./lib/observability/otel-server');
+    //   init();
+    // }
+  }
+
+  if (process.env.NEXT_RUNTIME === 'edge') {
+    // Register Edge-Side Observability
+    // if (process.env.NODE_ENV === 'production') {
+    //   const { init } = await import('./lib/observability/otel-edge');
+    //   init();
+    // }
   }
 }

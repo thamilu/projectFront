@@ -1,83 +1,264 @@
-// src/types/auth.types.ts
-export interface LoginRequest {
-  username: string;
-  password: string;
-  // Optional redirect target for credential-based login flows
-  redirectTo?: string;
-}
+/**
+ * Authentication Domain Types
+ * 
+ * Central type definitions for authentication domain
+ * Provides type safety across the application
+ */
 
-export interface RegisterRequest {
-  username: string;
+// ============================================================================
+// User Types
+// ============================================================================
+
+/**
+ * User role enumeration
+ * 
+ * Roles:
+ * - customer: Regular shoppers
+ * - farmer: Product suppliers
+ * - seller: Store operators
+ * - delivery: Delivery personnel
+ * - retail: Retail store managers
+ * - wholesale: Wholesale buyers
+ * - manager: Regional managers
+ * - admin: System administrators
+ */
+export type UserRole =
+  | 'customer'
+  | 'farmer'
+  | 'seller'
+  | 'delivery'
+  | 'retail'
+  | 'wholesale'
+  | 'manager'
+  | 'admin';
+
+/**
+ * User entity
+ */
+export interface User {
+  id: string;
   email: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
+  name: string;
+  roles: UserRole[];
+  image: string | null;
+  createdAt: Date;
+  lastLoginAt: Date | null;
+  emailVerified: boolean;
 }
 
-export interface TokenResponse {
-  access_token: string;
-  expires_in: number;
-  refresh_expires_in: number;
-  refresh_token: string;
-  token_type: string;
-  id_token?: string;
-  session_state?: string;
+// ============================================================================
+// Session Types
+// ============================================================================
+
+/**
+ * Authenticated session
+ * 
+ * Contains user information and tokens
+ * Stored in encrypted cookie
+ */
+export interface AuthSession {
+  user: User;
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt: Date;
+}
+
+/**
+ * Token pair returned from OAuth2 token endpoint
+ */
+export interface TokenPair {
+  accessToken: string;
+  refreshToken: string;
+  idToken: string;
+  expiresIn: number;
+}
+
+// ============================================================================
+// OAuth2 Types
+// ============================================================================
+
+/**
+ * OAuth2 authorization parameters
+ */
+export interface AuthorizationParams {
+  clientId: string;
+  redirectUri: string;
+  responseType: 'code';
   scope: string;
+  state: string;
+  nonce: string;
+  codeChallenge: string;
+  codeChallengeMethod: 'S256';
+  prompt?: 'none' | 'login' | 'consent' | 'select_account';
+  loginHint?: string;
 }
 
-export interface UserInfo {
-  sub: string;
-  email_verified?: boolean;
+/**
+ * OAuth2 token request
+ */
+export interface TokenRequest {
+  grantType: 'authorization_code' | 'refresh_token';
+  clientId: string;
+  clientSecret?: string;
+  code?: string;
+  codeVerifier?: string;
+  refreshToken?: string;
+  redirectUri?: string;
+}
+
+/**
+ * OAuth2 token response
+ */
+export interface TokenResponse {
+  accessToken: string;
+  refreshToken?: string;
+  idToken: string;
+  expiresIn: number;
+  tokenType: string;
+  scope?: string;
+}
+
+// ============================================================================
+// ID Token Claims
+// ============================================================================
+
+/**
+ * Standard OpenID Connect ID token claims
+ */
+export interface IdTokenClaims {
+  iss: string; // Issuer
+  sub: string; // Subject (user ID)
+  aud: string | string[]; // Audience (client ID)
+  exp: number; // Expiration time
+  iat: number; // Issued at
+  auth_time?: number; // Authentication time
+  nonce?: string; // Nonce
+  acr?: string; // Authentication Context Class Reference
+  amr?: string[]; // Authentication Methods References
+  azp?: string; // Authorized party
+  
+  // Profile claims
   name?: string;
-  preferred_username: string;
   given_name?: string;
   family_name?: string;
-  email: string;
-  roles?: string[];
-
-  // Legacy / application-specific fields (added for compatibility)
-  username?: string;
-  firstName?: string;
-  lastName?: string;
-  shopName?: string;
-  // Single role (legacy) — keep optional for older payloads
-  role?: string;
+  middle_name?: string;
+  nickname?: string;
+  preferred_username?: string;
+  profile?: string;
   picture?: string;
-  phone?: string;
-  address?: string;
-
-  // Demographics & Address
-  city?: string;
-  state?: string;
-  country?: string;
-  pincode?: string;
+  website?: string;
   gender?: string;
-  dateOfBirth?: string;
-
-  // KYC Fields
-  aadhar?: string;
-  pan?: string;
-  kycStatus?: string;
-
-  // Allow extra provider-specific/custom claims
-  [key: string]: unknown;
+  birthdate?: string;
+  zoneinfo?: string;
+  locale?: string;
+  updated_at?: number;
+  
+  // Email claims
+  email?: string;
+  email_verified?: boolean;
+  
+  // Phone claims
+  phone_number?: string;
+  phone_number_verified?: boolean;
+  
+  // Address claim
+  address?: {
+    formatted?: string;
+    street_address?: string;
+    locality?: string;
+    region?: string;
+    postal_code?: string;
+    country?: string;
+  };
+  
+  // Keycloak-specific claims
+  realm_access?: {
+    roles: string[];
+  };
+  resource_access?: {
+    [client: string]: {
+      roles: string[];
+    };
+  };
 }
 
+// ============================================================================
+// Authentication State
+// ============================================================================
+
+/**
+ * Client-side authentication state
+ */
 export interface AuthState {
-  user: UserInfo | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   error: string | null;
 }
 
-export interface RefreshTokenRequest {
-  refreshToken: string;
+/**
+ * Login state for forms
+ */
+export interface LoginState {
+  isLoading: boolean;
+  error: string | null;
+  redirectTo?: string;
 }
 
-export interface LoginUrlResponse {
-  authorizationUrl: string;
-  state: string;
+// ============================================================================
+// Error Types
+// ============================================================================
+
+/**
+ * Authentication error codes
+ */
+export type AuthErrorCode =
+  | 'configuration_error'
+  | 'invalid_request'
+  | 'unauthorized_client'
+  | 'access_denied'
+  | 'unsupported_response_type'
+  | 'invalid_scope'
+  | 'server_error'
+  | 'temporarily_unavailable'
+  | 'session_expired'
+  | 'state_mismatch'
+  | 'nonce_mismatch'
+  | 'callback_failed'
+  | 'token_refresh_failed'
+  | 'logout_failed';
+
+/**
+ * Authentication error
+ */
+export interface AuthError {
+  code: AuthErrorCode;
   message: string;
+  description?: string;
+  timestamp: Date;
+}
+
+// ============================================================================
+// Permission Types
+// ============================================================================
+
+/**
+ * Permission check result
+ */
+export interface PermissionCheck {
+  granted: boolean;
+  requiredRoles: UserRole[];
+  userRoles: UserRole[];
+}
+
+/**
+ * Route protection configuration
+ */
+export interface RouteProtection {
+  path: string;
+  requireAuth: boolean;
+  requiredRoles?: UserRole[];
+  redirectTo?: string;
 }

@@ -1,21 +1,25 @@
-/**
- * Next.js Proxy with NextAuth Protection (Next.js 16+)
- * 
- * Single source of truth for authentication and role-based routing.
- * Handles RBAC, CSP headers, redirects, and rate limiting.
- * Renamed from middleware.ts to proxy.ts per project conventions.
- */
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { auth } from '@/auth'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
+import { env } from '@/env'
 
-import { getToken } from 'next-auth/jwt';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { logger } from '@/lib/observability/logger';
-import { checkRateLimit, RATE_LIMITS } from '@/lib/security/rate-limiter';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+// Initialize Upstash Redis & Ratelimit only if credentials are provided and not placeholders
+const isUpstashConfigured = 
+  env.UPSTASH_REDIS_REST_URL && 
+  !env.UPSTASH_REDIS_REST_URL.includes('placeholder') &&
+  env.UPSTASH_REDIS_REST_TOKEN && 
+  env.UPSTASH_REDIS_REST_TOKEN !== 'placeholder-token';
 
-// --- CONSTANTS DEFINED OUTSIDE REQUEST SCOPE FOR PERFORMANCE ---
+const ratelimit = isUpstashConfigured 
+  ? new Ratelimit({
+      redis: Redis.fromEnv(),
+      // @ts-expect-error - slidingWindow is a static method but sometimes typed incorrectly in ESM
+      limiter: Ratelimit.slidingWindow(100, '60 s'),
+    })
+  : null;
 
-// Prefixes that should immediately skip all middleware processing (Static assets, core auth APIs)
 const STATIC_PREFIXES = [
   '/_next/',
   '/images/',
@@ -24,139 +28,80 @@ const STATIC_PREFIXES = [
   '/favicon',
   '/manifest',
   '/.well-known/',
-  '/auth/',
-  '/api/auth/',
-];
+]
 
-// Regex for all static file extensions
-const STATIC_FILE_REGEX = /\.(ico|png|jpg|jpeg|svg|webp|gif|css|js|json|webmanifest)$/i;
-
-// Routes that any guest can visit without authentication
-const PUBLIC_ROUTES = [
-  APP_ROUTES.HOME,
-  APP_ROUTES.PRODUCTS,
-  APP_ROUTES.CATEGORIES,
-  APP_ROUTES.ABOUT,
-  APP_ROUTES.CONTACT,
-  APP_ROUTES.HELP,
-  APP_ROUTES.TERMS,
-  APP_ROUTES.PRIVACY,
-  APP_ROUTES.SEARCH,
-  APP_ROUTES.CART,
-  APP_ROUTES.UNAUTHORIZED,
-];
-
-/**
- * Generate a random CSP nonce for inline scripts/styles
- */
-function generateNonce(): string {
-  return Buffer.from(crypto.randomUUID()).toString('base64');
-}
+const STATIC_FILE_REGEX = /\.(ico|png|jpg|jpeg|svg|webp|gif|css|js|json|webmanifest)$/i
 
 export async function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname } = req.nextUrl
 
-  // CRITICAL: Skip proxy for static assets and public Auth API routes
-  const isStaticPrefix = STATIC_PREFIXES.some(prefix => pathname.startsWith(prefix));
-  const isStaticFile = STATIC_FILE_REGEX.test(pathname);
-
-  if (isStaticPrefix || isStaticFile) {
-    return NextResponse.next();
+  // 1. Skip static assets
+  if (STATIC_PREFIXES.some(prefix => pathname.startsWith(prefix)) || STATIC_FILE_REGEX.test(pathname)) {
+    return NextResponse.next()
   }
 
-  // Only log non-static requests to reduce overhead
-  logger.debug('[proxy] Request received', { pathname });
-
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  const isAuth = !!token;
-
-  // Redirect authenticated users away from login/register
-  if (pathname === APP_ROUTES.AUTH_LOGIN || pathname === APP_ROUTES.AUTH_REGISTER) {
-    if (isAuth) {
-      logger.info('[proxy] Authenticated user visiting auth page, redirecting to home', { pathname });
-      return NextResponse.redirect(new URL(APP_ROUTES.HOME, req.url));
-    }
-    return NextResponse.next();
-  }
-
-  // Generate CSP nonce
-  const nonce = generateNonce();
-  const response = NextResponse.next();
-  response.headers.set('x-csp-nonce', nonce);
-
-  // Check if current route matches any public route (exact or sub-path)
-  const isPublicRoute = PUBLIC_ROUTES.some(
-    (route) =>
-      pathname === route || pathname.startsWith(`${route}/`) || pathname.startsWith(`${route}?`)
-  );
-
-  if (isPublicRoute && !isAuth) {
-    return response;
-  }
-
-  if (!isAuth) {
-    logger.info('[proxy] Redirecting to login', { pathname });
-    const loginUrl = new URL(APP_ROUTES.AUTH_LOGIN, req.url);
-    loginUrl.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Rate Limiting (Applied to authenticated/protected traffic)
-  // Using 'x-forwarded-for' or falling back to 'anon'.
-  // In production, ensure your reverse proxy (Vercel/Cloudflare) standardizes this header.
-  try {
-    const ip = req.headers.get('x-forwarded-for') || 'anon';
-    
-    // STRICT limit for auth routes (login, register, session)
-    // RELAXED limit for general API (dashboard data, products, etc)
-    const isAuthApi = pathname.startsWith('/api/auth') || pathname.startsWith('/auth');
-    const limitConfig = isAuthApi ? RATE_LIMITS.auth : RATE_LIMITS.authenticated;
-    
-    const rateLimitResult = checkRateLimit(ip, limitConfig);
-    
-    if (!rateLimitResult.allowed) {
-        logger.warn('[proxy] Rate limit exceeded', { ip, pathname });
+  // 2. Rate Limiting (Edge-side)
+  if (ratelimit) {
+    const ip = (req as any).ip ?? req.headers.get('x-forwarded-for') ?? '127.0.0.1'
+    try {
+      const { success, limit, remaining } = await ratelimit.limit(ip)
+      if (!success) {
         return NextResponse.json(
-            { message: 'Too many requests', retryAfter: rateLimitResult.retryAfter },
-            { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfter || 60) } }
-        );
+          { code: 'RATE_LIMITED', message: 'Too many requests' },
+          {
+            status: 429,
+            headers: {
+              'X-RateLimit-Limit': limit.toString(),
+              'X-RateLimit-Remaining': remaining.toString(),
+            }
+          }
+        )
+      }
+    } catch (error) {
+      console.error('Rate limiting error:', error)
+      // Fallback: allow request if rate limiter fails
     }
-  } catch (error) {
-    // Fail safe: If rate limiting throws, log it but don't block the request unless critical
-    logger.error('[proxy] Rate limit error', { error });
   }
 
-  // Role-based access control
-  const rawRoles = (token as any)?.roles || [];
-  const roles = Array.isArray(rawRoles) ? rawRoles.map(r => String(r).toUpperCase()) : [];
+  // 3. Auth Check
+  const session = await auth()
+  const isAuth = !!session
+
+  // 4. RBAC & Route Guards
+  const protectedRoutes = ['/seller', '/customer', '/delivery']
+  const isProtected = protectedRoutes.some(r => pathname.startsWith(r))
+
+  if (isProtected && !isAuth) {
+    const loginUrl = new URL('/login', req.url)
+    loginUrl.searchParams.set('callbackUrl', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  // 5. Propagate Headers & Correlation ID
+  const correlationId = crypto.randomUUID()
+  const requestHeaders = new Headers(req.headers)
+  requestHeaders.set('X-Correlation-ID', correlationId)
   
-  const isSeller = roles.includes('SELLER');
-  const isDeliveryAgent = roles.includes('DELIVERY_AGENT');
-  const isAdmin = roles.includes('ADMIN');
-
-  // Protect Seller Routes
-  if (pathname.startsWith(APP_ROUTES.SELLER.BASE) && !pathname.startsWith(APP_ROUTES.SELLER.REGISTER) && !isSeller) {
-    logger.warn('[proxy] Non-seller attempting to access seller route', { pathname });
-    return NextResponse.redirect(new URL(APP_ROUTES.SELLER.REGISTER, req.url));
+  if (session?.accessToken) {
+    requestHeaders.set('Authorization', `Bearer ${session.accessToken}`)
   }
 
-  // Protect Delivery Routes
-  if (pathname.startsWith(APP_ROUTES.DELIVERY.BASE) && !isDeliveryAgent) {
-    logger.warn('[proxy] Non-delivery agent attempting to access delivery route', { pathname });
-    return NextResponse.redirect(new URL(APP_ROUTES.UNAUTHORIZED, req.url));
-  }
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
 
-  // Allow sellers and delivery agents to view the consumer home page if they choose
-  // if (pathname === '/') {
-  //   if (isSeller) return NextResponse.redirect(new URL(APP_ROUTES.SELLER.DASHBOARD, req.url));
-  //   if (isDeliveryAgent) return NextResponse.redirect(new URL(APP_ROUTES.DELIVERY.DASHBOARD, req.url));
-  // }
+  // 6. Security Headers
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
 
-  return response;
+  return response
 }
 
 export const config = {
-  matcher: [
-    '/(.*)',
-  ],
-};
+  matcher: ['/(.*)'],
+}

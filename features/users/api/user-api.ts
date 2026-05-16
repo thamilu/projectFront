@@ -1,4 +1,4 @@
-import apiClient from '@/lib/axios';
+import { apiClient } from '@/lib/http/services';
 import { UserDTO, PageResponse, PageRequest } from '@/types';
 
 // Time Complexity: O(1) - single HTTP request

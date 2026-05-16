@@ -3,15 +3,15 @@
 import Link from 'next/link';
 import { ShoppingCart, User, LogOut, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import { signOut } from 'next-auth/react';
 import { useCart } from '@/features/cart/hooks/use-cart';
 import { APP_ROUTES } from '@/constants/routes/app-routes';
 
 export function Navigation() {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuth();
   const { cart } = useCart();
-  const handleLogout = () => signOut({ callbackUrl: '/auth/login' });
+  const handleLogout = () => logout();
 
   const cartItemsCount = cart?.items.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0) || 0;
 

@@ -2,7 +2,7 @@
 // Tokens are stored in httpOnly cookies and managed by Next.js API routes
 
 import { UserDTO, UserRole } from '@/types';
-import { safeFetch } from '@/lib/utils/fetch-utils';
+import { apiClient } from '@/lib/http/services';
 
 const USER_KEY = 'user';
 
@@ -90,11 +90,9 @@ export function getToken(): string | null {
  */
 export async function login(email: string, password: string): Promise<UserDTO> {
   try {
-    const data = await safeFetch<{ user: UserDTO }>('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email, password }),
+    const { data } = await apiClient.post<{ user: UserDTO }>('/api/auth/login', {
+      email,
+      password,
     });
 
     setUser(data.user);
@@ -115,12 +113,7 @@ export async function register(userData: {
   role: string;
 }): Promise<UserDTO> {
   try {
-    const data = await safeFetch<{ user: UserDTO }>('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(userData),
-    });
+    const { data } = await apiClient.post<{ user: UserDTO }>('/api/auth/register', userData);
 
     setUser(data.user);
     return data.user;
@@ -134,12 +127,10 @@ export async function register(userData: {
  */
 export async function logout(): Promise<void> {
   try {
-    await safeFetch('/api/auth/logout', {
-      method: 'POST',
+    await apiClient.post('/api/auth/logout', null, {
       headers: {
         'X-Requested-With': 'XMLHttpRequest',
       },
-      credentials: 'include',
     });
   } finally {
     removeUser();

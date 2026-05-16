@@ -71,6 +71,24 @@ const nextConfig = {
           return [];
         }
       })(),
+      // Allow Cloudflare R2 images dynamically from environment variable
+      ...(function () {
+        try {
+          const r2Url = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || process.env.R2_PUBLIC_URL;
+          if (!r2Url) return [];
+          const u = new URL(r2Url);
+          return [
+            {
+              protocol: u.protocol.replace(':', ''),
+              hostname: u.hostname,
+              ...(u.port ? { port: u.port } : {}),
+              pathname: '/**',
+            },
+          ];
+        } catch {
+          return [];
+        }
+      })(),
       {
         protocol: 'http',
         hostname: 'localhost',
@@ -186,7 +204,7 @@ const withPWA = withPWAInit({
   dest: 'public',
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
-  customWorkerDir: 'worker',
+  customWorkerDir: 'sw',
   fallbacks: {
     document: '/offline',
   },

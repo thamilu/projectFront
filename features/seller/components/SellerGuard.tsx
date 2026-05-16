@@ -4,9 +4,9 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { APP_ROUTES } from '@/constants/routes/app-routes';
-import { useAuth } from '@/hooks/use-auth-nextauth';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import { signIn } from 'next-auth/react';
-import { sellerProfileApi } from '@/features/seller/api/seller-profile-api';
+import { sellerApi } from '@/features/seller/api/seller-api';
 import { toast } from 'sonner';
 
 interface SellerGuardProps {
@@ -60,7 +60,8 @@ export function SellerGuard({ children }: SellerGuardProps) {
       // 5. ROLE MISSING - Deep check with backend before redirecting
       console.log('[SellerGuard] Role missing, checking backend status...');
       try {
-        const profile = await sellerProfileApi.getMyProfile();
+        const profile = await sellerApi.getMyProfile();
+
         if (!isMounted) return;
 
         if (profile?.status?.toUpperCase() === 'ACTIVE') {

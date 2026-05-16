@@ -56,18 +56,18 @@ export function BannerCarousel() {
   }, []);
 
   return (
-    <div className="relative w-full max-w-[1600px] mx-auto overflow-hidden">
+    <div className="relative w-full container mx-auto overflow-hidden">
       {/* Scroll Container */}
       <div
         ref={scrollRef}
-        className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 pb-4 px-4 md:px-8 scroll-smooth"
+        className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 pb-4 scroll-smooth"
       >
         {HERO_BANNERS.map((banner) => (
           <Link
             key={banner.id}
             href={banner.href}
             className={cn(
-              "relative flex-none w-[85vw] md:w-[60vw] lg:w-[45vw] snap-center aspect-[21/9] md:aspect-[24/9] rounded-2xl overflow-hidden group",
+              "relative flex-none w-[90vw] md:w-[70vw] lg:w-[48%] snap-start aspect-[21/9] md:aspect-[24/9] rounded-2xl overflow-hidden group",
               banner.bgColor
             )}
           >

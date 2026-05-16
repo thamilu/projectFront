@@ -7,9 +7,9 @@
  * ProductCardSkeleton, ProductPrice, and useWishlistToggle hook.
  */
 
-import { ProductCard, ProductCardSkeleton } from '@/components/products/product-card';
-import { ProductPrice } from '@/components/products/product-price';
-import { useWishlistToggle } from '@/hooks/useWishlistToggle';
+import { ProductCard, ProductCardSkeleton } from '@/features/products/components/product-card';
+import { ProductPrice } from '@/features/products/components/product-price';
+import { useWishlistToggle } from '@/features/wishlist/hooks/useWishlistToggle';
 import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
 import { toast } from 'sonner';

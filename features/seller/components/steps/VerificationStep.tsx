@@ -4,9 +4,9 @@ import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { ShieldCheck, FileText, CreditCard, Landmark, User } from 'lucide-react';
 import { SellerIdentityType } from '@/types';
-import { SellerOnboardingValues } from '../../schemas';
-import { StepLayout } from '../shared/StepLayout';
-import { StepInput } from '../shared/StepInput';
+import { SellerOnboardingValues } from '@/schemas/seller.schema';
+import { StepLayout } from '@/shared/components/StepLayout';
+import { StepInput } from '@/shared/components/StepInput';
 import { motion } from 'framer-motion';
 
 export function VerificationStep() {

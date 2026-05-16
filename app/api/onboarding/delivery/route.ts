@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { apiClient } from '@/lib/http/services';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,16 +13,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8082/api/v1';
 
-    const { safeFetch } = await import('@/lib/utils/fetch-utils');
-
     try {
-      const data = await safeFetch(`${backendUrl}/delivery/register`, {
-        method: 'POST',
+      const { data } = await apiClient.post(`/delivery/register`, body, {
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token.accessToken}`,
         },
-        body: JSON.stringify(body),
       });
 
       return NextResponse.json(data, { status: 201 });

@@ -39,6 +39,8 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string) => `/api/v1/products/${id}`,
     DELETE: (id: string) => `/api/v1/products/${id}`,
     BATCH: '/api/v1/products/batch',
+    FEATURED: '/api/v1/products/featured',
+    BY_CATEGORY: (categoryId: string) => `/api/v1/products/category/${categoryId}`,
   },
 
   // Cart - Versioned (/api/v1/cart)

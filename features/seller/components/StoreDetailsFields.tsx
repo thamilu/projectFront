@@ -3,14 +3,14 @@ import { UseFormRegister, FieldErrors, FieldValues, Path, useFormContext } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { AddressFields } from '@/components/shared/AddressFields';
+import { AddressFields } from '@/shared/components/AddressFields';
 import { Wand2, Tractor, CheckCircle2, Loader2, XCircle, Store, Phone as PhoneIcon, Globe, Image as ImageIcon, MapPin, FileText } from 'lucide-react';
 import { FormError } from '@/components/ui/form-error';
 import { SellerBusinessType } from '../types';
 import { Checkbox } from '@/components/ui/checkbox';
-import { apiClient } from '@/lib/axios';
+import { apiClient } from '@/lib/http/services';
 import { API_ENDPOINTS } from '@/constants/api/endpoints';
-import { StepInput } from './shared/StepInput';
+import { StepInput } from '@/shared/components/StepInput';
 
 interface FieldSpec<T> {
   id: string;

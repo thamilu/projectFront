@@ -3,6 +3,7 @@ import { retrievePkceState, createSession, clearPkceState } from '@/lib/auth/ses
 import { loadAuthConfig, getTokenEndpoint } from '@/lib/auth/config';
 import { validateIdToken, extractRoles } from '@/lib/auth/tokens';
 import { logger } from '@/lib/observability/logger';
+import { tokenExchange } from '@/lib/http/fetch-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,24 +61,10 @@ export async function GET(req: NextRequest) {
       params.append('client_secret', config.clientSecret);
     }
 
-    const { fetchRaw } = await import('@/lib/utils/fetch-utils');
-    const tokenResponse = await fetchRaw(tokenEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params.toString(),
-      timeout: 10000,
-    });
+    const tokens = await tokenExchange(tokenEndpoint, params) as any;
 
-    const tokens = await tokenResponse.json();
-
-    if (!tokenResponse.ok) {
-      logger.error('[Auth Callback] Token exchange failed', {
-        status: tokenResponse.status,
-        error: tokens.error,
-        description: tokens.error_description,
-      });
+    if (!tokens || !tokens.access_token) {
+      logger.error('[Auth Callback] Token exchange failed - no access token received');
       return NextResponse.redirect(new URL('/login?error=token_exchange_failed', req.url));
     }
 

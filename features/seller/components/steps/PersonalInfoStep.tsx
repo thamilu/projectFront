@@ -5,11 +5,11 @@ import { useFormContext, Controller } from 'react-hook-form';
 import { User, Mail, Phone, Calendar, Globe, Edit2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { SellerOnboardingValues } from '../../schemas';
+import { SellerOnboardingValues } from '@/schemas/seller.schema';
 
-import { StepLayout } from '../shared/StepLayout';
-import { StepInput } from '../shared/StepInput';
-import { ModernDatePicker } from '@/components/shared/ModernDatePicker';
+import { StepLayout } from '@/shared/components/StepLayout';
+import { StepInput } from '@/shared/components/StepInput';
+import { ModernDatePicker } from '@/shared/components/ModernDatePicker';
 
 export function PersonalInfoStep() {
   const { register, control, formState: { errors } } = useFormContext<SellerOnboardingValues>();

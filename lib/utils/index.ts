@@ -23,36 +23,6 @@ export {
 // DRY Utilities - Fetch, Error Handling, Tokens, API Client
 // ---------------------------------------------------------------------------
 
-// Fetch utilities
-export {
-  safeFetch,
-  authenticatedFetch,
-  retryFetch,
-  handleResponse,
-  createFetchError,
-  buildUrl,
-  normalizeUrl,
-  FetchError,
-  type FetchOptions,
-  type AuthenticatedFetchOptions,
-} from './fetch-utils';
-
-// Error handling utilities
-export {
-  handleError,
-  handleFetchError,
-  getUserFriendlyMessage,
-  logAndRethrow,
-  tryCatch,
-  retryWithBackoff,
-  ApiError,
-  AuthenticationError,
-  AuthorizationError,
-  ValidationError,
-  NotFoundError,
-  type ErrorResponse,
-} from './error-utils';
-
 // Token utilities
 export {
   storeTokens,
@@ -64,9 +34,6 @@ export {
   extractTokenData,
   type TokenData,
 } from './token-utils';
-
-// API client
-export { createApiClient, cartApi, productsApi, ordersApi, dashboardApi } from './api-client';
 
 // ---------------------------------------------------------------------------
 // Inventory helpers (unique to this module)

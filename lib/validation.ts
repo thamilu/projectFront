@@ -3,4 +3,4 @@
  * Re-exports all validation utilities
  */
 
-export * from './validation/schemas/product';
+export * from '@/schemas/product.schema';

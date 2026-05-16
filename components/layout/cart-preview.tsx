@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { useCartStore, selectCartItems, selectCartTotal } from '@/store/cart-store';
+import { useCartStore, selectCartItems, selectCartTotal } from '@/features/cart/store/cart-store';
 import { formatCurrency } from '@/lib/utils';
 import { ShoppingBag } from 'lucide-react';
 

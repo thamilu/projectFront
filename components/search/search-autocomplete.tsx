@@ -24,8 +24,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Search, TrendingUp, Clock, X } from 'lucide-react';
 import { debounce } from '@/lib/utils/debounce';
-import { safeFetch } from '@/lib/utils/fetch-utils';
-import { handleError } from '@/lib/utils/error-utils';
+import { apiClient } from '@/lib/http/services';
 import { logger } from '@/lib/observability/logger';
 
 interface SearchSuggestion {
@@ -90,9 +89,9 @@ export function SearchAutocomplete({ onSelect }: SearchAutocompleteProps) {
       setIsLoading(true);
 
       try {
-        const data = (await safeFetch<any>(
+        const { data } = await apiClient.get<any>(
           `/api/search/suggest?q=${encodeURIComponent(searchQuery)}`
-        )) as any;
+        );
         setSuggestions(data?.suggestions || []);
         setProducts(data?.products || []);
 
@@ -101,7 +100,7 @@ export function SearchAutocomplete({ onSelect }: SearchAutocompleteProps) {
           count: (data.suggestions || []).length,
         });
       } catch (error) {
-        handleError(error, 'Failed to fetch suggestions');
+        console.error('Failed to fetch suggestions', error);
         setSuggestions([]);
         setProducts([]);
       } finally {

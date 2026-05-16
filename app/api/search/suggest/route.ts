@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { suggestSearchTerms } from '@/lib/search/elasticsearch-client'
+import { apiClient } from '@/lib/http/services'
 import { getRequestLogger } from '@/lib/observability/logger'
 
 const suggestSchema = z.object({
@@ -32,12 +32,18 @@ export async function GET(request: NextRequest) {
       requestId,
     })
 
-    const results = await suggestSearchTerms(params.q, params.size)
+    // Execute search via backend API
+    const { data: results } = await apiClient.get<any>('/api/v1/products/search/suggest', {
+      params: {
+        query: params.q,
+        size: params.size,
+      }
+    });
 
     log.info('Search suggestions completed', {
       query: params.q,
-      suggestionsCount: results.suggestions.length,
-      productsCount: results.products.length,
+      suggestionsCount: results.suggestions?.length ?? 0,
+      productsCount: results.products?.length ?? 0,
       requestId,
     })
 

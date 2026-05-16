@@ -15,7 +15,7 @@ import { AnalyticsProvider } from '@/components/providers/analytics-provider';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { NetworkStatus } from '@/components/common/network-status';
 import { ScreenReaderAnnouncer } from '@/components/common/screen-reader-announcer';
-import { useAppIntegrations } from '@/hooks/use-app-integrations';
+import { useAppIntegrations } from '@/shared/hooks';
 
 interface ProvidersProps {
   children: ReactNode;

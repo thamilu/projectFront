@@ -3,7 +3,7 @@
  * @module features/notifications/api/notifications-api
  */
 
-import apiClient from '@/lib/axios';
+import { apiClient } from '@/lib/http/services';
 
 export const notificationsApi = {
   // TODO: Implement notifications API methods

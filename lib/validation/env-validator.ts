@@ -184,7 +184,7 @@ export function parseEnvValue<T = string>(
     case 'json': {
       try {
         return JSON.parse(value) as T;
-      } catch (error) {
+      } catch (_error) {
         throw new Error(`Invalid JSON format: ${value}`);
       }
     }

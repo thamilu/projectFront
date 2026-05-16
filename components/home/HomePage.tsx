@@ -1,16 +1,20 @@
 import React from 'react';
 import Hero from './Hero';
-import { CategorySection } from './CategorySection';
-import { FlashDealsSection } from './FlashDealsSection';
+import { 
+  CategorySection, 
+  FlashDealsSection, 
+  FeaturedProductsSection 
+} from '@/features/products';
+import { FeaturedStoresSection } from '@/features/seller';
 import { PromoBannerSection } from './PromoBannerSection';
-import { FeaturedProductsSection } from './FeaturedProductsSection';
-import { FeaturedStoresSection } from './FeaturedStoresSection';
 import FeaturedSlider from './FeaturedSlider';
 import PromoBanners from './PromoBanners';
 import TrustSection from './TrustSection';
 import { TestimonialsSection } from './TestimonialsSection';
 import { AppDownloadSection } from './AppDownloadSection';
 import { siteConfig } from '@/lib/config/site';
+import { auth } from '@/auth';
+import { CustomerQuickStats } from '@/features/customer';
 import {
   FlashDealsSkeleton,
   FeaturedProductsSkeleton,
@@ -130,16 +134,13 @@ const HOME_PAGE_SECTIONS = [
   },
 ];
 
-export default function HomePage(): React.JSX.Element {
+export default async function HomePage(): Promise<React.JSX.Element> {
+  const session = await auth();
+  const roles = (session as any)?.roles || [];
+  const isCustomer = roles.includes('CUSTOMER');
+
   return (
-    <main id="main-content" aria-label="Home page content" className="min-h-dvh">
-      {/* Skip navigation for keyboard/screen reader users (WCAG 2.1) */}
-      <a
-        href="#main-content"
-        className="focus:bg-primary focus:text-primary-foreground focus:ring-ring sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:px-4 focus:py-2 focus:shadow-lg focus:ring-2 focus:outline-none"
-      >
-        Skip to main content
-      </a>
+    <main id="main-content" aria-label="Home page content">
 
       {/* SEO: Primary heading for document outline */}
       <h1 className="sr-only">{siteConfig.name}</h1>
@@ -152,6 +153,21 @@ export default function HomePage(): React.JSX.Element {
         className="sr-only"
         id="loading-announcer"
       />
+
+      {/* 
+        Personalized Dashboard Section (Hardened)
+        Only shown for logged-in customers at the top of the home page
+      */}
+      {isCustomer && (
+        <SectionReveal index={-1}>
+          <ResilientSection 
+            fallback={<div className="h-20" />} 
+            skeleton={<div className="container mx-auto py-6 space-y-6"><div className="h-40 w-full bg-slate-200 animate-pulse rounded-3xl" /></div>}
+          >
+            <CustomerQuickStats session={session} />
+          </ResilientSection>
+        </SectionReveal>
+      )}
 
       {/* 
         Render all sections dynamically leveraging the configuration array.

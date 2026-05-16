@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { SellerOnboardingFormData } from '../schemas';
+import { SellerOnboardingFormData } from '@/schemas/seller.schema';
 import { SellerIdentityType } from '@/types';
 
 export const STEPS_DATA = [
@@ -12,14 +12,14 @@ export const STEPS_DATA = [
 
 const STEP_VALIDATION: Record<number, (keyof SellerOnboardingFormData)[]> = {
   0: ['identityType', 'businessTypes'],
-  1: ['displayName', 'phone', 'description'],
-  2: ['pan', 'aadhaar', 'businessName', 'businessPan', 'taxId', 'authorizedSignatory'],
+  1: ['shopName', 'phone', 'description'],
+  2: ['panNumber', 'aadhar', 'businessName', 'businessPan', 'gstin', 'authorizedSignatory'],
   3: [],
 };
 
 const FUTURE_STEP_FIELDS: Record<number, (keyof SellerOnboardingFormData)[]> = {
-  0: ['displayName', 'phone', 'description', 'pan', 'aadhaar', 'businessName', 'businessPan', 'taxId', 'authorizedSignatory', 'bankAccountNumber', 'bankIfsc', 'acceptedTerms'],
-  1: ['pan', 'aadhaar', 'businessName', 'businessPan', 'taxId', 'authorizedSignatory', 'bankAccountNumber', 'bankIfsc', 'acceptedTerms'],
+  0: ['shopName', 'phone', 'description', 'panNumber', 'aadhar', 'businessName', 'businessPan', 'gstin', 'authorizedSignatory', 'bankAccountNumber', 'bankIfsc', 'acceptedTerms'],
+  1: ['panNumber', 'aadhar', 'businessName', 'businessPan', 'gstin', 'authorizedSignatory', 'bankAccountNumber', 'bankIfsc', 'acceptedTerms'],
   2: ['bankAccountNumber', 'bankIfsc', 'acceptedTerms'],
   3: [],
 };
@@ -34,9 +34,9 @@ export function useSellerOnboarding(methods: UseFormReturn<SellerOnboardingFormD
     if (currentStep === 2) {
       const identityType = methods.watch('identityType');
       if (identityType === SellerIdentityType.INDIVIDUAL) {
-        fieldsToValidate = ['pan', 'aadhaar'];
+        fieldsToValidate = ['panNumber', 'aadhar'];
       } else if (identityType === SellerIdentityType.BUSINESS) {
-        fieldsToValidate = ['businessName', 'businessPan', 'taxId', 'authorizedSignatory'];
+        fieldsToValidate = ['businessName', 'businessPan', 'gstin', 'authorizedSignatory'];
       }
     }
 

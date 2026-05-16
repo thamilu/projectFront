@@ -4,9 +4,9 @@ import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { User, Building2, Briefcase, CheckCircle2, Tractor, Warehouse, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SellerIdentityType, SellerBusinessType } from '@/types';
-import { SellerOnboardingValues } from '../../schemas';
-import { StepLayout } from '../shared/StepLayout';
+import { SellerIdentityType, SellerBusinessType, SELLER_BUSINESS_TYPE_LABELS } from '@/types';
+import { SellerOnboardingValues } from '@/schemas/seller.schema';
+import { StepLayout } from '@/shared/components/StepLayout';
 import { cn } from '@/lib/utils';
 
 export function IdentityStep() {
@@ -181,10 +181,10 @@ export function IdentityStep() {
                   
                   <div className="space-y-1">
                     <span className={cn(
-                      "text-xs font-bold uppercase tracking-wider block transition-colors",
+                      "text-[10px] font-bold uppercase tracking-wider block transition-colors",
                       isSelected ? "text-primary" : "text-foreground/70"
                     )}>
-                      {type.replace(/_/g, ' ')}
+                      {SELLER_BUSINESS_TYPE_LABELS[type]}
                     </span>
                     <p className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                       {isSelected ? 'Selected Category' : 'Click to select'}

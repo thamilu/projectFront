@@ -3,4 +3,4 @@
  * Re-exports from lib/validation/schemas/product
  */
 
-export * from '../validation/schemas/product';
+export * from '@/schemas/product.schema';

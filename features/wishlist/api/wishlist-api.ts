@@ -3,7 +3,7 @@
  * @module features/wishlist/api/wishlist-api
  */
 
-import apiClient from '@/lib/axios';
+import { apiClient } from '@/lib/http/services';
 
 export const wishlistApi = {
   // TODO: Implement wishlist API methods

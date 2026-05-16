@@ -1,15 +1,12 @@
-// Feature: Seller
-// Centralized exports for seller feature module
+/**
+ * Public API for Seller Feature
+ */
 
-// Components
-export * from './components/AddProductForm';
-export * from './components/ImageUploader';
+export * from './hooks/use-seller'
+export * from './api/seller-api'
+export * from './components/FeaturedStoresSection'
 
-// Hooks
-export * from './hooks/use-seller';
-
-// API
-export * from './api/seller-api';
-
-// Types (to be added)
-// export type * from './types/seller.types';
+// Layout components
+export { SellerHeader } from './components/layout/header';
+export { SellerSidebar } from './components/layout/sidebar';
+export { SellerGuard } from './components/SellerGuard';

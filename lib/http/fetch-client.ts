@@ -1,4 +1,4 @@
-import { safeFetch } from '@/lib/utils/fetch-utils';
+import { apiClient } from '@/lib/http/services';
 
 export async function tokenExchange(
   endpoint: string,
@@ -11,9 +11,8 @@ export async function tokenExchange(
     ...(correlationId ? { 'X-Correlation-ID': correlationId } : {}),
   };
 
-  return safeFetch(endpoint, {
-    method: 'POST',
+  const response = await apiClient.post(endpoint, params.toString(), {
     headers,
-    body: params.toString(),
   });
+  return response.data;
 }
