@@ -45,6 +45,6 @@ test.describe('Product Browsing', () => {
     await page.press('input[placeholder="Search products"]', 'Enter');
 
     // Verify search results
-    await expect(page.locator('.product-card')).toHaveCount(5, { timeout: 5000 });
+    await expect(page.locator('.ProductCard')).toHaveCount(5, { timeout: 5000 });
   });
 });

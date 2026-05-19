@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { BarChart3, TrendingUp, ShoppingBag, DollarSign, Package, Star } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Skeleton } from '@/shared/ui/atoms/skeleton';
+import { Badge } from '@/shared/ui/atoms/badge';
 
 interface AnalyticsData {
   totalRevenue: number;

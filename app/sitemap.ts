@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
-import { productsApi } from '@/lib/http/services/products';
-import { ProductDTO } from '@/types';
+import { productsApi } from '@/domains/catalog/infrastructure/api/catalog-api';
+import { ProductDTO } from '@/domains/catalog/contracts/catalog.types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://yourdomain.com';
 

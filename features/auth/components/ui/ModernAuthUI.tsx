@@ -15,11 +15,11 @@ import { LogIn, UserPlus, Loader2, ShieldCheck, CheckCircle2 } from 'lucide-reac
 import { toast } from 'sonner';
 
 import { LogoutButton } from './LogoutButton';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/shared/ui/atoms/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
 import { useAuth } from '@/features/auth';
-import { cn } from '@/lib/utils';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { cn } from '@/shared/utils';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 interface ModernAuthUIProps {
   redirectTo?: string;

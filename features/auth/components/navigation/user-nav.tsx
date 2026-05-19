@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/atoms/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,13 +9,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/shared/ui/atoms/dropdown-menu';
 import { LogoutButton } from '../ui/LogoutButton';
 import { LoginButton } from '../ui/login-button';
 import { User, Settings, Store, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export function UserNav() {
   const { data: session, status } = useSession();

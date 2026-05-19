@@ -2,10 +2,10 @@
 
 import { use } from 'react';
 import { Star, ThumbsUp, Loader2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
+import { Avatar, AvatarFallback } from '@/shared/ui/atoms/avatar';
+import { Progress } from '@/shared/ui/atoms/progress';
+import { Button } from '@/shared/ui/atoms/button';
 
 const MOCK_REVIEWS = [
   { id: '1', author: 'Priya S.', rating: 5, date: '2026-02-15', title: 'Absolutely love it!', body: 'Great build quality and amazing sound. Worth every penny.', helpful: 24 },

@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../hooks/use-auth';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 import { Loader2 } from 'lucide-react';
 
 /**

@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ServerCrash } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { Button } from '@/shared/ui/atoms/button';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export default function ServerErrorPage() {
   const error = undefined as (Error & { digest?: string }) | undefined;

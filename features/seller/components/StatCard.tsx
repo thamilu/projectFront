@@ -1,7 +1,7 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
-import { PremiumCard } from '@/shared/components/PremiumCard';
-import { cn } from '@/lib/utils';
+import { PremiumCard } from '@/shared/ui/molecules/PremiumCard';
+import { cn } from '@/shared/utils';
 
 interface StatCardProps {
   title: string;

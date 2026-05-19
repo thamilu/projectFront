@@ -1,7 +1,7 @@
-import HomePage from '@/components/home/HomePage';
-import CustomerDashboard from '@/components/customer/CustomerDashboard';
+import HomePage from '@/features/home/components/HomePage';
+
 import type { Metadata } from 'next';
-import { siteConfig } from '@/lib/config/site';
+import { siteConfig } from '@/core/config/site';
 
 /**
  * Home Page Route

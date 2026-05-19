@@ -8,11 +8,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/atoms/card';
+import { Button } from '@/shared/ui/atoms/button';
 import { AlertCircle, Home, LogOut } from 'lucide-react';
-import { logoutAndRedirect } from '@/lib/auth/client-logout';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { signOut } from 'next-auth/react';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export default function AccessDeniedPage() {
   const router = useRouter();
@@ -27,7 +27,7 @@ export default function AccessDeniedPage() {
 
   const handleSignOut = async () => {
     /* console.log removed */
-    await logoutAndRedirect({ redirectTo: APP_ROUTES.AUTH_LOGIN });
+    await signOut({ callbackUrl: APP_ROUTES.AUTH_LOGIN });
   };
 
   return (

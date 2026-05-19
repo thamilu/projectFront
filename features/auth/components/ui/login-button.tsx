@@ -15,12 +15,12 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, type ButtonProps } from '@/components/ui/button';
+import { Button, type ButtonProps } from '@/shared/ui/atoms/button';
 import { LogIn, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { cn } from '@/lib/utils';
-import { logger } from '@/lib/observability/logger';
+import { cn } from '@/shared/utils';
+import { logger } from '@/core/telemetry/logger';
 import { authService } from '../../services/auth-service';
 
 // =============================================================================

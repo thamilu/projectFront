@@ -1,16 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '../api/product-api';
 import { productKeys } from '../query-keys';
-import { withDefaults } from '@/lib/utils/pagination';
-import {
-  ProductDTO,
-  PageResponse,
-  PageRequest,
-  ProductFilters,
-  CategoryDTO,
-  BrandDTO,
-  TagDTO,
-} from '@/types';
+import { withDefaults } from '@/shared/utils/pagination';
+import { PageResponse, PageRequest } from '@/shared/types';
+import { ProductDTO, ProductFilters, CategoryDTO, BrandDTO, TagDTO } from '@/domains/catalog/contracts/catalog.types';
 
 export function useProducts(params?: PageRequest & ProductFilters) {
   const p = withDefaults<PageRequest & ProductFilters>(params);
@@ -62,5 +55,17 @@ export function useTags() {
   return useQuery<TagDTO[]>({
     queryKey: productKeys.tags(),
     queryFn: () => productApi.getTags(),
+  });
+}
+
+export function useCreateProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ payload, correlationId }: { payload: Record<string, unknown>; correlationId?: string }) =>
+      productApi.create(payload, { correlationId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
   });
 }

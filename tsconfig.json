@@ -28,9 +28,11 @@
       "next"
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      "@/core/*": ["./core/*"],
+      "@/shared/*": ["./shared/*"],
+      "@/features/*": ["./features/*"],
+      "@/infrastructure/*": ["./infrastructure/*"]
     }
   },
   "include": [
@@ -45,7 +47,6 @@
     "node_modules",
     ".next",
     "**/__tests__/**",
-    "**/*.test.*",
-    "src/**"
+    "**/*.test.*"
   ]
 }

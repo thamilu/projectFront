@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { Tag, Plus, Copy, Trash2, ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
+import { Button } from '@/shared/ui/atoms/button';
 import { toast } from 'sonner';
-import { apiClient } from '@/lib/http/services';
-import { API_ENDPOINTS } from '@/constants/api/endpoints';
+import { apiClient } from '@/core/client';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
 import { motion } from 'framer-motion';
 
 interface ExtendedSession {
@@ -36,7 +36,7 @@ export default function SellerPromotionsPage() {
     if (!session?.accessToken) return;
     try {
       setLoading(true);
-      const { data } = await apiClient.get<any>(API_ENDPOINTS.SELLERS.PROMOTIONS);
+      const { data } = await apiClient.get<any>(API_ENDPOINTS.SELLER.PROMOTIONS);
       setPromotions(Array.isArray(data) ? data : (data?.data && Array.isArray(data.data) ? data.data : []));
     } catch (err) {
       console.warn("Promotions API missing/failing, fallback to empty array or mock.");
@@ -56,7 +56,7 @@ export default function SellerPromotionsPage() {
     if (!session?.accessToken) return;
     setPromotions(c => c.map(cp => cp.id === id ? { ...cp, active: !currentStatus } : cp));
     try {
-      await apiClient.put(`${API_ENDPOINTS.SELLERS.PROMOTIONS}/${id}/toggle`);
+      await apiClient.put(`${API_ENDPOINTS.SELLER.PROMOTIONS}/${id}/toggle`);
     } catch (err) {
       toast.error('Failed to update promotion status');
       // Revert if failed
@@ -69,7 +69,7 @@ export default function SellerPromotionsPage() {
   const del = async (id: string) => {
     if (!session?.accessToken) return;
     try {
-       await apiClient.delete(`${API_ENDPOINTS.SELLERS.PROMOTIONS}/${id}`);
+       await apiClient.delete(`${API_ENDPOINTS.SELLER.PROMOTIONS}/${id}`);
       setPromotions(c => c.filter(cp => cp.id !== id));
       toast.success('Promotion deleted');
     } catch (err) {

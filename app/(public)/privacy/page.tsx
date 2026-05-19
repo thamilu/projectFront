@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export const metadata = {
   title: 'Privacy Policy | E-Shop',

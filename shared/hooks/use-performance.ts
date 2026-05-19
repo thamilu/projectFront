@@ -13,8 +13,8 @@ import {
   measurePerformance,
   trackComponentRender,
   createTimer,
-} from '@/lib/performance/monitoring';
-import { logger } from '@/lib/observability/logger';
+} from '@/core/telemetry/monitoring';
+import { logger } from '@/core/telemetry/logger';
 
 interface UsePerformanceOptions {
   /** Component name for tracking */

@@ -9,7 +9,7 @@
 
 import { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-import { getRequestLogger } from '@/lib/observability/logger'
+import { getRequestLogger } from '@/core/telemetry/logger'
 
 /**
  * GET /api/orders/[id]/stream

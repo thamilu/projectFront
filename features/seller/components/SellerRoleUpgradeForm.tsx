@@ -3,8 +3,8 @@
 import React, { useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { sellerOnboardingSchema, SellerOnboardingValues } from '@/schemas/seller.schema';
-import { SellerIdentityType } from '@/types';
+import { sellerOnboardingSchema, SellerOnboardingValues } from '@/domains/seller/contracts/seller.schema';
+import { SellerIdentityType } from '@/domains/seller/contracts/seller.types';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { PersonalInfoStep } from '@/features/seller/components/steps/PersonalInfoStep';
 import { PermanentAddressStep } from '@/features/seller/components/steps/PermanentAddressStep';
@@ -12,14 +12,15 @@ import { IdentityStep } from '@/features/seller/components/steps/IdentityStep';
 import { KycStep } from '@/features/seller/components/steps/KycStep';
 import { StoreStep } from '@/features/seller/components/steps/StoreStep';
 import { TermsStep } from '@/features/seller/components/steps/TermsStep';
-import { Stepper } from '@/components/ui/stepper';
-import { Button } from '@/components/ui/button';
+import { Stepper } from '@/shared/ui/atoms/stepper';
+import { Button } from '@/shared/ui/atoms/button';
 import { toast } from 'sonner';
 import { CheckCircle2, Loader2 } from 'lucide-react';
-import { apiClient } from '@/lib/http/services';
-import { API_ENDPOINTS } from '@/constants/api/endpoints';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
-import { PremiumCard } from '@/shared/components/PremiumCard';
+import { sellerApi } from '@/features/seller/api/seller-api';
+import { apiClient } from '@/core/client';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { PremiumCard } from '@/shared/ui/molecules/PremiumCard';
 
 const STEPS = [
   { title: 'Personal', description: 'Contact details' },
@@ -95,31 +96,79 @@ export function SellerRoleUpgradeForm({
     }
   }, [methods.formState.errors]);
 
+  const prefillAttemptedRef = React.useRef(false);
+
   // Pre-populate Step 1 (Personal Address) from user profile
   useEffect(() => {
     async function prefillData() {
+      prefillAttemptedRef.current = true;
+
+      // 1. Instantly prefill defaults using the active NextAuth/Keycloak session user object
+      const currentValues = methods.getValues();
+      let prefilledValues = {
+        ...currentValues,
+        firstName: (user as any)?.firstName || user?.name?.split(' ')[0] || '',
+        lastName: (user as any)?.lastName || user?.name?.split(' ').slice(1).join(' ') || '',
+        email: user?.email || '',
+        phone: (user as any)?.phone || currentValues.phone || '',
+      };
+
+      methods.reset(prefilledValues, { keepDefaultValues: true });
+      console.log('[SellerRegistration] Prefilled basic session defaults:', prefilledValues);
+
+      // 2. Fetch the user's actual personal profile from the database
       try {
-        const response = await apiClient.get(API_ENDPOINTS.USERS.PROFILE);
-        const data = response.data.data;
+        const userProfileResp = await apiClient.get<any>(API_ENDPOINTS.USERS.PROFILE);
+        const userData = userProfileResp.data?.data || userProfileResp.data || userProfileResp;
+
+        if (userData) {
+          console.log('[SellerRegistration] Merging actual user profile data:', userData);
+          prefilledValues = {
+            ...prefilledValues,
+            firstName: userData.firstName || prefilledValues.firstName || '',
+            lastName: userData.lastName || prefilledValues.lastName || '',
+            email: userData.email || prefilledValues.email || '',
+            phone: userData.phone || userData.personalMobileNumber || prefilledValues.phone || '',
+            alternatePhone: userData.alternatePhone || '',
+            preferredLanguage: userData.preferredLanguage || '',
+            gender: userData.gender || '',
+            dateOfBirth: userData.dateOfBirth || '',
+            addressLine1: userData.addressLine1 || '',
+            addressLine2: userData.addressLine2 || '',
+            city: userData.city || '',
+            district: userData.district || '',
+            taluk: userData.taluk || '',
+            state: userData.state || '',
+            pincode: userData.pincode || '',
+            country: userData.country || 'India',
+          };
+          methods.reset(prefilledValues, { keepDefaultValues: true });
+        }
+      } catch (userErr) {
+        console.error('[SellerRegistration] Failed to fetch user personal profile', userErr);
+      }
+
+      // 3. Safely attempt to merge existing database seller profile values if available
+      try {
+        const data = await sellerApi.getMyProfile() as any;
 
         if (data) {
-          console.log('Prefilling seller data from profile:', data);
-          const currentValues = methods.getValues();
+          console.log('[SellerRegistration] Merging existing seller data from profile:', data);
           methods.reset({
-            ...currentValues,
+            ...prefilledValues,
             ...data, // Spread data safely
-            firstName: data.firstName || currentValues.firstName || '',
-            lastName: data.lastName || currentValues.lastName || '',
-            email: data.email || user?.email || currentValues.email || '',
-            phone: data.phone || data.personalMobileNumber || (user as any)?.phone || currentValues.phone || '',
+            firstName: data.firstName || prefilledValues.firstName || '',
+            lastName: data.lastName || prefilledValues.lastName || '',
+            email: data.email || user?.email || prefilledValues.email || '',
+            phone: data.phone || data.personalMobileNumber || prefilledValues.phone || '',
           }, { keepDefaultValues: true });
         }
       } catch (_error) {
-        console.error('Failed to prefill seller registration data', _error);
+        console.warn('[SellerRegistration] Seller profile does not exist yet (expected for registration flow). Using user profile defaults.');
       }
     }
 
-    if (user && status === 'IDLE') {
+    if (user && status === 'IDLE' && !prefillAttemptedRef.current) {
       prefillData();
     }
   }, [user, methods.reset, methods.getValues, status]);
@@ -128,10 +177,16 @@ export function SellerRoleUpgradeForm({
     console.log('Attempting final submission with data:', data);
     setIsSubmitting(true);
     try {
-      const response = await apiClient.post(API_ENDPOINTS.SELLERS.REGISTER, data);
-      console.log('Registration success response:', response.data);
+      const response = await sellerApi.register(data);
+      console.log('Registration success response:', response);
       toast.success('Registration successful! Redirecting...');
       setStatus('PENDING');
+      import('@/platform/events').then(({ eventBus }) => {
+        eventBus.publish('SellerRegistered', {
+          sellerId: Math.floor(Math.random() * 1000000),
+          shopName: data.shopName,
+        });
+      }).catch(() => {});
       if (onSuccess) onSuccess();
     } catch (error: any) {
       // [HARDEN] Ultimate diagnostic logging - ensuring visibility in all environments

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/shared/ui/atoms/button';
 import { useAuth } from '../../hooks/use-auth';
 
 interface LogoutButtonProps {

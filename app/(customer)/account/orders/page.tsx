@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export default function AccountOrdersPage() {
   const router = useRouter();

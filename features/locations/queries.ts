@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { locationService } from '@/lib/http/services';
+import { locationService } from './infrastructure/api';
 
 /**
  * Location Query Keys Factory [ENTERPRISE]

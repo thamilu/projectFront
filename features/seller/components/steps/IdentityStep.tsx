@@ -4,10 +4,10 @@ import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { User, Building2, Briefcase, CheckCircle2, Tractor, Warehouse, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SellerIdentityType, SellerBusinessType, SELLER_BUSINESS_TYPE_LABELS } from '@/types';
-import { SellerOnboardingValues } from '@/schemas/seller.schema';
-import { StepLayout } from '@/shared/components/StepLayout';
-import { cn } from '@/lib/utils';
+import { SellerIdentityType, SellerBusinessType, SELLER_BUSINESS_TYPE_LABELS } from '@/domains/seller/contracts/seller.types';
+import { SellerOnboardingValues } from '@/domains/seller/contracts/seller.schema';
+import { StepLayout } from '@/shared/ui/organisms/StepLayout';
+import { cn } from '@/shared/utils';
 
 export function IdentityStep() {
   const {

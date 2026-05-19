@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { CartDTO, CartItemDTO } from '@/types';
+import { CartDTO, CartItemDTO } from '@/domains/cart/contracts/cart.types';
 
 /** Calculates precise cart total from items, avoiding floating point drift. */
 function calcCartTotal(items: CartItemDTO[]): number {

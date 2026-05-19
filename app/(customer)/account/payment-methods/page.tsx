@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { CreditCard, Plus, Trash2, CheckCircle2, Smartphone, Wallet } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/shared/ui/atoms/button';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
 import { toast } from 'sonner';
 
 interface PaymentMethod {

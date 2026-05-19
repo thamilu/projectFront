@@ -1,10 +1,10 @@
 import { useFormContext } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { SellerIdentityType } from '@/types';
-import { SellerOnboardingFormData } from '@/schemas/seller.schema';
+import { Input } from '@/shared/ui/atoms/input';
+import { Label } from '@/shared/ui/atoms/label';
+import { SellerIdentityType } from '@/domains/seller/contracts/seller.types';
+import { SellerOnboardingFormData } from '@/domains/seller/contracts/seller.schema';
 
 export function KycStep() {
   const {

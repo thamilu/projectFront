@@ -8,7 +8,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { logger } from '@/lib/observability/logger'
+import { logger } from '@/core/telemetry/logger'
 
 interface UseSSEOptions {
   enabled?: boolean

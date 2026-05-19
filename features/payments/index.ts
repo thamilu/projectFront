@@ -2,7 +2,7 @@
 // Centralized exports for payments feature module
 
 // Components
-export * from './components/payment-element';
+export * from './components/PaymentElement';
 
 // Hooks
 export * from './hooks/use-payment-intent';

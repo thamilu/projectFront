@@ -9,10 +9,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { logger } from '@/lib/observability/logger';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { Button } from '@/shared/ui/atoms/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { logger } from '@/core/telemetry/logger';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 interface LoginErrorProps {
   error: Error & { digest?: string };

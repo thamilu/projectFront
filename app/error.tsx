@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import { ErrorFallback } from '@/shared/components';
+import { ErrorFallback } from '@/shared/ui/feedback/error-fallback';
 
 export default function GlobalError({
   error,

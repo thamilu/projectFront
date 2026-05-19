@@ -1,6 +1,6 @@
 import { useMemo, useCallback } from 'react';
 import { useAuth } from '@/features/auth/hooks/use-auth'; // Use the fetching hook
-import type { UserRole } from '@/types/auth'; // Ensure this matches logic
+import { UserRole } from '@/domains/auth/contracts/auth.types';
 
 interface UsePermissionsReturn {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

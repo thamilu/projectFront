@@ -1,4 +1,4 @@
-import { SellerOnboardingValues, SellerProfileUpdateValues, StoreCreateFormData } from '@/schemas/seller.schema';
+import { SellerOnboardingValues, SellerProfileUpdateValues, StoreCreateFormData } from '@/domains/seller/contracts/seller.schema';
 import { SellerRegisterRequest, SellerProfile } from '../types';
 
 /**

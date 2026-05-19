@@ -10,9 +10,10 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import SellerDashboardClient from './SellerDashboardClient';
-import { serverBackendFetch, SellerDashboardResponse } from '@/lib/http/services/backend';
-import { logger } from '@/lib/observability/logger';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { serverBackendFetch } from '@/core/client/server-fetch';
+import { type SellerDashboardResponse } from '@/domains/seller/contracts/seller-dashboard.types';
+import { logger } from '@/core/telemetry/logger';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 interface DashboardStats {
   totalProducts: number;
@@ -73,7 +74,7 @@ export default async function SellerDashboardPage() {
         totalRevenue: 0,
         pendingOrders: dashboardData?.orderManagement?.newOrders || 0,
       },
-      recentProducts: dashboardData?.topProducts?.map(p => ({
+      recentProducts: dashboardData?.topProducts?.map((p: any) => ({
         id: p.productId,
         name: p.productName,
         price: p.currentPrice,

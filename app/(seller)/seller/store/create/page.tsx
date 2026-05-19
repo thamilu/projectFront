@@ -3,12 +3,11 @@
 import { useCreateStore } from '@/features/seller/hooks/use-seller';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 import { StoreProfileForm } from '@/features/seller/components/StoreProfileForm';
 import { storeCreateRequestFromForm } from '@/features/seller/utils/store-mappers';
-import { StoreCreateFormData } from '@/schemas/seller.schema';
-
-import { FeatureHeader } from '@/components/shared/FeatureHeader';
+import { type StoreCreateFormData } from '@/domains/seller/contracts/seller.schema';
+import { FeatureHeader } from '@/shared/ui/molecules';
 
 export default function CreateStorePage() {
   const router = useRouter();

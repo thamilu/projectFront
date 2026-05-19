@@ -10,10 +10,10 @@ import {
   ExternalLink,
   Store
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/atoms/card';
+import { Button } from '@/shared/ui/atoms/button';
+import { Switch } from '@/shared/ui/atoms/switch';
+import { Label } from '@/shared/ui/atoms/label';
 import { signIn } from 'next-auth/react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';

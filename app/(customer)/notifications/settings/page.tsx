@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { Bell, Mail, Smartphone, ShoppingBag, Tag, Package, Star } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/atoms/card';
+import { Switch } from '@/shared/ui/atoms/switch';
+import { Label } from '@/shared/ui/atoms/label';
+import { Button } from '@/shared/ui/atoms/button';
 import { toast } from 'sonner';
 
 interface PrefGroup {

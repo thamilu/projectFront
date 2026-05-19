@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/observability/logger';
+import { logger } from '@/core/telemetry/logger';
 
 type ProductImage = {
   id: string;
@@ -14,12 +14,6 @@ let productImages: ProductImage[] = (global as Record<string, unknown>).__PRODUC
 export async function PUT(request: NextRequest, context: any) {
   const paramsObj = await Promise.resolve(context?.params);
   const { productId, imageId } = paramsObj || {};
-  const prisma = await import('@/lib/db/prismaClient').then(m => m.getPrisma()).catch(() => undefined);
-  if (prisma) {
-    await prisma.productImage.updateMany({ where: { productId }, data: { isPrimary: false } });
-    await prisma.productImage.update({ where: { id: imageId }, data: { isPrimary: true } });
-    return NextResponse.json({ success: true });
-  }
 
   // fallback in-memory store for environments without Prisma
   logger.info('Prisma unavailable; updating in-memory product images', { productId, imageId });

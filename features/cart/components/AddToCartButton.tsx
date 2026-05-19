@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/shared/ui/atoms/button';
 import { useCartStore } from '@/features/cart/store/cart-store';
 
 const LABEL = 'Add to Cart';

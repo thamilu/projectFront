@@ -4,26 +4,26 @@ import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Package, DollarSign, Tag, Image as ImageIcon, Settings } from 'lucide-react';
-import { productSchema, ProductFormData } from '@/schemas/product.schema';
-import { useAddProduct } from '@/features/seller/hooks/useAddProduct';
+import { productSchema, ProductFormData } from '@/domains/catalog/contracts/product.schema';
+import { useAddProduct } from '@/features/seller/hooks/use-product-form';
 import { useSellerStore } from '../hooks/use-seller';
 import { ImageUploader } from './ImageUploader';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/shared/ui/atoms/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Input } from '@/shared/ui/atoms/input';
+import { Label } from '@/shared/ui/atoms/label';
+import { Textarea } from '@/shared/ui/atoms/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+} from '@/shared/ui/atoms/select';
+import { Switch } from '@/shared/ui/atoms/switch';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 // Mock data - Replace with API calls
 const CATEGORIES = [

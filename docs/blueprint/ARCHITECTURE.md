@@ -38,3 +38,24 @@ Complex features are isolated into the `features/` directory, containing:
 - **Tailwind CSS 4**: Utility-first styling with design tokens in `app/globals.css`.
 - **shadcn/ui**: Accessible Radix-based primitives.
 - **Dark Mode**: Native support via `next-themes`.
+
+---
+
+## 🏗️ Layer Boundaries: Core vs Shared
+
+To enforce strict separation of concerns and prevent circular or leaking dependencies, the application strictly distinguishes between the **Core** and **Shared** layers.
+
+### 🛡️ Core Layer (`core/`)
+- **Purpose**: Low-level system configurations, global HTTP adapters, security proxies, auth session bridging, logger adapters, and telemetry integrations.
+- **Constraints**:
+  - **Visual-free**: Core contains absolutely no UI, visual rendering, or style rules.
+  - **No Outward Dependencies**: Core **MUST NOT** import any code from `shared/`, `features/`, or `app/` modules.
+  - **Direct Consumption**: Core utilities can be imported directly by any other layer (features, pages, or shared hooks).
+
+### 🧩 Shared Layer (`shared/`)
+- **Purpose**: Domain-agnostic UI kit components (buttons, cards, grids), shared hooks (useMounted, usePerformance), shared types, validation schemas, and constants.
+- **Constraints**:
+  - **Domain-agnostic**: Shared modules cannot contain domain-specific business rules or business-specific logic.
+  - **Features Dependency Forbidden**: Shared modules **MUST NOT** import from `features/` or `app/` modules.
+  - **Import Hierarchy**: Shared code can import from `core/` to access base system facilities.
+

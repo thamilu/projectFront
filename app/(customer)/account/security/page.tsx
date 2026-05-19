@@ -1,9 +1,9 @@
 'use client';
 
 import { Shield, KeyRound, Laptop2, Smartphone, ExternalLink } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/atoms/card';
+import { Button } from '@/shared/ui/atoms/button';
+import { Badge } from '@/shared/ui/atoms/badge';
 import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
 

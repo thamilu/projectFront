@@ -12,8 +12,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, CheckCircle2 } from 'lucide-react';
-import { useKeycloakAuth } from '@/lib/hooks/useKeycloakAuth';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useKeycloakAuth } from '@/shared/hooks';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
 
 export default function CallbackPage() {
   const router = useRouter();

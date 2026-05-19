@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
+import { Button } from '@/shared/ui/atoms/button';
 import { ChevronRight, Star } from 'lucide-react';
-import { cn, isValidImageUrl } from '@/lib/utils';
+import { cn, isValidImageUrl } from '@/shared/utils';
 import { productApi, isBackendDown } from '@/features/products/api/product-api';
 import { AddToCartButton } from '@/features/cart';
-import { featuredProducts as demoProducts } from '@/constants/demoData';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { featuredProducts as demoProducts } from '@/shared/constants/demoData';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 // ============================================================================
 // Constants & Configuration
@@ -63,7 +63,7 @@ export async function FeaturedProductsSection() {
       .filter(p => !existingIds.has(p.id))
       .map(p => ({
         ...p,
-        image: `/images/products/featured-${p.id}.svg`,
+        image: p.image,
         isDemo: true
       }));
     featuredProducts = [...featuredProducts, ...placeholders].slice(0, 4);
@@ -132,11 +132,11 @@ export async function FeaturedProductsSection() {
                   <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
                     <div className="flex flex-col">
                       <span className="text-xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        ₹{product.price}
+                        â‚¹{product.price}
                       </span>
                       {product.oldPrice && (
                         <span className="text-xs line-through text-slate-400 font-medium">
-                          ₹{product.oldPrice}
+                          â‚¹{product.oldPrice}
                         </span>
                       )}
                     </div>

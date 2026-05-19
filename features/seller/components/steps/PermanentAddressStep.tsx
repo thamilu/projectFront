@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Edit2, Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { AddressFields } from '@/shared/components/AddressFields';
-import { StepLayout } from '@/shared/components/StepLayout';
+import { Button } from '@/shared/ui/atoms/button';
+import { AddressFields } from '@/shared/ui/molecules/AddressFields';
+import { StepLayout } from '@/shared/ui/organisms/StepLayout';
 
 export function PermanentAddressStep() {
   const [isEditing, setIsEditing] = useState(false);

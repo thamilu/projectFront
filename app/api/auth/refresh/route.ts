@@ -13,7 +13,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/observability/logger';
+import { logger } from '@/core/telemetry/logger';
 
 // ============================================================================
 // POST Handler - Direct Delegation

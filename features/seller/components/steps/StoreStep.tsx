@@ -2,8 +2,8 @@
 
 import { useFormContext } from 'react-hook-form';
 import { StoreDetailsFields } from '@/features/seller/components/StoreDetailsFields';
-import { SellerOnboardingValues } from '@/schemas/seller.schema';
-import { StepLayout } from '@/shared/components/StepLayout';
+import { SellerOnboardingValues } from '@/domains/seller/contracts/seller.schema';
+import { StepLayout } from '@/shared/ui/organisms/StepLayout';
 
 export function StoreStep() {
   const {

@@ -12,7 +12,7 @@ import { useEffect, type ComponentType } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/features/auth';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
 
 interface ProtectedRouteProps {
   requiredRoles?: string[];

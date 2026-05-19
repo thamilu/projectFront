@@ -1,7 +1,7 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/atoms/avatar';
+import { Button } from '@/shared/ui/atoms/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,11 +11,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/shared/ui/atoms/dropdown-menu';
 import { LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import Link from 'next/link';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export function UserNav() {
   const { user, logout } = useAuth();

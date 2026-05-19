@@ -3,10 +3,10 @@
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { ShieldCheck, FileText, CreditCard, Landmark, User } from 'lucide-react';
-import { SellerIdentityType } from '@/types';
-import { SellerOnboardingValues } from '@/schemas/seller.schema';
-import { StepLayout } from '@/shared/components/StepLayout';
-import { StepInput } from '@/shared/components/StepInput';
+import { SellerIdentityType } from '@/domains/seller/contracts/seller.types';
+import { SellerOnboardingValues } from '@/domains/seller/contracts/seller.schema';
+import { StepLayout } from '@/shared/ui/organisms/StepLayout';
+import { StepInput } from '@/shared/ui/molecules/StepInput';
 import { motion } from 'framer-motion';
 
 export function VerificationStep() {

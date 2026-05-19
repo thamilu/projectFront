@@ -10,11 +10,11 @@ import {
   wsClient,
   OrderStatusUpdateEvent,
   TrackingUpdateEvent,
-} from '@/lib/realtime/websocket-client'
+} from '@/infrastructure/realtime/websocket-client'
 // OrderStatus type may be defined in orders feature; fallback to string
 // import { OrderStatus } from '@/features/orders/types/order.types'
 import { toast } from 'sonner'
-import { logger } from '@/lib/observability/logger'
+import { logger } from '@/core/telemetry/logger'
 
 export function useOrderUpdates(orderId: string) {
   const { data: session } = useSession()

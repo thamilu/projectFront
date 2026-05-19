@@ -2,18 +2,17 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { apiClient } from '@/lib/http/services';
-import { API_ENDPOINTS } from '@/constants/api/endpoints';
-import type { ApiResponse } from '@/types/api';
-import type { PageResponse, StoreDTO } from '@/types';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { apiClient } from '@/core/client';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
+import type { ApiResponse } from '@/shared/types/api';
+import type { PageResponse, StoreDTO } from '@/shared/types';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 import {
   getStoreDisplayName,
   getStoreInitials,
   getStoreAvatarColor,
-} from '@/lib/store/store-helpers';
-import { siteConfig } from '@/lib/config/site';
-import { AppError } from '@/lib/errors/AppError';
+} from '@/shared/store/store-helpers';
+import { siteConfig } from '@/core/config/site';
 
 export const metadata: Metadata = {
   title: `Stores | ${siteConfig.name}`,
@@ -30,8 +29,8 @@ async function loadStores(): Promise<StoreDTO[]> {
     );
     return response?.data?.content ?? [];
   } catch (error) {
-    const err = error as AppError;
-    if (err?.status === 404) {
+    const err = error as { statusCode?: number };
+    if (err?.statusCode === 404) {
       return [];
     }
     throw error;

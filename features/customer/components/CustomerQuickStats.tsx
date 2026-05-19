@@ -14,13 +14,13 @@ import {
   Truck,
   ChevronRight
 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency } from '@/lib/utils';
-import { apiClient } from '@/lib/http/services';
-import { API_ENDPOINTS } from '@/constants/api/endpoints';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/shared/ui/atoms/skeleton';
+import { formatCurrency } from '@/shared/utils';
+import { apiClient } from '@/core/client';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { cn } from '@/shared/utils';
+import { Button } from '@/shared/ui/atoms/button';
 import { useRouter } from 'next/navigation';
 
 interface CustomerQuickStatsProps {

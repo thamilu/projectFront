@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { User as UserInfo, AuthState as AuthStateType } from '@/types/auth.types';
+import { User as UserInfo, AuthState as AuthStateType } from '../types/auth.types';
 
 interface AuthState extends AuthStateType {
   // Actions

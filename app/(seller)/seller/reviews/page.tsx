@@ -1,10 +1,10 @@
 'use client';
 
 import { Star, TrendingUp, MessageSquare } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
+import { Progress } from '@/shared/ui/atoms/progress';
+import { Avatar, AvatarFallback } from '@/shared/ui/atoms/avatar';
 
 const REVIEWS = [
   { id: '1', product: 'Wireless Earbuds Pro', customer: 'Priya S.', rating: 5, comment: 'Amazing product! Fast shipping.', date: '2026-02-22' },

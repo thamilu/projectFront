@@ -1,5 +1,5 @@
-import { apiClient } from '@/lib/http/services';
-import { CartDTO } from '@/types';
+import { apiClient } from '@/core/client';
+import { CartDTO } from '@/domains/cart/contracts/cart.types';
 
 // Time Complexity: O(1) - single HTTP request
 // Space Complexity: O(n) where n is number of cart items

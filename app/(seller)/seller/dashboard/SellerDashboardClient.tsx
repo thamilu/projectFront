@@ -10,14 +10,13 @@
 import { Session } from 'next-auth';
 import { useEffect, useState } from 'react';
 import { signOut } from 'next-auth/react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
+import { Button } from '@/shared/ui/atoms/button';
 import { AlertCircle, Package, DollarSign, ShoppingCart, RefreshCw, LayoutDashboard } from 'lucide-react';
-import { sellerApi } from '@/lib/http/services/backend';
-import { logger } from '@/lib/observability/logger';
-import { PremiumCard } from '@/components/shared/PremiumCard';
-import { FeatureHeader } from '@/components/shared/FeatureHeader';
+import { sellerApi } from '@/domains/seller/infrastructure/api/seller-api';
+import { logger } from '@/core/telemetry/logger';
+import { PremiumCard, FeatureHeader } from '@/shared/ui/molecules';
 
 interface DashboardStats {
   totalProducts: number;
@@ -67,9 +66,8 @@ export default function SellerDashboardClient({
     try {
       logger.debug('[Dashboard/Client] Fetching products...');
       
-      const response = await sellerApi.getProducts();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const productList = (response as any).products || [];
+      const response = await sellerApi.getMyProducts({ page: 0, size: 20 });
+      const productList = response.content || [];
       
       logger.info('[Dashboard/Client] Fetched products', { count: productList.length });
       setProducts(productList);
@@ -103,17 +101,18 @@ export default function SellerDashboardClient({
     try {
       logger.debug('[Dashboard/Client] Fetching dashboard stats...');
       
-      const response = await sellerApi.getDashboard();
+      const response = await sellerApi.getDashboardStats();
+      const responseData = response?.data ?? response;
       
       // Transform backend response
       const newStats = {
-        totalProducts: response.data.shopOverview.totalProducts,
-        lowStockProducts: response.data.shopOverview.outOfStockProducts,
+        totalProducts: responseData?.shopOverview?.totalProducts ?? 0,
+        lowStockProducts: responseData?.shopOverview?.outOfStockProducts ?? 0,
         totalRevenue: 0, // Backend doesn't provide this yet
-        pendingOrders: response.data.orderManagement.newOrders,
+        pendingOrders: responseData?.orderManagement?.newOrders ?? 0,
       };
       
-      const newProducts = response.data.topProducts.map(p => ({
+      const newProducts = (responseData?.topProducts || []).map((p: any) => ({
         id: p.productId,
         name: p.productName,
         price: p.currentPrice,

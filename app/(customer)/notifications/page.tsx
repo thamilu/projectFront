@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import Header from '@/components/layout/header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import Header from '@/shared/ui/layout/header';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Button } from '@/shared/ui/atoms/button';
+import { Badge } from '@/shared/ui/atoms/badge';
 import { 
   Bell, 
   Check, 

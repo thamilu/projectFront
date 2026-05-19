@@ -6,8 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { apiClient } from '@/lib/http/services'
-import { getRequestLogger } from '@/lib/observability/logger'
+import { apiClient } from '@/core/client';
+import { getRequestLogger } from '@/core/telemetry/logger'
 
 const suggestSchema = z.object({
   q: z.string().min(2, 'Query must be at least 2 characters'),

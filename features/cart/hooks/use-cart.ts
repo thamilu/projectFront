@@ -33,6 +33,13 @@ export function useCart() {
       setCart(data);
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       toast.success('Item added to cart');
+      import('@/platform/events').then(({ eventBus }) => {
+        eventBus.publish('CartUpdated', {
+          cartId: String(data.id || 'unknown'),
+          itemCount: data.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0,
+          totalAmount: data.totalAmount ?? 0,
+        });
+      }).catch(() => {});
     },
     onError: () => {
       toast.error('Failed to add item to cart');
@@ -47,6 +54,13 @@ export function useCart() {
     onSuccess: (data) => {
       setCart(data);
       queryClient.invalidateQueries({ queryKey: ['cart'] });
+      import('@/platform/events').then(({ eventBus }) => {
+        eventBus.publish('CartUpdated', {
+          cartId: String(data.id || 'unknown'),
+          itemCount: data.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0,
+          totalAmount: data.totalAmount ?? 0,
+        });
+      }).catch(() => {});
     },
     onError: () => {
       toast.error('Failed to update cart item');
@@ -61,6 +75,13 @@ export function useCart() {
       setCart(data);
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       toast.success('Item removed from cart');
+      import('@/platform/events').then(({ eventBus }) => {
+        eventBus.publish('CartUpdated', {
+          cartId: String(data.id || 'unknown'),
+          itemCount: data.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0,
+          totalAmount: data.totalAmount ?? 0,
+        });
+      }).catch(() => {});
     },
     onError: () => {
       toast.error('Failed to remove item from cart');

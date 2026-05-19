@@ -15,31 +15,31 @@ import {
   generateSlug,
   generateSKU,
   calculateFinalPrice,
-} from '@/schemas/product-form.schema';
+} from '@/domains/catalog/contracts/product-form.schema';
 import {
   mapFormToBackendRequest,
   ProductPayloadValidationError,
-} from '@/features/products/backend-mapper';
+} from '@/features/products/mappers/backend-mapper';
 import { normalizeProductCreateError } from '@/features/products/product-create-error-taxonomy';
 import { PRODUCT_FORM_CONSTANTS } from '@/features/products/constants';
-import { productImagesApi } from '@/lib/http/services/product-images';
-import { getRequestLogger } from '@/lib/observability/logger';
-import type { Category, Brand } from '@/types/product';
-import { CATEGORY_ATTRIBUTES, getCategoryKey } from '@/lib/config/product-attributes';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { productImagesApi } from '@/domains/catalog/infrastructure/api/product-images-api';
+import { getRequestLogger } from '@/core/telemetry/logger';
+import type { Category, Brand } from '@/shared/types/product';
+import { CATEGORY_ATTRIBUTES, getCategoryKey } from '@/core/config/product-attributes';
+import { Button } from '@/shared/ui/atoms/button';
+import { Input } from '@/shared/ui/atoms/input';
+import { Textarea } from '@/shared/ui/atoms/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '@/shared/ui/atoms/select';
+import { Checkbox } from '@/shared/ui/atoms/checkbox';
+import { Label } from '@/shared/ui/atoms/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/atoms/tabs';
 import {
   Dialog,
   DialogContent,
@@ -47,17 +47,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+} from '@/shared/ui/atoms/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/atoms/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/atoms/popover';
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from '@/components/ui/command';
-import { R2ImageUploader } from '@/components/R2ImageUploader';
+} from '@/shared/ui/atoms/command';
+import { R2ImageUploader } from '@/shared/ui/forms/R2ImageUploader';
 import {
   Package,
   DollarSign,
@@ -70,19 +70,17 @@ import {
   TrendingDown,
   Calculator,
   IndianRupee,
-  Globe,
   MapPin,
   RotateCcw,
   Truck,
   Star,
   Share2,
-  Heart,
   ShieldCheck,
   Tag,
   List,
 } from 'lucide-react';
 import Image from 'next/image';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export default function CreateProductPage() {
   const parseOptionalNumber = (value: string | number) => {
@@ -138,7 +136,7 @@ export default function CreateProductPage() {
       categories = categoryTree as Category[];
     } else {
       // Fallback to filtered list
-      categories = allCategories.filter((cat) => !cat.parentCategory && !cat.parent_id);
+      categories = allCategories.filter((cat) => !cat.parentCategory);
     }
     // Sort alphabetically by name
     return categories.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -269,7 +267,7 @@ export default function CreateProductPage() {
   const watchCategoryId = watch('categoryId');
   const watchSubCategoryId = watch('subCategoryId');
   const watchThirdLevelCategoryId = watch('thirdLevelCategoryId');
-  const watchFourthLevelCategoryId = watch('fourthLevelCategoryId');
+  // const watchFourthLevelCategoryId = watch('fourthLevelCategoryId');
   const watchBrandId = watch('brandId');
 
   const activeCategory = React.useMemo(
@@ -551,7 +549,7 @@ export default function CreateProductPage() {
   }, [watchMrp, watchSellingPrice, watchDiscountType, watchDiscountValue, watchTaxPercentage]);
 
   // Legacy finalPrice for backward compatibility
-  const finalPrice = priceBreakdown.discountedPrice;
+  // const finalPrice = priceBreakdown.discountedPrice;
 
   // Form submission with backend mapping
   const onSubmit = React.useCallback(

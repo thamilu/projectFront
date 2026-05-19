@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { SellerHeader, SellerSidebar, SellerGuard } from '@/features/seller';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export default function SellerLayout({
   children,

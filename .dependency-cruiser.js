@@ -34,6 +34,13 @@ module.exports = {
       to: { path: '^(features|app)/' }
     },
     {
+      name: 'core-isolation',
+      comment: 'The core layer must not depend on shared, features, or app.',
+      severity: 'error',
+      from: { path: '^core/' },
+      to: { path: '^(shared|features|app)/' }
+    },
+    {
       name: 'feature-internal-access',
       comment: 'Features must only be accessed through their public API (index.ts).',
       severity: 'error',

@@ -2,11 +2,11 @@
 // Centralized exports for products feature module
 
 // Components
-export * from './components/product-card';
-export * from './components/product-list';
-export * from './components/product-grid';
-export * from './components/product-filters';
-export * from './components/product-price';
+export * from './components/ProductCard';
+export * from './components/ProductList';
+export * from './components/ProductGrid';
+export { ProductFilters } from './components/ProductFilters';
+export * from './components/ProductPrice';
 export * from './components/FeaturedProductsSection';
 export * from './components/FlashDealsSection';
 export * from './components/CategorySection';
@@ -19,8 +19,7 @@ export * from './hooks/use-products';
 // API
 export * from './api/product-api';
 
-// Types
-export type * from './types/product.types';
+export type * from './types';
 
 // Infrastructure
 export * from './query-keys';

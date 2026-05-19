@@ -1,10 +1,10 @@
 "use client";
 
 import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Button } from '@/shared/ui/atoms/button';
+import { Input } from '@/shared/ui/atoms/input';
+import { Badge } from '@/shared/ui/atoms/badge';
 import { Package, Search, Filter, AlertTriangle, Save } from 'lucide-react';
 import { useState } from 'react';
 

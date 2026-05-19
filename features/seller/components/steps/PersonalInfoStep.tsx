@@ -3,13 +3,13 @@
 import React, { useState } from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
 import { User, Mail, Phone, Calendar, Globe, Edit2, Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { SellerOnboardingValues } from '@/schemas/seller.schema';
+import { Button } from '@/shared/ui/atoms/button';
+import { Label } from '@/shared/ui/atoms/label';
+import { SellerOnboardingValues } from '@/domains/seller/contracts/seller.schema';
 
-import { StepLayout } from '@/shared/components/StepLayout';
-import { StepInput } from '@/shared/components/StepInput';
-import { ModernDatePicker } from '@/shared/components/ModernDatePicker';
+import { StepLayout } from '@/shared/ui/organisms/StepLayout';
+import { StepInput } from '@/shared/ui/molecules/StepInput';
+import { ModernDatePicker } from '@/shared/ui/molecules/ModernDatePicker';
 
 export function PersonalInfoStep() {
   const { register, control, formState: { errors } } = useFormContext<SellerOnboardingValues>();

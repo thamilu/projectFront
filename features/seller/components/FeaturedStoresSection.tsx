@@ -1,5 +1,5 @@
 /**
- * FeaturedStoresSection — Async Server Component
+ * FeaturedStoresSection â€” Async Server Component
  *
  * Fetches and renders a horizontal scroll of seller stores.
  * Follows the same pattern as FeaturedProductsSection (async SSC + error boundary).
@@ -9,21 +9,20 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { z } from 'zod';
 import { ArrowRight, ChevronRight, Store } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn, isValidImageUrl } from '@/lib/utils';
-import { logger } from '@/lib/observability/logger';
-import { API_ENDPOINTS } from '@/constants/api/endpoints';
-import { apiClient } from '@/lib/http/services';
-import { siteConfig } from '@/lib/config/site';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { Button } from '@/shared/ui/atoms/button';
+import { cn, isValidImageUrl } from '@/shared/utils';
+import { logger } from '@/core/telemetry/logger';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
+import { apiClient } from '@/core/client';
+import { siteConfig } from '@/core/config/site';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 import {
   getStoreDisplayName,
   getStoreInitials,
   getStoreAvatarColor,
-} from '@/lib/store/store-helpers';
-import styles from './FeaturedStoresSection.module.css';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
+} from '@/shared/store/store-helpers';
+// Remove CSS module import
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface ShopSummary {
   id: number;
@@ -38,12 +37,12 @@ interface ShopSummary {
 const ShopSummarySchema = z
   .object({
     id: z.coerce.number(),
-    shopName: z.string().optional(),
-    name: z.string().optional(),
-    description: z.string().optional(),
-    logoUrl: z.string().optional(),
-    productCount: z.coerce.number().optional(),
-    rating: z.coerce.number().optional(),
+    shopName: z.string().nullable().optional(),
+    name: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
+    logoUrl: z.string().nullable().optional(),
+    productCount: z.coerce.number().nullable().optional(),
+    rating: z.coerce.number().nullable().optional(),
   })
   .passthrough();
 
@@ -65,7 +64,7 @@ const FeaturedStoresResponseSchema = z.union([
   z.array(ShopSummarySchema),
 ]);
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /** Fetch stores using the authenticated server-side fetch wrapper */
 async function fetchStores(size = 10): Promise<ShopSummary[]> {
@@ -126,7 +125,7 @@ async function fetchStores(size = 10): Promise<ShopSummary[]> {
   }
 }
 
-// ─── Store Card ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Store Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function StoreCard({ shop }: { shop: ShopSummary }) {
   const name = getStoreDisplayName(shop);
@@ -137,22 +136,22 @@ function StoreCard({ shop }: { shop: ShopSummary }) {
   return (
     <Link
       href={APP_ROUTES.STORES.DETAIL(String(shop.id))}
-      className={cn(styles.storeCard, 'group flex-shrink-0')}
+      className={cn('flex flex-col w-[180px] rounded-2xl bg-white border-[1.5px] border-black/5 p-4 pt-4 pb-3.5 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:shadow-xl hover:border-indigo-500/35 dark:bg-slate-800 dark:border-white/10 relative overflow-hidden', 'group shrink-0')}
       aria-label={`Visit ${name}`}
     >
       {/* Avatar */}
-      <div className={styles.avatarWrap}>
+      <div className="w-14 h-14 rounded-xl overflow-hidden mb-3 shadow-sm shrink-0 relative">
         {hasValidLogo ? (
           <Image
             src={shop.logoUrl!}
             alt={`${name} logo`}
             fill
             sizes="56px"
-            className={styles.avatarImg}
+            className="object-cover"
           />
         ) : (
           <div
-            className={styles.avatarInitials}
+            className="w-full h-full flex items-center justify-center text-[18px] font-extrabold text-white tracking-wide"
             style={{ background: `linear-gradient(135deg, ${color}, ${color}99)` }}
             aria-hidden="true"
           >
@@ -162,33 +161,33 @@ function StoreCard({ shop }: { shop: ShopSummary }) {
       </div>
 
       {/* Info */}
-      <div className={styles.storeInfo}>
-        <h3 className={styles.storeName}>{name}</h3>
-        {shop.description && <p className={styles.storeDesc}>{shop.description}</p>}
-        <div className={styles.storeMeta}>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-[13px] font-bold leading-snug line-clamp-2 mb-1">{name}</h3>
+        {shop.description && <p className="text-[11px] text-slate-400 line-clamp-2 mb-2 leading-relaxed">{shop.description}</p>}
+        <div className="flex items-center flex-wrap gap-1">
           {typeof shop.productCount === 'number' && (
-            <span className={styles.storeBadge}>{shop.productCount} Products</span>
+            <span className="text-[10px] font-semibold bg-indigo-500/10 text-indigo-500 px-2 py-0.5 rounded-full">{shop.productCount} Products</span>
           )}
           {typeof shop.rating === 'number' && (
-            <span className={styles.storeRating}>⭐ {shop.rating.toFixed(1)}</span>
+            <span className="text-[10px] text-stone-500 font-medium">â­ {shop.rating.toFixed(1)}</span>
           )}
         </div>
       </div>
 
       {/* CTA */}
-      <div className={styles.storeCta}>
+      <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
         <ArrowRight className="h-4 w-4 text-indigo-500 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
       </div>
     </Link>
   );
 }
 
-// ─── Empty State ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Empty State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function EmptyStores() {
   return (
-    <div className={styles.storesEmpty}>
-      <div className={styles.storesEmptyIcon}>
+    <div className="flex flex-col items-center justify-center min-h-[180px] text-center p-6 w-full">
+      <div className="w-14 h-14 rounded-xl bg-linear-to-br from-indigo-50 to-indigo-100 flex items-center justify-center mb-3">
         <Store className="h-8 w-8 text-indigo-400" />
       </div>
       <h3 className="text-base font-semibold">No stores yet</h3>
@@ -196,13 +195,13 @@ function EmptyStores() {
         Be among the first sellers on {siteConfig.name}!
       </p>
       <Button asChild size="sm" className="mt-4 bg-indigo-600 text-white hover:bg-indigo-700">
-        <Link href="/become-seller">Open Your Store →</Link>
+        <Link href="/become-seller">Open Your Store â†’</Link>
       </Button>
     </div>
   );
 }
 
-// ─── Main Section Component ────────────────────────────────────────────────────
+// â”€â”€â”€ Main Section Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function FeaturedStoresSection() {
   const stores = await fetchStores(10);

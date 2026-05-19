@@ -8,14 +8,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Save, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
+import { Button } from '@/shared/ui/atoms/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Input } from '@/shared/ui/atoms/input';
+import { Label } from '@/shared/ui/atoms/label';
+import { Textarea } from '@/shared/ui/atoms/textarea';
+import { Switch } from '@/shared/ui/atoms/switch';
 import { toast } from 'sonner';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 const schema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),

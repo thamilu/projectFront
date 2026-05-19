@@ -6,13 +6,13 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Package, RotateCcw, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Button } from '@/shared/ui/atoms/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/atoms/card';
+import { Label } from '@/shared/ui/atoms/label';
+import { Textarea } from '@/shared/ui/atoms/textarea';
+import { RadioGroup, RadioGroupItem } from '@/shared/ui/atoms/radio-group';
 import { toast } from 'sonner';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 const RETURN_REASONS = [
   'Item is defective / not working',

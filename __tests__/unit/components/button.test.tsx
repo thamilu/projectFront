@@ -4,7 +4,7 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/shared/ui/atoms/button';
 
 describe('Button Component', () => {
   it('renders button with text', () => {

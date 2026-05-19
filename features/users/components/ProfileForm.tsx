@@ -20,30 +20,30 @@ import {
 } from 'lucide-react';
 import { useSession, signIn } from 'next-auth/react';
 import { toast } from 'sonner';
-import { logger } from '@/lib/observability/logger';
+import { logger } from '@/core/telemetry/logger';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { apiClient } from '@/lib/http/services';
-import { API_ENDPOINTS } from '@/constants/api/endpoints';
+import { Button } from '@/shared/ui/atoms/button';
+import { Input } from '@/shared/ui/atoms/input';
+import { Label } from '@/shared/ui/atoms/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/atoms/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/atoms/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/atoms/avatar';
+import { Badge } from '@/shared/ui/atoms/badge';
+import { Skeleton } from '@/shared/ui/atoms/skeleton';
+import { apiClient } from '@/core/client';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
 import { 
   Select, 
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
   SelectValue 
-} from '@/components/ui/select';
-import { AddressFields } from '@/shared/components/AddressFields';
-import { ModernDatePicker } from '@/shared/components/ModernDatePicker';
-import { languages } from '@/constants';
-import { FormActions } from '@/shared/components/FormActions';
-import { profileSchema, ProfileValues } from '@/schemas/user.schema';
+} from '@/shared/ui/atoms/select';
+import { AddressFields } from '@/shared/ui/molecules/AddressFields';
+import { ModernDatePicker } from '@/shared/ui/molecules/ModernDatePicker';
+import { languages } from '@/shared/constants';
+import { FormActions } from '@/shared/ui/molecules/FormActions';
+import { profileSchema, ProfileValues } from '@/shared/schemas/user.schema';
 
 export function ProfileForm() {
   const { data: session, status, update: updateSession } = useSession();
@@ -109,7 +109,7 @@ export function ProfileForm() {
 
         if (isSellerRole) {
           try {
-            const response = await apiClient.get<any>(API_ENDPOINTS.SELLERS.PROFILE);
+            const response = await apiClient.get<any>(API_ENDPOINTS.SELLER.PROFILE);
             data = response.data.data;
             sellerProfileFound = true;
           } catch (err: any) {
@@ -192,7 +192,7 @@ export function ProfileForm() {
   const onSubmit = async (values: ProfileValues) => {
     setIsSubmitting(true);
     try {
-      const endpoint = hasSellerProfile ? API_ENDPOINTS.SELLERS.PROFILE : API_ENDPOINTS.USERS.PROFILE;
+      const endpoint = hasSellerProfile ? API_ENDPOINTS.SELLER.PROFILE : API_ENDPOINTS.USERS.PROFILE;
       
       // [HARDEN] Robust Partial Update: Filter out empty strings to prevent accidental 
       // blank-overwrites and validation failures on the backend.

@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { AlertOctagon } from 'lucide-react';
-import { siteConfig } from '@/lib/config/site';
-import { logger } from '@/lib/observability/logger';
+import { siteConfig } from '@/core/config/site';
+import { logger } from '@/core/telemetry/logger';
 
 export default function GlobalError({
   error,

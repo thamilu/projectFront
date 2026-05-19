@@ -4,10 +4,10 @@ import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { CheckCircle2, ShieldAlert, FileText } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { SellerOnboardingValues } from '@/schemas/seller.schema';
-import { StepLayout } from '@/shared/components/StepLayout';
+import { Checkbox } from '@/shared/ui/atoms/checkbox';
+import { Label } from '@/shared/ui/atoms/label';
+import { SellerOnboardingValues } from '@/domains/seller/contracts/seller.schema';
+import { StepLayout } from '@/shared/ui/organisms/StepLayout';
 
 export function TermsStep() {
   const { watch, setValue, formState: { errors } } = useFormContext<SellerOnboardingValues>();

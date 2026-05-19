@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSettingsStore } from '@/lib/store/settings-store';
+import { useSettingsStore } from '@/shared/store/settings-store';
 
 export function useSettingsEffect() {
   const { theme, fontSize, accessibility } = useSettingsStore();

@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { Store, TrendingUp, Shield, Headphones, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { Button } from '@/shared/ui/atoms/button';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 const BENEFITS = [
   {

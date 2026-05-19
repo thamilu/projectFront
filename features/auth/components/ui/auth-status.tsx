@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@/shared/ui/atoms/badge'
 import { Shield, ShieldAlert, ShieldCheck } from 'lucide-react'
 
 export function AuthStatus() {

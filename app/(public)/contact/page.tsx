@@ -5,11 +5,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Mail, Phone, MapPin, Loader2, CheckCircle2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/shared/ui/atoms/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Input } from '@/shared/ui/atoms/input';
+import { Label } from '@/shared/ui/atoms/label';
+import { Textarea } from '@/shared/ui/atoms/textarea';
 
 const schema = z.object({
   name: z.string().min(2, 'Name is required'),

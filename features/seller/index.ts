@@ -2,9 +2,11 @@
  * Public API for Seller Feature
  */
 
-export * from './hooks/use-seller'
+export * from './hooks'
 export * from './api/seller-api'
 export * from './components/FeaturedStoresSection'
+
+export * from './types'
 
 // Layout components
 export { SellerHeader } from './components/layout/header';

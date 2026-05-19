@@ -44,5 +44,8 @@ jobs:
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_123
           NEXT_PUBLIC_KEYCLOAK_URL: https://keycloak.example.com
           
+      - name: Enforce Performance Budgets
+        run: npm run check:budgets
+          
       - name: Lighthouse CI
         run: npx lighthouserc autorun || true # Optional: Fail only on critical regressions

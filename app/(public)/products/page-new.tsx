@@ -1,7 +1,8 @@
 import { Metadata } from 'next';
-import { ProductDTO, PaginatedResponse, ApiResponse } from '@/types';
+import { PaginatedResponse, ApiResponse } from '@/shared/types';
+import { ProductDTO } from '@/domains/catalog/contracts/catalog.types';
 import ProductsListClient from './products-list-client';
-import SafeJsonLd from '@/components/Seo/SafeJsonLd';
+import SafeJsonLd from '@/shared/ui/layout/Seo/SafeJsonLd';
 
 export const metadata: Metadata = {
   title: 'Products | E-Commerce Platform',

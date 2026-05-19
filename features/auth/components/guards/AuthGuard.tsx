@@ -9,14 +9,16 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { Skeleton } from '@/shared/ui/atoms/skeleton';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 import { useAuth } from '../../hooks/use-auth';
 
 export interface AuthGuardProps {
   children: ReactNode;
   /** Required roles (user must have at least one) */
   requiredRoles?: string[];
+  /** Required single role (convenience prop matching user specification) */
+  requiredRole?: 'CUSTOMER' | 'SELLER' | 'DELIVERY_AGENT';
   /** Custom loading fallback */
   fallback?: ReactNode;
 }
@@ -40,6 +42,7 @@ export interface AuthGuardProps {
 export function AuthGuard({
   children,
   requiredRoles = [],
+  requiredRole,
   fallback,
 }: AuthGuardProps) {
   const { isAuthenticated, isLoading, hasAnyRole, login, user } = useAuth();
@@ -71,9 +74,14 @@ export function AuthGuard({
   }
 
   // Check role requirements
-  if (requiredRoles.length > 0 && !hasAnyRole(requiredRoles)) {
+  const rolesToCheck = [...requiredRoles];
+  if (requiredRole) {
+    rolesToCheck.push(requiredRole);
+  }
+
+  if (rolesToCheck.length > 0 && !hasAnyRole(rolesToCheck)) {
     console.log('[AuthGuard] Redirecting to /unauthorized due to missing roles:', { 
-      required: requiredRoles, 
+      required: rolesToCheck, 
       userRoles: (user as any)?.roles 
     });
     router.push(APP_ROUTES.UNAUTHORIZED);

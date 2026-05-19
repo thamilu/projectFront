@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Flame, Clock, ShoppingCart, Zap } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
+import { Button } from '@/shared/ui/atoms/button';
+import { Progress } from '@/shared/ui/atoms/progress';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 const FLASH_DEALS = [
   { id: '1', name: 'TWS Earphones Z9', slug: 'tws-earphones-z9', originalPrice: 3999, flashPrice: 1299, discount: 68, stock: 12, totalStock: 50, endsAt: Date.now() + 2 * 60 * 60 * 1000 },

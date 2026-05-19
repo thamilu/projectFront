@@ -1,10 +1,10 @@
 import { useFormContext, Controller } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { CreditCard } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { SellerOnboardingFormData } from '@/schemas/seller.schema';
+import { Input } from '@/shared/ui/atoms/input';
+import { Label } from '@/shared/ui/atoms/label';
+import { Checkbox } from '@/shared/ui/atoms/checkbox';
+import { SellerOnboardingFormData } from '@/domains/seller/contracts/seller.schema';
 
 export function FinanceStep() {
   const {

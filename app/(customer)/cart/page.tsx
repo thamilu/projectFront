@@ -4,14 +4,14 @@ import { useMemo, useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Button } from '@/shared/ui/atoms/button';
+import { Input } from '@/shared/ui/atoms/input';
+import { Badge } from '@/shared/ui/atoms/badge';
 import { Minus, Plus, Trash2, ShoppingBag, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiClient } from '@/lib/http/services';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { apiClient } from '@/core/client';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082/api/v1';
 

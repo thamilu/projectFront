@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ErrorFallback } from '@/shared/components';
+import { ErrorFallback } from '@/shared/ui/feedback/error-fallback';
 
 export default function ShopError({ error, reset }: { error: Error; reset: () => void }) {
   return (

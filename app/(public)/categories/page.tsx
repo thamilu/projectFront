@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Grid, ChevronRight } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
+import { Skeleton } from '@/shared/ui/atoms/skeleton';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 interface CategoryDTO {
   id: number;

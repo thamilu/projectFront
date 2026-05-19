@@ -4,20 +4,20 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCreateStore, useSellerStore, useUpdateStore } from '@/features/seller/hooks/use-seller';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
 import { Loader2, Store as StoreIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
-import { queryKeys } from '@/lib/query-keys';
+import { Button } from '@/shared/ui/atoms/button';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { queryKeys } from '@/core/cache/query-keys';
 import { sellerApi } from '@/features/seller/api/seller-api';
 import {
   storeCreateRequestFromSellerProfile,
   storeCreateRequestFromForm
 } from '@/features/seller/utils/store-mappers';
-import { StoreCreateFormData } from '@/schemas/seller.schema';
+import { type StoreCreateFormData } from '@/domains/seller/contracts/seller.schema';
 import { StoreProfileForm } from '@/features/seller/components/StoreProfileForm';
 import { toast } from 'sonner';
-import { FeatureHeader } from '@/components/shared/FeatureHeader';
+import { FeatureHeader } from '@/shared/ui/molecules';
 
 export default function SellerStorePage() {
   const router = useRouter();
@@ -27,7 +27,7 @@ export default function SellerStorePage() {
   const updateStore = useUpdateStore();
 
   const { data: sellerProfile, isLoading: isProfileLoading, error: profileError } = useQuery({
-    queryKey: queryKeys.seller.profile(),
+    queryKey: queryKeys.seller.profile,
     queryFn: sellerApi.getMyProfile,
   });
 

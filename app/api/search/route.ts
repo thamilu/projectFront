@@ -6,9 +6,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { apiClient } from '@/lib/http/services'
-import { API_ENDPOINTS } from '@/constants/api/endpoints'
-import { getRequestLogger } from '@/lib/observability/logger'
+import { apiClient } from '@/core/client';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints'
+import { getRequestLogger } from '@/core/telemetry/logger'
 
 const searchSchema = z.object({
   q: z.string().min(1, 'Query is required'),

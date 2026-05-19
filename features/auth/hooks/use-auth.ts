@@ -2,10 +2,10 @@
 
 import { useCallback } from 'react';
 import { usePathname } from 'next/navigation';
-import { UserRole } from '@/types';
+import { UserRole } from '@/domains/auth/contracts/auth.types';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { logger } from '@/lib/observability/logger';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { logger } from '@/core/telemetry/logger';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 import { authService } from '../services/auth-service';
 

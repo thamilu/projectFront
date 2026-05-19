@@ -2,12 +2,12 @@
 
 import { use } from 'react';
 import { CheckCircle2, Clock, Package, Truck, MapPin, Phone } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 
-const MapComponent = dynamic(() => import('@/components/ui/map-component'), { ssr: false });
+const MapComponent = dynamic(() => import('@/shared/ui/atoms/map-component'), { ssr: false });
 
 const STEPS = [
   { key: 'placed', label: 'Order Placed', icon: CheckCircle2 },

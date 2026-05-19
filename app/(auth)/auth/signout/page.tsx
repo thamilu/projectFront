@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
-import { logoutAndRedirect } from '@/lib/auth/client-logout';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { signOut } from 'next-auth/react';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export default function SignOutPage() {
   useEffect(() => {
-    logoutAndRedirect({ redirectTo: APP_ROUTES.AUTH_LOGIN });
+    signOut({ callbackUrl: APP_ROUTES.AUTH_LOGIN });
   }, []);
 
   return (

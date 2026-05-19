@@ -6,8 +6,8 @@ import {
   User, MapPin, CreditCard, ShoppingBag, Star, Shield,
   ChevronRight, Package
 } from 'lucide-react';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/atoms/avatar';
 
 const NAV_ITEMS = [
   { href: APP_ROUTES.ACCOUNT.PROFILE, icon: User, label: 'Profile', desc: 'Name, email, phone, avatar' },

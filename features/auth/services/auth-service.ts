@@ -6,9 +6,9 @@
  */
 
 import { getSession, signIn, signOut } from 'next-auth/react';
-import { logger } from '@/lib/observability/logger';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
-import { UserRole } from '@/types';
+import { logger } from '@/core/telemetry/logger';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { UserRole } from '@/domains/auth/contracts/auth.types';
 
 export const authService = {
   /**

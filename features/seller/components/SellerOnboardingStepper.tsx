@@ -1,5 +1,5 @@
 import { CheckCircle2 } from 'lucide-react';
-import { STEPS_DATA } from '../hooks/useSellerOnboarding';
+import { STEPS_DATA } from '../hooks/use-seller-onboarding';
 
 interface SellerOnboardingStepperProps {
   currentStep: number;

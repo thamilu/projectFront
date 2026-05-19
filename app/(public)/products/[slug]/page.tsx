@@ -1,9 +1,10 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { productsApi } from '@/lib/http/services/products';
+import { productsApi } from '@/domains/catalog/infrastructure/api/catalog-api';
 import ProductDetailClient from './product-detail-client';
-import { ProductDTO, ShopDTO } from '@/types';
-import SafeJsonLd from '@/components/Seo/SafeJsonLd';
+import { ProductDTO } from '@/domains/catalog/contracts/catalog.types';
+import { ShopDTO } from '@/domains/seller/contracts/seller.types';
+import SafeJsonLd from '@/shared/ui/layout/Seo/SafeJsonLd';
 // import { logger } from '@/lib/logger';
 
 // Enable ISR: Regenerate page every hour

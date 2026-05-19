@@ -12,8 +12,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { logger } from '@/lib/observability/logger';
-import { logoutFromKeycloak } from '@/lib/auth/token-service';
+import { logger } from '@/core/telemetry/logger';
+import { logoutFromKeycloak } from '@/core/auth/tokens/token-service';
 
 // ============================================================================
 // Environment Configuration

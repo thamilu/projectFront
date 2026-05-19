@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import CheckoutSchema, { CheckoutFormValues } from '@/lib/validation/checkout';
-import Header from '@/components/layout/header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import CheckoutSchema, { CheckoutFormValues } from '@/domains/order/contracts/checkout.schema';
+import Header from '@/shared/ui/layout/header';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Button } from '@/shared/ui/atoms/button';
+import { Input } from '@/shared/ui/atoms/input';
+import { Label } from '@/shared/ui/atoms/label';
 import { 
   CreditCard, 
   Smartphone, 
@@ -62,6 +62,15 @@ const paymentMethods = [
 export default function CheckoutPage() {
   const [selectedPayment, setSelectedPayment] = useState<'card' | 'upi' | 'wallet' | 'emi'>('card');
 
+  useEffect(() => {
+    import('@/platform/events').then(({ eventBus }) => {
+      eventBus.publish('CheckoutStarted', {
+        cartId: 'cart_session_' + Date.now().toString().slice(-6),
+        totalAmount: orderSummary.total,
+      });
+    }).catch(() => {});
+  }, []);
+
   const { register, handleSubmit, control, watch, formState: { errors, isSubmitting } } = useForm<CheckoutFormValues>({
     // zodResolver typing may be incompatible with some inferred union/optional shapes;
     // cast to `any` to satisfy the Resolver signature while keeping runtime validation.
@@ -89,6 +98,16 @@ export default function CheckoutPage() {
     try {
       // TODO: call order submit API (server-side) with proper tokenization for card
       // Order submission logic
+      import('@/platform/events').then(({ eventBus }) => {
+        eventBus.publish('OrderPlaced', {
+          orderId: 'ord_' + Math.random().toString(36).substring(2, 9),
+          totalAmount: orderSummary.total,
+          items: orderSummary.items.map((item, idx) => ({
+            productId: 100 + idx,
+            quantity: item.quantity,
+          })),
+        });
+      }).catch(() => {});
     } catch (__err) {
       // Checkout submit error
     }

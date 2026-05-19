@@ -16,20 +16,20 @@ import {
   Info
 } from 'lucide-react';
 
-import { PremiumCard } from '@/shared/components/PremiumCard';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { PremiumCard } from '@/shared/ui/molecules/PremiumCard';
+import { Button } from '@/shared/ui/atoms/button';
+import { Input } from '@/shared/ui/atoms/input';
+import { Label } from '@/shared/ui/atoms/label';
+import { Textarea } from '@/shared/ui/atoms/textarea';
 import { 
   Select, 
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
   SelectValue 
-} from '@/components/ui/select';
-import { AddressFields } from '@/shared/components/AddressFields';
-import { storeCreateSchema, type StoreCreateFormData } from '@/schemas/seller.schema';
+} from '@/shared/ui/atoms/select';
+import { AddressFields } from '@/shared/ui/molecules/AddressFields';
+import { storeCreateSchema, type StoreCreateFormData } from '@/domains/seller/contracts/seller.schema';
 
 interface StoreProfileFormProps {
   initialData?: Partial<StoreCreateFormData>;

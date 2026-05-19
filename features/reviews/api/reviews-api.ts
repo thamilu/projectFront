@@ -3,7 +3,7 @@
  * @module features/reviews/api/reviews-api
  */
 
-import { apiClient } from '@/lib/http/services';
+import { apiClient } from '@/core/client';
 
 export const reviewsApi = {
   // TODO: Implement reviews API methods

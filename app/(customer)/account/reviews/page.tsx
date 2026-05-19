@@ -1,10 +1,10 @@
 'use client';
 
 import { Star, Package } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
 import Link from 'next/link';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 interface Review {
   id: string;

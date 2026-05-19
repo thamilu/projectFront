@@ -2,14 +2,14 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/shared/ui/atoms/button';
 import { useProducts, useCategories } from '@/features/products/hooks/use-products';
 import { toast } from 'sonner';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { productApi } from '@/features/products/api/product-api';
-import type { ProductDTO } from '@/types';
-import { apiClient } from '@/lib/http/services';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import type { ProductDTO } from '@/shared/types';
+import { apiClient } from '@/core/client';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export default function SellerProductsPage() {
   const [query, setQuery] = useState('');
@@ -36,7 +36,7 @@ export default function SellerProductsPage() {
   // mutations with optimistic updates
   const updateMut = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: Partial<ProductDTO> }) =>
-      productApi.updateProduct(id, payload),
+      productApi.update(id, payload),
     onMutate: async ({ id, payload }) => {
       await qc.cancelQueries({ queryKey: ['products'] });
       const qdata = qc.getQueriesData({ queryKey: ['products'] });
@@ -63,7 +63,7 @@ export default function SellerProductsPage() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id: number) => productApi.deleteProduct(id),
+    mutationFn: (id: number) => productApi.delete(id),
     onMutate: async (id: number) => {
       await qc.cancelQueries({ queryKey: ['products'] });
       const qdata = qc.getQueriesData({ queryKey: ['products'] });

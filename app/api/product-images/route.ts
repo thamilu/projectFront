@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/observability/logger';
-import { apiClient } from '@/lib/http/services';
+import { logger } from '@/core/telemetry/logger';
+import { apiClient } from '@/core/client';
 
 // Simple in-memory store for demo purposes
 type ImageRecord = {
@@ -35,7 +35,7 @@ async function uploadToCloudinary(dataUri: string): Promise<UploadResult> {
     throw new Error('Cloudinary not configured');
   }
 
-  const mod = await import('cloudinary');
+  const mod = await import(String('cloudinary'));
   const cloudinary = mod.v2 || mod;
   cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
 

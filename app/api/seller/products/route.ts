@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createProductApiSchema } from "@/schemas/product.schema";
+import { createProductApiSchema } from "@/domains/catalog/contracts/product.schema";
 
 // Mock database - Replace with your actual database
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,7 +37,7 @@ async function uploadImagesToCloudinary(images: string[]): Promise<string[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let cloudinary: any;
   try {
-    const mod = await import("cloudinary");
+    const mod = await import(String("cloudinary"));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cloudinary = (mod as any).v2 || mod;
     cloudinary.config({

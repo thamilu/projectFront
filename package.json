@@ -2,6 +2,9 @@
   "name": "ecommerce-enterprise-frontend",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "packageManager": "npm@10.8.0",
   "engines": {
     "node": ">=24.12.0",
@@ -34,6 +37,7 @@
     "check:api-types": "openapi-typescript http://localhost:8080/v3/api-docs -o /tmp/api-check.ts && diff types/generated/api.ts /tmp/api-check.ts",
     "check:architecture": "depcruise --config .dependency-cruiser.js features shared lib app",
     "check:dead-code": "knip",
+    "check:budgets": "node scripts/check-bundle-budgets.js",
     "prepare": "husky"
   },
   "dependencies": {
@@ -136,8 +140,12 @@
       "maxSize": "200 kB"
     },
     {
-      "path": ".next/static/chunks/pages/_app-*.js",
-      "maxSize": "300 kB"
+      "path": ".next/static/chunks/framework-*.js",
+      "maxSize": "250 kB"
+    },
+    {
+      "path": ".next/static/chunks/app/layout-*.js",
+      "maxSize": "50 kB"
     }
   ]
 }

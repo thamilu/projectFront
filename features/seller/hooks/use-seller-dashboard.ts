@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/http/services';
+import { apiClient } from '@/core/client';
 import { env } from '@/env';
 
 export interface DashboardData {

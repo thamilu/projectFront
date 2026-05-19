@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/http/services';
+import { apiClient } from '@/core/client';
 
 export default function PkceCallbackPage() {
   const router = useRouter();

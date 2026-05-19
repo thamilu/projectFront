@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiClient } from '@/lib/http/services';
+import { apiClient } from '@/core/client';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const productImages: any[] = (global as Record<string, unknown>).__PRODUCT_IMAGES_STORE__ as any[] || [];

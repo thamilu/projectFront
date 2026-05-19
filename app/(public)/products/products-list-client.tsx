@@ -4,17 +4,18 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/shared/ui/atoms/button';
+import { Input } from '@/shared/ui/atoms/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/atoms/select';
 import { useCart } from '@/features/cart/hooks/use-cart';
-import { formatPrice, calculateDiscount } from '@/lib/utils';
-import { ProductDTO, CategoryDTO, BrandDTO, PageResponse } from '@/types';
+import { formatPrice, calculateDiscount } from '@/shared/utils';
+import { PageResponse } from '@/shared/types';
+import { ProductDTO, CategoryDTO, BrandDTO } from '@/domains/catalog/contracts/catalog.types';
 import { ShoppingCart, Search, Grid, List, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 interface ProductsListClientProps {
   initialProducts: PageResponse<ProductDTO>;

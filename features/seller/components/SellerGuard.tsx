@@ -3,7 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { signIn } from 'next-auth/react';
 import { sellerApi } from '@/features/seller/api/seller-api';

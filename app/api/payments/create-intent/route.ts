@@ -16,9 +16,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { z } from 'zod'
-import { apiClient } from '@/lib/http/services'
-import { getRequestLogger } from '@/lib/observability/logger'
-import { API_ENDPOINTS } from '@/constants/api/endpoints'
+import { apiClient } from '@/core/client';
+import { getRequestLogger } from '@/core/telemetry/logger'
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints'
 
 const createIntentSchema = z.object({
   orderId: z.string().uuid(),

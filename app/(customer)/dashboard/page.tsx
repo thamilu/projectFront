@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Loader2 } from 'lucide-react';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 /**
  * /dashboard — Role-based redirect hub.
@@ -32,7 +32,7 @@ export default function DashboardRedirectPage() {
     } else if (roles.includes('DELIVERY_AGENT')) {
       router.replace(APP_ROUTES.DELIVERY.DASHBOARD);
     } else {
-      router.replace(APP_ROUTES.CUSTOMER.DASHBOARD);
+      router.replace(APP_ROUTES.HOME);
     }
   }, [session, status, router]);
 

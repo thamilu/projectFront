@@ -2,9 +2,9 @@
 
 import { useSession } from 'next-auth/react';
 import { env } from '@/env';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
+import { Button } from '@/shared/ui/atoms/button';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,8 +14,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { apiClient } from '@/lib/http/services';
+} from '@/shared/ui/atoms/table';
+import { apiClient } from '@/core/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,11 +23,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/shared/ui/atoms/dropdown-menu';
 import { Eye, MoreHorizontal, Package, Truck } from 'lucide-react';
-import { OrderStatus, PaymentStatus } from '@/types';
-import { logger } from '@/lib/observability/logger';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { OrderStatus, PaymentStatus } from '@/domains/order/contracts/order.types';
+import { logger } from '@/core/telemetry/logger';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 // Interface matching Backend OrderResponse
 interface SellerOrder {

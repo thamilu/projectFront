@@ -2,11 +2,11 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
+import { Button } from '@/shared/ui/atoms/button';
+import { Skeleton } from '@/shared/ui/atoms/skeleton';
+import { Input } from '@/shared/ui/atoms/input';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
@@ -33,11 +33,11 @@ import {
   BarChart3,
   type LucideIcon,
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
-import { apiClient } from '@/lib/http/services';
-import { AppError } from '@/lib/errors/AppError';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
-import { API_ENDPOINTS } from '@/constants/api/endpoints';
+import { formatCurrency } from '@/shared/utils';
+import { apiClient } from '@/core/client';
+import { AppError } from '@/core/http/errors';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
 
 // ============ Types ============
 interface ProductSummary {
@@ -392,7 +392,7 @@ function ProductCard({ product }: { product: ProductSummary }) {
   const discount = calcDiscountPct(product.price, product.discountedPrice);
 
   return (
-    <div className="product-card group shrink-0">
+    <div className="ProductCard group shrink-0">
       {discount && (
         <span className="product-badge">-{discount}%</span>
       )}
@@ -426,8 +426,8 @@ function ProductCard({ product }: { product: ProductSummary }) {
             )}
           </div>
         )}
-        <div className="product-price-row">
-          <span className="product-price">{formatCurrency(product.discountedPrice || product.price)}</span>
+        <div className="ProductPrice-row">
+          <span className="ProductPrice">{formatCurrency(product.discountedPrice || product.price)}</span>
           {discount && (
             <span className="product-original-price">{formatCurrency(product.price)}</span>
           )}
@@ -983,7 +983,7 @@ const DASHBOARD_STYLES = `
 .category-chip-name { font-size: 11px; font-weight: 600; white-space: nowrap; }
 
 /* ===== PRODUCT CARDS ===== */
-.product-card {
+.ProductCard {
   width: 188px;
   border-radius: 16px;
   background: white;
@@ -994,8 +994,8 @@ const DASHBOARD_STYLES = `
   box-shadow: 0 2px 10px rgba(0,0,0,0.06);
   position: relative;
 }
-.dark .product-card { background: #1e293b; border-color: rgba(255,255,255,0.08); }
-.product-card:hover {
+.dark .ProductCard { background: #1e293b; border-color: rgba(255,255,255,0.08); }
+.ProductCard:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 28px rgba(0,0,0,0.14);
   border-color: rgba(99,102,241,0.3);
@@ -1016,7 +1016,7 @@ const DASHBOARD_STYLES = `
   color: #f43f5e; transition: all 0.2s;
   opacity: 0;
 }
-.product-card:hover .product-wishlist-btn { opacity: 1; }
+.ProductCard:hover .product-wishlist-btn { opacity: 1; }
 .product-wishlist-btn:hover { background: #fff; transform: scale(1.1); }
 .product-image-wrap {
   aspect-ratio: 1/1; overflow: hidden;
@@ -1028,14 +1028,14 @@ const DASHBOARD_STYLES = `
   width: 100%; height: 100%; object-fit: cover;
   transition: transform 0.4s ease;
 }
-.product-card:hover .product-image { transform: scale(1.06); }
+.ProductCard:hover .product-image { transform: scale(1.06); }
 .product-overlay {
   position: absolute; inset: 0;
   background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%);
   display: flex; align-items: flex-end; padding: 12px;
   opacity: 0; transition: opacity 0.25s;
 }
-.product-card:hover .product-overlay { opacity: 1; }
+.ProductCard:hover .product-overlay { opacity: 1; }
 .product-cart-btn {
   width: 100%;
   background: white !important;
@@ -1066,9 +1066,9 @@ const DASHBOARD_STYLES = `
   font-size: 11px; font-weight: 500;
   color: #78716c; margin-bottom: 6px;
 }
-.product-price-row { display: flex; align-items: baseline; gap: 6px; }
-.product-price { font-size: 16px; font-weight: 800; color: #0f172a; }
-.dark .product-price { color: #f8fafc; }
+.ProductPrice-row { display: flex; align-items: baseline; gap: 6px; }
+.ProductPrice { font-size: 16px; font-weight: 800; color: #0f172a; }
+.dark .ProductPrice { color: #f8fafc; }
 .product-original-price {
   font-size: 11px; font-weight: 400;
   color: #94a3b8; text-decoration: line-through;

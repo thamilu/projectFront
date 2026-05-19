@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { IndianRupee, TrendingUp, Clock, CheckCircle2, BanknoteIcon, Loader2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { apiClient } from '@/lib/http/services';
-import { API_ENDPOINTS } from '@/constants/api/endpoints';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
+import { apiClient } from '@/core/client';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -32,7 +32,7 @@ export default function SellerPayoutsPage() {
     if (!session?.accessToken) return;
     try {
       setLoading(true);
-      const { data } = await apiClient.get<any>(API_ENDPOINTS.SELLERS.PAYOUTS);
+      const { data } = await apiClient.get<any>(API_ENDPOINTS.SELLER.PAYOUTS);
       // Fallback to static data if API isn't fully ready yet, or set empty array
       if (data && data.stats) {
         setStats(data.stats);

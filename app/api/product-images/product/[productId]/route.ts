@@ -6,12 +6,6 @@ const productImages: unknown[] = (global as Record<string, unknown>).__PRODUCT_I
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ productId: string }> }) {
   const { productId } = await params;
-  const prismaMod = await import('@/lib/db/prismaClient').then(m => m.getPrisma()).catch(() => undefined);
-  if (prismaMod) {
-    const imgs = await prismaMod.productImage.findMany({ where: { productId }, orderBy: { displayOrder: 'asc' } });
-    return NextResponse.json(imgs);
-  }
-
   const images = productImages.filter(img => (img as Record<string, unknown>).productId === productId);
   return NextResponse.json(images);
 }

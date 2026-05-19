@@ -8,8 +8,8 @@
  */
 
 import type { MetadataRoute } from 'next';
-import { siteConfig } from '@/lib/config/site';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { siteConfig } from '@/core/config/site';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 /**
  * Generate Web App Manifest

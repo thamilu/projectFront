@@ -6,7 +6,7 @@
  */
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/shared/ui/atoms/button';
 import { Home, Search } from 'lucide-react';
 
 export default function NotFound() {

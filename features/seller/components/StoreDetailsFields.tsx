@@ -1,16 +1,16 @@
 import React from 'react';
 import { UseFormRegister, FieldErrors, FieldValues, Path, useFormContext } from 'react-hook-form';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { AddressFields } from '@/shared/components/AddressFields';
+import { Input } from '@/shared/ui/atoms/input';
+import { Label } from '@/shared/ui/atoms/label';
+import { Textarea } from '@/shared/ui/atoms/textarea';
+import { AddressFields } from '@/shared/ui/molecules/AddressFields';
 import { Wand2, Tractor, CheckCircle2, Loader2, XCircle, Store, Phone as PhoneIcon, Globe, Image as ImageIcon, MapPin, FileText } from 'lucide-react';
-import { FormError } from '@/components/ui/form-error';
+import { FormError } from '@/shared/ui/atoms/form-error';
 import { SellerBusinessType } from '../types';
-import { Checkbox } from '@/components/ui/checkbox';
-import { apiClient } from '@/lib/http/services';
-import { API_ENDPOINTS } from '@/constants/api/endpoints';
-import { StepInput } from '@/shared/components/StepInput';
+import { Checkbox } from '@/shared/ui/atoms/checkbox';
+import { apiClient } from '@/core/client';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
+import { StepInput } from '@/shared/ui/molecules/StepInput';
 
 interface FieldSpec<T> {
   id: string;
@@ -59,7 +59,7 @@ export function StoreDetailsFields<T extends FieldValues>(props: {
       setIsCheckingHandle(true);
       try {
         const response = await apiClient.get(
-          `${API_ENDPOINTS.SELLERS.ROOT}/check-handle/${watchedShopHandle}`,
+          API_ENDPOINTS.SELLER.CHECK_HANDLE(watchedShopHandle),
           { signal: controller.signal }
         );
         

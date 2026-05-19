@@ -1,13 +1,12 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import { apiClient } from '@/lib/http/services';
-import { API_ENDPOINTS } from '@/constants/api/endpoints';
-import type { StoreDTO } from '@/types';
-import type { ApiResponse } from '@/types/api';
-import { AppError } from '@/lib/errors/AppError';
-import { PublicStoreProfile } from '@/components/store/PublicStoreProfile';
-import { siteConfig } from '@/lib/config/site';
+import { apiClient } from '@/core/client';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
+import type { StoreDTO } from '@/shared/types';
+import type { ApiResponse } from '@/shared/types/api';
+import { PublicStoreProfile } from '@/features/seller/components/PublicStoreProfile';
+import { siteConfig } from '@/core/config/site';
 
 interface StorePageProps {
   params: Promise<{ id: string }>;
@@ -20,8 +19,8 @@ async function loadStore(id: string): Promise<StoreDTO | null> {
     );
     return response?.data ?? null;
   } catch (error) {
-    const err = error as AppError;
-    if (err?.status === 404) {
+    const err = error as { statusCode?: number };
+    if (err?.statusCode === 404) {
       return null;
     }
     throw error;

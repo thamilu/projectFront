@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { BarChart3, X, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { Button } from '@/shared/ui/atoms/button';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 const MOCK_PRODUCTS = [
   { id: 'p1', slug: 'wireless-earbuds-pro', name: 'Wireless Earbuds Pro', price: 2499, rating: 4.5, battery: '6h', warranty: '1 year', connectivity: 'Bluetooth 5.3', weight: '58g' },

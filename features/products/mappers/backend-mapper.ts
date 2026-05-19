@@ -2,8 +2,8 @@ import {
   generateSlug,
   calculateFinalPrice,
   type ProductFormData,
-} from '@/schemas/product-form.schema';
-import type { BackendProductRequest, Category } from '@/types/product';
+} from '@/domains/catalog/contracts/product-form.schema';
+import type { BackendProductRequest, Category } from '@/shared/types/product';
 import { z } from 'zod';
 
 export const createProductRequestSchema = z.object({

@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/shared/ui/atoms/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
 import { AlertCircle, RefreshCcw, Home } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export default function StoreError({
   error,

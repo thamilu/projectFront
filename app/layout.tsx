@@ -15,12 +15,13 @@
 
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
-import { fontClassNames } from '@/lib/fonts';
-import { siteConfig } from '@/lib/config/site';
+import { fontClassNames } from '@/shared/fonts';
+import { siteConfig } from '@/core/config/site';
 import { Providers } from './providers';
-import { SkipToContent } from '@/components/layout/skip-to-content';
-import Header from '@/components/layout/header-wrapper';
-import { cn } from '@/lib/utils';
+import { SkipToContent } from '@/shared/ui/layout/skip-to-content';
+import Header from '@/shared/ui/layout/header-wrapper';
+import HydrationTracker from '@/core/providers/hydration-tracker';
+import { cn } from '@/shared/utils';
 import './globals.css'; // Global Tailwind CSS styles
 
 /**
@@ -215,6 +216,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
 
         {/* Provider hierarchy with error boundaries and state management */}
         <Providers>
+          <HydrationTracker />
           {/* Header persists across all routes */}
           <Header />
 

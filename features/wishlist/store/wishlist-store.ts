@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { logger } from '@/lib/observability/logger';
+import { logger } from '@/core/telemetry/logger';
 
 interface WishlistItem {
   id: number;

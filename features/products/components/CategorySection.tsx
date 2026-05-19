@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
+import { Button } from '@/shared/ui/atoms/button';
 import {
   ChevronRight,
   Laptop,
@@ -14,9 +14,9 @@ import {
   Gamepad2,
   LucideIcon
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/utils';
 import { productApi, isBackendDown } from '@/features/products/api/product-api';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 /**
  * Enterprise Category Mapping

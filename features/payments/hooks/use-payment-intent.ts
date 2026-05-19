@@ -6,13 +6,13 @@
 
 import { useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { apiClient } from '@/lib/http/services'
+import { apiClient } from '@/core/client';
 import {
   CreatePaymentIntentRequest,
   CreatePaymentIntentResponse,
   PaymentIntent,
 } from '../types/payment.types'
-import { logger } from '@/lib/observability/logger'
+import { logger } from '@/core/telemetry/logger'
 import { toast } from 'sonner'
 
 export function usePaymentIntent() {

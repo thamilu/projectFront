@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
 import { ChevronRight, Timer, Flame, TrendingDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/utils';
 import { productApi, isBackendDown } from '@/features/products/api/product-api';
-import { flashDeals as demoDeals } from '@/constants/demoData';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { flashDeals as demoDeals } from '@/shared/constants/demoData';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 // ============================================================================
 // Constants & Configuration
@@ -100,7 +100,7 @@ export async function FlashDealsSection() {
       .filter(d => !existingIds.has(d.id))
       .map(d => ({
         ...d,
-        image: `/images/products/deal-${d.id}.svg`,
+        image: d.image,
         isDemo: true
       }));
     flashDeals = [...flashDeals, ...placeholders].slice(0, 4);

@@ -12,7 +12,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { getRequestLogger } from '@/lib/observability/logger';
+import { getRequestLogger } from '@/core/telemetry/logger';
 import { decodeJwt } from 'jose';
 
 

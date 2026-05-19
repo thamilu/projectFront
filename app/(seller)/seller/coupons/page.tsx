@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, Flame, Tag } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
+import { Button } from '@/shared/ui/atoms/button';
 import { toast } from 'sonner';
 
 const PROMOTIONS = [

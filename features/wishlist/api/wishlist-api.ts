@@ -3,7 +3,7 @@
  * @module features/wishlist/api/wishlist-api
  */
 
-import { apiClient } from '@/lib/http/services';
+import { apiClient } from '@/core/client';
 
 export const wishlistApi = {
   // TODO: Implement wishlist API methods

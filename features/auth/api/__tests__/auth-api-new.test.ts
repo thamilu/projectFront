@@ -1,8 +1,6 @@
 /// <reference types="jest" />
-import { authApi } from '../auth-api-new';
-import apiClient from '@/lib/http/services';
-
-jest.mock('@/lib/http/services');
+import { authApi } from '../auth-api';
+import { apiClient } from '@/core/client';
 
 const mockedClient = apiClient as jest.Mocked<typeof apiClient>;
 

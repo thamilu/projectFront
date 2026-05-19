@@ -8,12 +8,12 @@ import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
 import { SellerRoleUpgradeForm } from '@/features/seller/components/SellerRoleUpgradeForm';
-import { apiClient } from '@/lib/http/services';
-import { API_ENDPOINTS } from '@/constants/api/endpoints';
-import type { ApiResponse } from '@/types/api';
+import { apiClient } from '@/core/client';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
+import type { ApiResponse } from '@/shared/types/api';
 import type { SellerProfile } from '@/features/seller/types';
-import { AppError } from '@/lib/errors/AppError';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { AppError } from '@/core/http/errors';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +27,7 @@ async function getInitialStatus(isAuthenticated: boolean): Promise<'IDLE' | 'PEN
   
   try {
     const { data: response } = await apiClient.get<ApiResponse<SellerProfile>>(
-      API_ENDPOINTS.SELLERS.PROFILE
+      API_ENDPOINTS.SELLER.PROFILE
     );
 
     const status = response?.data?.status ? String(response.data.status).toUpperCase() : null;
@@ -39,16 +39,16 @@ async function getInitialStatus(isAuthenticated: boolean): Promise<'IDLE' | 'PEN
     
     // Log the error for observability but don't crash the page
     console.warn('[SellerOnboarding] Error checking initial status:', {
-      status: err?.status,
+      status: err?.statusCode,
       code: err?.code,
       message: err?.message
     });
 
     // If we get 404, check if a profile exists but is not yet approved
-    if (err?.status === 404) {
+    if (err?.statusCode === 404) {
       try {
         const { data: existsResponse } = await apiClient.get<ApiResponse<boolean>>(
-          API_ENDPOINTS.SELLERS.PROFILE_EXISTS
+          API_ENDPOINTS.SELLER.PROFILE_EXISTS
         );
         if (existsResponse?.data === true) return 'PENDING';
       } catch {

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { apiClient } from '@/lib/http/services';
+import { Input } from '@/shared/ui/atoms/input';
+import { Button } from '@/shared/ui/atoms/button';
+import { apiClient } from '@/core/client';
 
 interface Props {
   onClose: () => void;

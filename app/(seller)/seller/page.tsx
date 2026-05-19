@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,9 +14,9 @@ import {
   Settings,
   AlertCircle,
 } from 'lucide-react';
-import { logger } from '@/lib/observability/logger';
+import { logger } from '@/core/telemetry/logger';
 import { AppSession, getNormalizedRoles } from '@/features/seller/utils/auth';
-import { useSellerDashboard } from '@/features/seller/hooks/useSellerDashboard';
+import { useSellerDashboard } from '@/features/seller';
 import { StatCard } from '@/features/seller/components/StatCard';
 import { DashboardSkeleton } from '@/features/seller/components/DashboardSkeleton';
 

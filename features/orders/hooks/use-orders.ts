@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { orderApi } from '../api/order-api';
-import { PageRequest, CreateOrderRequest, OrderFilters } from '@/types';
+import { PageRequest } from '@/shared/types';
+import { CreateOrderRequest, OrderFilters, OrderStatus } from '@/domains/order/contracts/order.types';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -59,7 +60,7 @@ export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: import('@/types').OrderStatus }) =>
+    mutationFn: ({ id, status }: { id: number; status: OrderStatus }) =>
       orderApi.updateOrderStatus(id, { orderStatus: status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });

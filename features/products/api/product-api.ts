@@ -2,10 +2,9 @@
  * [LEGACY] Product API Proxy
  * 
  * This file is maintained for backward compatibility. 
- * Please migrate to imports from '@/lib/http/services'.
+ * Please migrate to imports from '@/domains/catalog/infrastructure/api/catalog-api'.
  */
-export { productApi } from '@/lib/http/services';
-export { isBackendDown } from '@/lib/http/utils';
+export { productApi } from '@/domains/catalog/infrastructure/api/catalog-api';
+export { isBackendDown } from '@/core/http/utils';
 
-// Keep local types or re-export from types
-export * from '../types/product.types';
+export * from '../types';

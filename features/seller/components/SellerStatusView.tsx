@@ -1,11 +1,11 @@
 import { CheckCircle2, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/shared/ui/atoms/button';
 import Link from 'next/link';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 import { motion } from 'framer-motion';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { SellerFormStatus } from '../hooks/useSellerProfileStatus';
+import { SellerFormStatus } from '../hooks/use-seller-status';
 
 interface SellerStatusViewProps {
   status: Extract<SellerFormStatus, 'PENDING' | 'SUCCESS'>;

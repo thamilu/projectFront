@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, SlidersHorizontal, ShoppingCart } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { Button } from '@/shared/ui/atoms/button';
+import { Input } from '@/shared/ui/atoms/input';
+import { Badge } from '@/shared/ui/atoms/badge';
+import { Card, CardContent, CardFooter } from '@/shared/ui/atoms/card';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 interface ProductDTO {
   id: number;

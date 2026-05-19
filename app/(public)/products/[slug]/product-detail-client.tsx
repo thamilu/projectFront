@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/shared/ui/atoms/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
+import { Badge } from '@/shared/ui/atoms/badge';
 // Tabs component not available in the shared UI library in this workspace.
 // Replace with simple accessible sections instead of Tabs to avoid missing import.
 import { useCart } from '@/features/cart/hooks/use-cart';
 import { useWishlistStore } from '@/features/wishlist/store/wishlist-store';
-import { formatPrice, calculateDiscount } from '@/lib/utils';
-import { sanitizeHtml } from '@/lib/sanitize';
-import { ProductDTO } from '@/types';
+import { formatPrice, calculateDiscount } from '@/shared/utils';
+import { sanitizeHtml } from '@/shared/utils/sanitize';
+import { ProductDTO } from '@/domains/catalog/contracts/catalog.types';
 import { ShoppingCart, Heart, Star, Truck, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,6 +25,16 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const [selectedImage, setSelectedImage] = useState(0);
   const { addToCart, isAdding } = useCart();
   const wishlistState = useWishlistStore();
+
+  useEffect(() => {
+    import('@/platform/events').then(({ eventBus }) => {
+      eventBus.publish('ProductViewed', {
+        productId: product.id,
+        name: product.name,
+        categoryId: product.category?.id || 0,
+      });
+    }).catch(() => {});
+  }, [product.id, product.name, product.category?.id]);
 
   const inWishlist = wishlistState.wishlists
     .flatMap((w) => w.items)

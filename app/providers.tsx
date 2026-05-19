@@ -7,15 +7,18 @@
 import { useState, useEffect, type ReactNode, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { ThemeProvider } from '@/components/providers/theme-provider';
-import NextAuthProvider from '@/components/NextAuthProvider';
-import { ToastProvider } from '@/components/providers/toast-provider';
+import { ThemeProvider } from '@/core/providers/theme-provider';
+import NextAuthProvider from '@/core/providers/NextAuthProvider';
+import { ToastProvider } from '@/core/providers/toast-provider';
 import { Toaster } from 'sonner';
-import { AnalyticsProvider } from '@/components/providers/analytics-provider';
-import { ErrorBoundary } from '@/components/common/error-boundary';
-import { NetworkStatus } from '@/components/common/network-status';
-import { ScreenReaderAnnouncer } from '@/components/common/screen-reader-announcer';
+import { AnalyticsProvider } from '@/core/providers/analytics-provider';
+import { ErrorBoundary } from '@/shared/ui/feedback/error-boundary';
+import { NetworkStatus } from '@/shared/ui/common/network-status';
+import { ScreenReaderAnnouncer } from '@/shared/ui/common/screen-reader-announcer';
 import { useAppIntegrations } from '@/shared/hooks';
+
+import { I18nProvider } from '@/core/i18n';
+import { FeatureFlagProvider } from '@/core/feature-flags';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -81,7 +84,11 @@ export function Providers({ children }: ProvidersProps) {
                 <AnalyticsProvider>
                   <ScreenReaderAnnouncer />
                   <NetworkStatus />
-                  {children}
+                  <FeatureFlagProvider>
+                    <I18nProvider>
+                      {children}
+                    </I18nProvider>
+                  </FeatureFlagProvider>
                   <Toaster position="top-right" richColors closeButton />
                   {process.env.NODE_ENV === 'development' && (
                     <ReactQueryDevtools initialIsOpen={false} />

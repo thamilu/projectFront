@@ -1,4 +1,4 @@
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 import Link from 'next/link';
 
 export const metadata = {

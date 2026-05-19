@@ -1,13 +1,6 @@
-import { apiClient } from '@/lib/http/services';
-import {
-  OrderDTO,
-  PageResponse,
-  PageRequest,
-  CreateOrderRequest,
-  UpdateOrderStatusRequest,
-  UpdatePaymentStatusRequest,
-  OrderFilters,
-} from '@/types';
+import { apiClient } from '@/core/client';
+import { PageResponse, PageRequest } from '@/shared/types';
+import { OrderDTO, CreateOrderRequest, UpdateOrderStatusRequest, UpdatePaymentStatusRequest, OrderFilters } from '@/domains/order/contracts/order.types';
 
 // Time Complexity: O(1) - single HTTP request
 // Space Complexity: O(n) where n is number of orders/items

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
-import { productImagesApi, ProductImage } from '@/lib/http/services/product-images';
+import { productImagesApi, ProductImage } from '@/domains/catalog/infrastructure/api/product-images-api';
 
 interface Props {
   productId: string;
@@ -77,7 +77,7 @@ export function ProductImageUploader({ productId, images, onImagesChange }: Prop
         {images.map((image) => (
           <div key={image.id} className="relative group">
             <Image
-              src={image.thumbnailUrl}
+              src={image.thumbnailUrl || image.url}
               alt={image.altText || 'Product image'}
               width={150}
               height={150}

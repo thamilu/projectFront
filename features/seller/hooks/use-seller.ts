@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { sellerApi } from '../api/seller-api'
-import { queryKeys } from '@/lib/query/query-keys'
+import { queryKeys } from '@/core/cache/query-keys'
 
 export function useSellerProfile() {
   return useQuery({
-    queryKey: queryKeys.seller.profile(),
+    queryKey: queryKeys.seller.profile,
     queryFn: () => sellerApi.getMyProfile(),
   })
 }
@@ -15,7 +15,7 @@ export function useUpdateSellerProfile() {
   return useMutation({
     mutationFn: sellerApi.updateProfile,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.seller.profile() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.seller.profile })
     },
   })
 }
@@ -29,7 +29,30 @@ export function useSellerProducts(params?: any) {
 
 export function useSellerStore() {
   return useQuery({
-    queryKey: queryKeys.seller.store(),
+    queryKey: queryKeys.seller.store,
     queryFn: () => sellerApi.getMyStore(),
   })
 }
+
+export function useCreateStore() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: sellerApi.createStore,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.seller.store })
+    },
+  })
+}
+
+export function useUpdateStore() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: sellerApi.updateStore,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.seller.store })
+    },
+  })
+}
+

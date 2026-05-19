@@ -2,10 +2,10 @@
 
 import { Bell, Search, Menu } from 'lucide-react';
 import Link from 'next/link';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Input } from '@/shared/ui/atoms/input';
+import { Button } from '@/shared/ui/atoms/button';
 import { UserNav } from './user-nav';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/shared/ui/layout/theme-toggle';
 
 export function SellerHeader() {
   return (

@@ -1,26 +1,26 @@
 'use client';
 
-import { useAuthStore } from '@/features/auth/store/auth-store';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useAuth } from '@/features/auth';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/atoms/card';
+import { Button } from '@/shared/ui/atoms/button';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/layout/header';
-import Sidebar from '@/components/layout/sidebar';
+import Header from '@/shared/ui/layout/header';
+import Sidebar from '@/shared/ui/layout/sidebar';
 import { User, Lock, Bell, Globe, Shield } from 'lucide-react';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export default function SettingsPage() {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       router.push(APP_ROUTES.AUTH_LOGIN);
     }
-  }, [isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, router]);
 
-  if (!isAuthenticated) {
+  if (isLoading || !isAuthenticated) {
     return null;
   }
 
@@ -57,7 +57,7 @@ export default function SettingsPage() {
                 <div>
                   <label className="text-sm font-medium">Username</label>
                   <div className="mt-1 p-3 bg-muted rounded-md">
-                    {user?.preferred_username || user?.sub}
+                    {(user as any)?.preferred_username || (user as any)?.sub}
                   </div>
                 </div>
                 <div>
@@ -69,13 +69,13 @@ export default function SettingsPage() {
                 <div>
                   <label className="text-sm font-medium">First Name</label>
                   <div className="mt-1 p-3 bg-muted rounded-md">
-                    {user?.firstName || 'Not set'}
+                    {(user as any)?.firstName || 'Not set'}
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Last Name</label>
                   <div className="mt-1 p-3 bg-muted rounded-md">
-                    {user?.lastName || 'Not set'}
+                    {(user as any)?.lastName || 'Not set'}
                   </div>
                 </div>
               </div>

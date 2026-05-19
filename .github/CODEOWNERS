@@ -1,0 +1,10 @@
+# Bounded Context Domain Ownership
+# Restricts changes to critical domain logic to designated platform and team owners.
+
+/domains/catalog/           @thamilu/catalog-maintainers
+/domains/seller/            @thamilu/seller-maintainers
+/domains/auth/              @thamilu/security-maintainers
+/domains/order/             @thamilu/checkout-maintainers
+/domains/customer/          @thamilu/customer-maintainers
+/packages/design-system/    @thamilu/design-system-team
+/platform/                  @thamilu/platform-architects

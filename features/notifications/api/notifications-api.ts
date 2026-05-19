@@ -3,7 +3,7 @@
  * @module features/notifications/api/notifications-api
  */
 
-import { apiClient } from '@/lib/http/services';
+import { apiClient } from '@/core/client';
 
 export const notificationsApi = {
   // TODO: Implement notifications API methods

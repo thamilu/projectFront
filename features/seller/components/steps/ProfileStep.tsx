@@ -4,10 +4,10 @@ import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { User, Phone, MapPin } from 'lucide-react';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { AddressFields } from '@/shared/components/AddressFields';
-import { SellerOnboardingValues } from '@/schemas/seller.schema';
+import { Label } from '@/shared/ui/atoms/label';
+import { Input } from '@/shared/ui/atoms/input';
+import { AddressFields } from '@/shared/ui/molecules/AddressFields';
+import { SellerOnboardingValues } from '@/domains/seller/contracts/seller.schema';
 
 export function ProfileStep() {
   const { register, getValues, formState: { errors } } = useFormContext<SellerOnboardingValues>();

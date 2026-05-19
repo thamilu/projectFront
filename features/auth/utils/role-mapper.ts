@@ -1,4 +1,4 @@
-import { UserRole } from '@/types';
+import { UserRole } from '@/domains/auth/contracts/auth.types';
 
 const ROLE_MAPPINGS: ReadonlyMap<string, UserRole> = new Map([
   ['SELLER', UserRole.SELLER],

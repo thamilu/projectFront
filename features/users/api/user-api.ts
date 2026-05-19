@@ -1,5 +1,6 @@
-import { apiClient } from '@/lib/http/services';
-import { UserDTO, PageResponse, PageRequest } from '@/types';
+import { apiClient } from '@/core/client';
+import { PageResponse, PageRequest } from '@/shared/types';
+import { UserDTO } from '@/domains/auth/contracts/auth.types';
 
 // Time Complexity: O(1) - single HTTP request
 // Space Complexity: O(n) where n is number of users

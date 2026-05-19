@@ -305,7 +305,7 @@ export type RoleCheck = z.infer<typeof RoleCheckSchema>;
 // Auth Error Schema
 // ============================================================================
 
-import { User as UserInfo, AuthState as AuthStateType } from '@/types/auth.types';
+import { User as UserInfo, AuthState as AuthStateType } from '../types/auth.types';
 
 /**
  * Authentication error response

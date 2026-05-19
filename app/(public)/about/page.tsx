@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { ShoppingBag, Truck, Shield, Users, Star, ArrowRight } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { APP_ROUTES } from '@/constants/routes/app-routes';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
+import { Button } from '@/shared/ui/atoms/button';
+import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 
 export const metadata = {
   title: 'About Us | E-Shop',

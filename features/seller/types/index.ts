@@ -1,8 +1,4 @@
-import { 
-  SellerIdentityType, 
-  SellerBusinessType,
-  SELLER_BUSINESS_TYPE_LABELS
-} from '@/types';
+import { SellerIdentityType, SellerBusinessType, SELLER_BUSINESS_TYPE_LABELS } from '@/domains/seller/contracts/seller.types';
 
 export { SellerIdentityType, SellerBusinessType, SELLER_BUSINESS_TYPE_LABELS };
 

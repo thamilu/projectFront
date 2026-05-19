@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { Home, ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { CardFooter } from '@/components/ui/card';
+import { Button } from '@/shared/ui/atoms/button';
+import { CardFooter } from '@/shared/ui/atoms/card';
 
 export default function Error403Client() {
   return (

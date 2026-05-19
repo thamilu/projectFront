@@ -1,172 +1,75 @@
-import { apiClient } from '@/lib/http/services';
-import { logger } from '@/lib/observability/logger';
-import { ProductDTO, PageResponse, PageRequest } from '@/types';
-import { Store, StoreCreateRequest, StoreUpdateRequest, SellerProfile, SellerOnboardingRequest, SellerOnboardingResponse } from '../types';
-import { API_ENDPOINTS } from '@/constants/api/endpoints';
+import { sellerApi as domainSellerApi } from '@/domains/seller/infrastructure/api/seller-api';
+import { 
+  Store, 
+  StoreCreateRequest, 
+  StoreUpdateRequest, 
+  SellerProfile, 
+  SellerOnboardingRequest, 
+  SellerOnboardingResponse 
+} from '../types';
+import { PageResponse, PageRequest } from '@/shared/types';
+import { ProductDTO } from '@/domains/catalog/contracts/catalog.types';
 
 /**
- * [HARDEN] Consolidated Seller API Service
+ * [DELEGATED] Seller API Service
  * 
- * Single source of truth for all seller-related operations.
- * - Store Management
- * - Product Inventory Management
- * - Seller Profile & KYC
- * - Onboarding / Registration
+ * Bridges feature-level frontend types with the domain infrastructure API.
+ * Delegates all network calls directly to domains/seller/infrastructure/api/seller-api
+ * to prevent duplicate axios/fetch calls and ensure SRP and bounded ownership.
  */
 export const sellerApi = {
-  // ============================================================================
-  // Onboarding & Profile
-  // ============================================================================
-
-  /**
-   * Register a new seller (onboarding)
-   */
-  register: async (data: SellerOnboardingRequest): Promise<SellerOnboardingResponse> => {
-    logger.debug('🔍 [sellerApi.register] Onboarding request:', { data });
-    const { data: resp } = await apiClient.post<any>(API_ENDPOINTS.SELLERS.REGISTER, data);
-    return resp?.data ?? resp;
+  register: (data: SellerOnboardingRequest): Promise<SellerOnboardingResponse> => {
+    return domainSellerApi.register(data as any) as any;
   },
 
-  /**
-   * Get current user's seller profile (KYC status, etc.)
-   */
-  getMyProfile: async (): Promise<SellerProfile | null> => {
-    try {
-      const { data: resp } = await apiClient.get<any>(API_ENDPOINTS.SELLERS.PROFILE);
-      return resp?.data ?? resp;
-    } catch (error: any) {
-      if (error?.statusCode === 404) return null;
-      throw error;
-    }
+  getMyProfile: (): Promise<SellerProfile | null> => {
+    return domainSellerApi.getMyProfile() as any;
   },
 
-  /**
-   * Check if user has an active seller profile
-   */
-  profileExists: async (): Promise<boolean> => {
-    try {
-      const { data: resp } = await apiClient.get<any>(API_ENDPOINTS.SELLERS.PROFILE_EXISTS);
-      const data = resp?.data ?? resp;
-      return typeof data === 'boolean' ? data : Boolean(data);
-    } catch (error: any) {
-      if (error?.statusCode === 404) return false;
-      return false;
-    }
+  profileExists: (): Promise<boolean> => {
+    return domainSellerApi.profileExists();
   },
 
-  /**
-   * Update seller profile details
-   */
-  updateProfile: async (data: Partial<SellerOnboardingRequest>): Promise<SellerProfile> => {
-    const { data: resp } = await apiClient.put<any>(API_ENDPOINTS.SELLERS.PROFILE, data);
-    return resp?.data ?? resp;
+  updateProfile: (data: Partial<SellerOnboardingRequest>): Promise<SellerProfile> => {
+    return domainSellerApi.updateProfile(data as any) as any;
   },
 
-  // ============================================================================
-  // Store Management
-  // ============================================================================
-
-  /**
-   * Get current user's store details
-   */
-  getMyStore: async (): Promise<Store | null> => {
-    try {
-      const { data: resp } = await apiClient.get<any>(API_ENDPOINTS.SELLER_STORE.MY_STORE);
-      return resp?.data ?? resp;
-    } catch (error: any) {
-      if (error?.statusCode === 404) return null;
-      throw error;
-    }
+  getMyStore: (): Promise<Store | null> => {
+    return domainSellerApi.getMyStore() as any;
   },
 
-  /**
-   * Check if user has an active store
-   */
-  checkStoreExists: async (): Promise<boolean> => {
-    try {
-      const { data: resp } = await apiClient.get<any>(API_ENDPOINTS.SELLER_STORE.EXISTS);
-      const data = resp?.data ?? resp;
-      return Boolean(data);
-    } catch (error: any) {
-      if ([404, 403, 428].includes(error?.statusCode)) {
-        return false;
-      }
-      throw error;
-    }
+  checkStoreExists: (): Promise<boolean> => {
+    return domainSellerApi.checkStoreExists();
   },
 
-  /**
-   * Create a new store
-   */
-  createStore: async (storeData: StoreCreateRequest): Promise<Store> => {
-    const { data: resp } = await apiClient.post<any>(
-      API_ENDPOINTS.SELLER_STORE.MY_STORE,
-      storeData
-    );
-    return resp?.data ?? resp;
+  createStore: (storeData: StoreCreateRequest): Promise<Store> => {
+    return domainSellerApi.createStore(storeData as any) as any;
   },
 
-  /**
-   * Update existing store details
-   */
-  updateStore: async (storeData: Partial<StoreUpdateRequest>): Promise<Store> => {
-    const { data: resp } = await apiClient.put<any>(API_ENDPOINTS.SELLER_STORE.MY_STORE, storeData);
-    return resp?.data ?? resp;
+  updateStore: (storeData: Partial<StoreUpdateRequest>): Promise<Store> => {
+    return domainSellerApi.updateStore(storeData as any) as any;
   },
 
-  // ============================================================================
-  // Product Inventory Management
-  // ============================================================================
-
-  /**
-   * Get paginated products for the current seller
-   */
-  getMyProducts: async (params: PageRequest): Promise<PageResponse<ProductDTO>> => {
-    const { data: resp } = await apiClient.get<any>(
-      API_ENDPOINTS.SELLER_PRODUCTS.LIST,
-      { params }
-    );
-    return resp?.data ?? resp;
+  getMyProducts: (params: PageRequest): Promise<PageResponse<ProductDTO>> => {
+    return domainSellerApi.getMyProducts(params) as any;
   },
 
-  /**
-   * Create a new product as a seller
-   */
-  createProduct: async (productData: Partial<ProductDTO>): Promise<ProductDTO> => {
-    const { data: resp } = await apiClient.post<any>(
-      API_ENDPOINTS.SELLER_PRODUCTS.CREATE,
-      productData
-    );
-    return resp?.data ?? resp;
+  createProduct: (productData: Partial<ProductDTO>): Promise<ProductDTO> => {
+    return domainSellerApi.createProduct(productData) as any;
   },
 
-  /**
-   * Update a product as a seller
-   */
-  updateProduct: async (id: number, productData: Partial<ProductDTO>): Promise<ProductDTO> => {
-    const { data: resp } = await apiClient.put<any>(
-      API_ENDPOINTS.SELLER_PRODUCTS.UPDATE(id),
-      productData
-    );
-    return resp?.data ?? resp;
+  updateProduct: (id: number, productData: Partial<ProductDTO>): Promise<ProductDTO> => {
+    return domainSellerApi.updateProduct(id, productData) as any;
   },
 
-  /**
-   * Delete a product
-   */
-  deleteProduct: async (id: number): Promise<void> => {
-    await apiClient.delete(API_ENDPOINTS.SELLER_PRODUCTS.DELETE(id));
+  deleteProduct: (id: number): Promise<void> => {
+    return domainSellerApi.deleteProduct(id);
   },
 
-  /**
-   * Toggle product active/inactive status
-   */
-  toggleProductStatus: async (id: number): Promise<ProductDTO> => {
-    const { data: resp } = await apiClient.patch<any>(
-      API_ENDPOINTS.SELLER_PRODUCTS.TOGGLE_STATUS(id)
-    );
-    return resp?.data ?? resp;
+  toggleProductStatus: (id: number): Promise<ProductDTO> => {
+    return domainSellerApi.toggleProductStatus(id) as any;
   },
 };
 
-
+export const sellersApi = sellerApi;
+export default sellerApi;

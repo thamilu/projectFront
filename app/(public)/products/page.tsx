@@ -20,25 +20,25 @@
 import { useState, useMemo, useTransition, useCallback, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { z } from 'zod';
-import { useDebounce } from '@/hooks';
+import { useDebounce } from '@/shared/hooks';
 import { useProducts, useCategories, useBrands } from '@/features/products/hooks/use-products';
 import { useCart } from '@/features/cart/hooks/use-cart';
-import { formatPrice, calculateDiscount, cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { formatPrice, calculateDiscount, cn } from '@/shared/utils';
+import { Button } from '@/shared/ui/atoms/button';
+import { Input } from '@/shared/ui/atoms/input';
+import { Badge } from '@/shared/ui/atoms/badge';
+import { Skeleton } from '@/shared/ui/atoms/skeleton';
+import { Alert, AlertDescription } from '@/shared/ui/atoms/alert';
 import Link from 'next/link';
 import Image from 'next/image';
-import { siteConfig } from '@/lib/config';
+import { siteConfig } from '@/core/config';
 import {
   ProductSummarySchema,
   CategorySchema,
   BrandSchema,
   ProductListResponseSchema,
-} from '@/schemas/api-response.schema';
-import { logger } from '@/lib/observability/logger';
+} from '@/shared/schemas/api-response.schema';
+import { logger } from '@/core/telemetry/logger';
 import {
   Search,
   ShoppingCart,
@@ -483,7 +483,7 @@ export default function ProductsPage() {
               <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <Input
                 type="search"
-                placeholder="Search products, brands…"
+                placeholder="Search products, brandsâ€¦"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="h-11 rounded-xl pl-10"
@@ -589,7 +589,7 @@ export default function ProductsPage() {
                   <div
                     className={styles.loadingOverlay}
                     aria-live="polite"
-                    aria-label="Updating products…"
+                    aria-label="Updating productsâ€¦"
                   >
                     <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
                   </div>
