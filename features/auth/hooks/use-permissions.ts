@@ -18,22 +18,22 @@ interface UsePermissionsReturn {
 }
 
 export function usePermissions(): UsePermissionsReturn {
-  const { user, isLoading, isAuthenticated } = useAuth(); // Fetches from /api/auth/me
+  const { user, isLoading, isAuthenticated } = useAuth(); // NextAuth session via useAuth()
 
   // Handle singular vs plural roles from different auth implementations
   const roles = useMemo(() => {
     // Return empty roles while loading or if no user matches
     if (isLoading || !user) {
-       return [];
+      return [];
     }
-    
+
     // @ts-ignore - Handle potential singular role from other auth types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((user as any).role) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return [(user as any).role];
     }
-    
+
     // Existing use-auth returns roles array
     return user.roles || [];
   }, [user, isLoading]);
@@ -48,8 +48,10 @@ export function usePermissions(): UsePermissionsReturn {
     (requiredRoles: UserRole | UserRole[]): boolean => {
       if (!roles.length) return false;
       const reqRoles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
-      return reqRoles.some(req => 
-        roles.some(userRole => (userRole as string).toUpperCase() === (req as string).toUpperCase())
+      return reqRoles.some((req) =>
+        roles.some(
+          (userRole) => (userRole as string).toUpperCase() === (req as string).toUpperCase()
+        )
       );
     },
     [roles]
@@ -58,10 +60,10 @@ export function usePermissions(): UsePermissionsReturn {
   const hasPermission = useCallback(
     (permission: string): boolean => {
       // Sellers have all seller permissions
-      if (roles.some(r => ['SELLER'].includes((r as string).toUpperCase()))) {
+      if (roles.some((r) => ['SELLER'].includes((r as string).toUpperCase()))) {
         return true;
       }
-      
+
       if (!permissions.length) return false;
 
       // Exact match
@@ -93,10 +95,7 @@ export function usePermissions(): UsePermissionsReturn {
     [hasPermission]
   );
 
-  const isSeller = useMemo(
-    () => hasRole('SELLER' as UserRole),
-    [hasRole]
-  );
+  const isSeller = useMemo(() => hasRole('SELLER' as UserRole), [hasRole]);
 
   return {
     user,
