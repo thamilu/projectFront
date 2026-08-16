@@ -11,32 +11,12 @@ import { logger } from '@/core/telemetry/logger';
 // ---------------------------------------------------------------------------
 export { useAuth } from '@/features/auth';
 
-/**
- * Hook for debounced value
- */
-export function useDebounce<T>(value: T, delay: number = 500): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
+export { useDebounce } from './use-debounce';
 
 /**
  * Hook for async operations
  */
-export function useAsync<T>(
-  asyncFunction: () => Promise<T>,
-  immediate: boolean = true
-) {
+export function useAsync<T>(asyncFunction: () => Promise<T>, immediate: boolean = true) {
   const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -146,27 +126,7 @@ export function useLocalStorage<T>(
   return [storedValue, setValue, removeValue];
 }
 
-/**
- * Hook for media query
- */
-export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const media = window.matchMedia(query);
-    if (media.matches !== matches) {
-      setMatches(media.matches);
-    }
-
-    const listener = () => setMatches(media.matches);
-    media.addEventListener('change', listener);
-
-    return () => media.removeEventListener('change', listener);
-  }, [matches, query]);
-
-  return matches;
-}
+export { useMediaQuery } from './use-media-query';
 
 /**
  * Hook for previous value
@@ -184,9 +144,7 @@ export function usePrevious<T>(value: T): T | undefined {
 /**
  * Hook for click outside
  */
-export function useClickOutside<T extends HTMLElement>(
-  callback: () => void
-) {
+export function useClickOutside<T extends HTMLElement>(callback: () => void) {
   const ref = useRef<T>(null);
 
   useEffect(() => {
@@ -237,5 +195,10 @@ export function useWindowSize() {
 
 export * from './use-mounted';
 export * from './use-app-integrations';
-export * from './use-keycloak-auth';
-
+export * from './use-feature-flag';
+export * from './useIsomorphicLayoutEffect';
+export * from './use-reduced-motion';
+export * from './use-body-scroll-lock';
+export * from './use-focus-on-change';
+export * from './use-merged-ref';
+export * from './use-animation-config';
