@@ -1,10 +1,10 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
+import * as React from 'react';
+import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 
-import { cn } from "@/shared/utils"
-import { Button } from "@/shared/ui/atoms/button"
+import { cn } from '@/shared/utils';
+import { Button } from '@/shared/ui/atoms/button';
 import {
   Command,
   CommandEmpty,
@@ -12,63 +12,67 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/shared/ui/atoms/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/shared/ui/atoms/popover"
+} from '@/shared/ui/atoms/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/atoms/popover';
 
 export interface ComboboxOption {
-  value: string | number
-  label: string
+  value: string | number;
+  label: string;
 }
 
 interface ComboboxProps {
-  options: ComboboxOption[]
-  value?: string | number
-  onSelect: (value: string | number) => void
-  placeholder?: string
-  searchPlaceholder?: string
-  emptyText?: string
-  className?: string
-  disabled?: boolean
-  loading?: boolean
-  allowCustomValue?: boolean
-  onSearchChange?: (value: string) => void
+  options: ComboboxOption[];
+  value?: string | number;
+  onSelect: (value: string | number) => void;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  emptyText?: string;
+  className?: string;
+  disabled?: boolean;
+  loading?: boolean;
+  allowCustomValue?: boolean;
+  onSearchChange?: (value: string) => void;
+  /** Forwarded to the trigger button so a <label htmlFor> can associate with it. */
+  id?: string;
+  /** Forwarded to the trigger button for cases without a visible <label>. */
+  'aria-label'?: string;
 }
 
 export function Combobox({
   options = [],
   value,
   onSelect,
-  placeholder = "Select option...",
-  searchPlaceholder = "Search...",
-  emptyText = "No results found.",
+  placeholder = 'Select option...',
+  searchPlaceholder = 'Search...',
+  emptyText = 'No results found.',
   className,
   disabled = false,
   loading = false,
   allowCustomValue = false,
-  onSearchChange
+  onSearchChange,
+  id,
+  'aria-label': ariaLabel,
 }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false)
-  const [searchValue, setSearchValue] = React.useState("")
+  const [open, setOpen] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState('');
 
   // Find the selected label
   const selectedLabel = React.useMemo(() => {
-    if (value === undefined || value === null || value === "") return undefined
-    const option = options.find((option) => String(option.value) === String(value))
-    return option ? option.label : String(value) // Return value itself if it's a custom value
-  }, [value, options])
+    if (value === undefined || value === null || value === '') return undefined;
+    const option = options.find((option) => String(option.value) === String(value));
+    return option ? option.label : String(value); // Return value itself if it's a custom value
+  }, [value, options]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", !value && "text-muted-foreground", className)}
+          aria-label={ariaLabel}
+          className={cn('w-full justify-between', !value && 'text-muted-foreground', className)}
           disabled={disabled}
         >
           <span className="truncate">{selectedLabel || placeholder}</span>
@@ -81,23 +85,23 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
         <Command>
-          <CommandInput 
-            placeholder={searchPlaceholder} 
-            value={searchValue} 
+          <CommandInput
+            placeholder={searchPlaceholder}
+            value={searchValue}
             onValueChange={(val) => {
-              setSearchValue(val)
-              onSearchChange?.(val)
-            }} 
+              setSearchValue(val);
+              onSearchChange?.(val);
+            }}
           />
           <CommandList>
             <CommandEmpty>
               {allowCustomValue && searchValue ? (
                 <button
-                  className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                  className="relative flex w-full cursor-default items-center rounded-sm px-2 py-1.5 text-sm text-slate-900 outline-none select-none hover:bg-slate-100 hover:text-slate-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:text-slate-100 dark:hover:bg-slate-700 dark:hover:text-slate-100"
                   onClick={() => {
-                    onSelect(searchValue)
-                    setOpen(false)
-                    setSearchValue("")
+                    onSelect(searchValue);
+                    setOpen(false);
+                    setSearchValue('');
                   }}
                 >
                   Use custom value: "{searchValue}"
@@ -112,15 +116,15 @@ export function Combobox({
                   key={option.value}
                   value={option.label}
                   onSelect={() => {
-                    onSelect(option.value)
-                    setOpen(false)
-                    setSearchValue("")
+                    onSelect(option.value);
+                    setOpen(false);
+                    setSearchValue('');
                   }}
                 >
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
-                      String(value) === String(option.value) ? "opacity-100" : "opacity-0"
+                      'mr-2 h-4 w-4',
+                      String(value) === String(option.value) ? 'opacity-100' : 'opacity-0'
                     )}
                   />
                   {option.label}
@@ -131,5 +135,5 @@ export function Combobox({
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }
