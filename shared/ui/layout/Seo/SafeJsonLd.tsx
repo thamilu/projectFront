@@ -1,20 +1,23 @@
 import React from 'react';
-import { headers } from 'next/headers';
 
 interface SafeJsonLdProps {
   data: unknown;
+  nonce?: string;
 }
 
-export default async function SafeJsonLd({ data }: SafeJsonLdProps) {
-  const h = await headers();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nonce = (h as any).get ? (h as any).get('x-csp-nonce') : undefined;
+export default function SafeJsonLd({ data, nonce }: SafeJsonLdProps) {
+  // JSON.stringify does not escape "</script>" (or "<!--"), so a value that
+  // ever contains user-generated text (e.g. a product description folded
+  // into structured data) could break out of the script tag. Escaping "<"
+  // is safe for JSON-LD — it's never a meaningful character in JSON output —
+  // and is the standard mitigation for this exact class of injection.
+  const json = JSON.stringify(data).replace(/</g, '\\u003c');
 
   return (
     <script
       type="application/ld+json"
-       
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      suppressHydrationWarning
+      dangerouslySetInnerHTML={{ __html: json }}
       {...(nonce ? { nonce } : {})}
     />
   );

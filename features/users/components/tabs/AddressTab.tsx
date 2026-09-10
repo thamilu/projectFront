@@ -39,18 +39,18 @@ export const AddressTab = memo(function AddressTab({
 
   return (
     <TabContainer actions={actions} hasNext={hasNext} hasBack={hasBack}>
-        <div className="space-y-6">
-          <AddressFields disabled={isDisabled} showTitle={false} />
-        </div>
+      <div className="space-y-6">
+        <AddressFields disabled={isDisabled} showTitle={false} />
+      </div>
 
-        {/* Onboarding Shipping Tip Banner */}
-        <div className="flex items-start gap-3 rounded-xl border border-blue-500/30 bg-blue-500/10 p-4 text-xs font-semibold text-slate-350 shadow-md">
-          <MapPin className="mt-0.5 h-5 w-5 shrink-0 animate-pulse text-blue-500" />
-          <div>
-            <span className="font-bold text-blue-500">Shipping Tip:</span> Ensure your pincode
-            matches your city and locality exactly to avoid carrier delays on package delivery.
-          </div>
+      {/* Shipping Tip Banner */}
+      <div className="flex items-start gap-2.5 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <div>
+          <span className="font-semibold text-foreground">Delivery Tip:</span> Ensure your postal PIN code
+          matches your city and locality to prevent carrier routing delays.
         </div>
+      </div>
     </TabContainer>
   );
 });

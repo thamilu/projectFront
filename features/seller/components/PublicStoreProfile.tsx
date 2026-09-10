@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Store as StoreIcon, Mail, MapPin, Phone, Star, ArrowLeft } from 'lucide-react';
 
 import type { StoreDTO } from '@/shared/types';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/routes';
 import { Button } from '@/shared/ui/atoms/button';
 import { Badge } from '@/shared/ui/atoms/badge';
 import {
@@ -11,6 +11,7 @@ import {
   getStoreDisplayName,
   getStoreInitials,
 } from '@/shared/store/store-helpers';
+import { sanitizeCSSValue } from '@/lib/sanitize';
 
 interface PublicStoreProfileProps {
   store: StoreDTO;
@@ -59,7 +60,9 @@ export function PublicStoreProfile({ store }: PublicStoreProfileProps) {
               />
             ) : (
               <span
-                style={{ background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}88)` }}
+                style={{
+                  background: `linear-gradient(135deg, ${sanitizeCSSValue(avatarColor)}, ${sanitizeCSSValue(avatarColor)}88)`,
+                }}
                 className="flex h-full w-full items-center justify-center rounded-2xl"
               >
                 {initials || name[0]}

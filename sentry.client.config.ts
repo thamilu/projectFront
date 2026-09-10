@@ -10,10 +10,10 @@ const SENTRY_ENVIRONMENT = process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || process
 Sentry.init({
   dsn: SENTRY_DSN,
   environment: SENTRY_ENVIRONMENT,
-  
+
   // Adjust this value in production, or use tracesSampler for greater control
   tracesSampleRate: SENTRY_ENVIRONMENT === 'production' ? 0.1 : 1.0,
-  
+
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
 
@@ -52,13 +52,16 @@ Sentry.init({
     // Filter out events from browser extensions
     if (event.exception) {
       const values = event.exception.values || [];
-      if (values.some((value) => {
-        const stacktrace = value.stacktrace?.frames || [];
-        return stacktrace.some((frame) => 
-          frame.filename?.includes('chrome-extension://') ||
-          frame.filename?.includes('moz-extension://')
-        );
-      })) {
+      if (
+        values.some((value) => {
+          const stacktrace = value.stacktrace?.frames || [];
+          return stacktrace.some(
+            (frame) =>
+              frame.filename?.includes('chrome-extension://') ||
+              frame.filename?.includes('moz-extension://')
+          );
+        })
+      ) {
         return null; // Don't send extension errors
       }
     }

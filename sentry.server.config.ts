@@ -18,11 +18,7 @@ Sentry.init({
   debug: false,
 
   // Ignore errors from health check endpoints
-  ignoreErrors: [
-    'ECONNREFUSED',
-    'ETIMEDOUT',
-    'ENOTFOUND',
-  ],
+  ignoreErrors: ['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND'],
 
   // Filter transactions
   beforeSendTransaction(event) {

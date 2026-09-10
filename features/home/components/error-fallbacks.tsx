@@ -21,13 +21,13 @@ interface SectionErrorProps {
 /**
  * Composable section error component with mobile-responsive layout
  * and WCAG 2.2 compliant touch targets
- * 
+ *
  * Features:
  * - Responsive flex layout (stacks on mobile, inline on desktop)
  * - 44×44px minimum touch target for retry button
  * - Proper ARIA attributes for screen readers
  * - Consistent padding and styling
- * 
+ *
  * @example
  * ```tsx
  * <SectionError
@@ -37,14 +37,9 @@ interface SectionErrorProps {
  * />
  * ```
  */
-export function SectionError({ 
-  title, 
-  message, 
-  onRetry,
-  className 
-}: SectionErrorProps) {
+export function SectionError({ title, message, onRetry, className }: SectionErrorProps) {
   return (
-    <section className={cn("container mx-auto px-4 py-8", className)}>
+    <section className={cn('container mx-auto px-4 py-8', className)}>
       <Alert variant="destructive" role="alert" aria-live="polite">
         <AlertCircle className="h-4 w-4" aria-hidden="true" />
         <AlertTitle>{title}</AlertTitle>
@@ -52,9 +47,9 @@ export function SectionError({
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-sm">{message}</span>
             {onRetry && (
-              <Button 
+              <Button
                 variant="secondary"
-                size="sm" 
+                size="sm"
                 onClick={onRetry}
                 aria-label={`Retry: ${title}`}
                 className="min-h-[44px] min-w-[44px] shrink-0"
@@ -123,9 +118,9 @@ export function AppDownloadError({ onRetry }: Pick<SectionErrorProps, 'onRetry'>
   );
 }
 
-export function SectionErrorFallback({ 
-  section, 
-  onRetry 
+export function SectionErrorFallback({
+  section,
+  onRetry,
 }: Pick<SectionErrorProps, 'onRetry'> & { section?: string }) {
   return (
     <SectionError

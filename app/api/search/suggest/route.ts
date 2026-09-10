@@ -1,43 +1,43 @@
 /**
  * GET /api/search/suggest
- * 
+ *
  * Search suggestions and autocomplete endpoint
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { apiClient } from '@/core/client';
-import { getRequestLogger } from '@/core/telemetry/logger'
+import { getRequestLogger } from '@/core/telemetry/logger';
 
 const suggestSchema = z.object({
   q: z.string().min(2, 'Query must be at least 2 characters'),
   size: z.coerce.number().positive().max(20).optional().default(10),
-})
+});
 
 export async function GET(request: NextRequest) {
-  const requestId = request.headers.get('x-request-id') || crypto.randomUUID()
-  const log = getRequestLogger(requestId)
+  const requestId = request.headers.get('x-request-id') || crypto.randomUUID();
+  const log = getRequestLogger(requestId);
 
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(request.url);
 
     const params = suggestSchema.parse({
       q: searchParams.get('q'),
       size: searchParams.get('size') || '10',
-    })
+    });
 
     log.info('Search suggestions request', {
       query: params.q,
       size: params.size,
       requestId,
-    })
+    });
 
     // Execute search via backend API
     const { data: results } = await apiClient.get<any>('/api/v1/products/search/suggest', {
       params: {
         query: params.q,
         size: params.size,
-      }
+      },
     });
 
     log.info('Search suggestions completed', {
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       suggestionsCount: results.suggestions?.length ?? 0,
       productsCount: results.products?.length ?? 0,
       requestId,
-    })
+    });
 
     return NextResponse.json(
       {
@@ -58,9 +58,9 @@ export async function GET(request: NextRequest) {
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
         },
       }
-    )
+    );
   } catch (error) {
-    log.error('Search suggestions failed', { error, requestId })
+    log.error('Search suggestions failed', { error, requestId });
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
           status: 400,
           headers: { 'X-Request-ID': requestId },
         }
-      )
+      );
     }
 
     return NextResponse.json(
@@ -84,6 +84,6 @@ export async function GET(request: NextRequest) {
         status: 500,
         headers: { 'X-Request-ID': requestId },
       }
-    )
+    );
   }
 }

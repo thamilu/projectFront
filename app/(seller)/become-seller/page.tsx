@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { Store, TrendingUp, Shield, Headphones, ChevronRight } from 'lucide-react';
 import { Button } from '@/shared/ui/atoms/button';
 import { Card, CardContent } from '@/shared/ui/atoms/card';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/routes';
 
 const BENEFITS = [
   {
@@ -46,19 +46,28 @@ export default function BecomeSellerPage() {
             E-Shop
           </span>
         </h1>
-        <p className="mx-auto mb-10 max-w-xl text-lg text-muted-foreground">
-          Join over 10,000 sellers already growing their businesses on India&apos;s trusted marketplace.
+        <p className="text-muted-foreground mx-auto mb-10 max-w-xl text-lg">
+          Join over 10,000 sellers already growing their businesses on India&apos;s trusted
+          marketplace.
         </p>
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           {session ? (
-            <Button asChild size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white px-10">
+            <Button
+              asChild
+              size="lg"
+              className="bg-indigo-600 px-10 text-white hover:bg-indigo-700"
+            >
               <Link href={APP_ROUTES.SELLER.REGISTER}>
                 Register as a seller <ChevronRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           ) : (
             <>
-              <Button asChild size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white px-10">
+              <Button
+                asChild
+                size="lg"
+                className="bg-indigo-600 px-10 text-white hover:bg-indigo-700"
+              >
                 <Link href={APP_ROUTES.AUTH_LOGIN}>
                   Sign in to get started <ChevronRight className="ml-2 h-5 w-5" />
                 </Link>
@@ -76,13 +85,13 @@ export default function BecomeSellerPage() {
         <h2 className="mb-10 text-center text-2xl font-bold">Why sell with us?</h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {BENEFITS.map(({ icon: Icon, title, desc }) => (
-            <Card key={title} className="border-0 shadow-md hover:shadow-xl transition-shadow">
+            <Card key={title} className="border-0 shadow-md transition-shadow hover:shadow-xl">
               <CardContent className="p-6">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-900">
                   <Icon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <h3 className="mb-2 font-semibold">{title}</h3>
-                <p className="text-sm text-muted-foreground">{desc}</p>
+                <p className="text-muted-foreground text-sm">{desc}</p>
               </CardContent>
             </Card>
           ))}
@@ -92,8 +101,10 @@ export default function BecomeSellerPage() {
       {/* CTA footer */}
       <section className="border-t py-16 text-center">
         <h2 className="mb-4 text-2xl font-bold">Ready to start?</h2>
-        <p className="mb-6 text-muted-foreground">It only takes a few minutes to set up your store.</p>
-        <Button asChild size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+        <p className="text-muted-foreground mb-6">
+          It only takes a few minutes to set up your store.
+        </p>
+        <Button asChild size="lg" className="bg-indigo-600 text-white hover:bg-indigo-700">
           <Link href={session ? APP_ROUTES.SELLER.REGISTER : APP_ROUTES.AUTH_LOGIN}>
             Get started for free
           </Link>

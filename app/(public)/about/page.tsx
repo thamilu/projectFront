@@ -2,11 +2,15 @@ import Link from 'next/link';
 import { ShoppingBag, Truck, Shield, Users, Star, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from '@/shared/ui/atoms/card';
 import { Button } from '@/shared/ui/atoms/button';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/routes';
 
 export const metadata = {
-  title: 'About Us | E-Shop',
-  description: 'Learn about E-Shop – India\'s trusted online marketplace.',
+  // Title only. The root layout's `title.template` appends the site name;
+  // hardcoding a suffix here doubled it in the tab and in og:title — and
+  // used a brand spelling ('E-Shop') that does not match the configured
+  // `siteConfig.name` either.
+  title: 'About Us',
+  description: "Learn about E-Shop – India's trusted online marketplace.",
 };
 
 const STATS = [
@@ -17,10 +21,26 @@ const STATS = [
 ];
 
 const VALUES = [
-  { icon: Shield, title: 'Trust & Safety', desc: 'Every transaction is secured with industry-standard encryption and buyer protection.' },
-  { icon: Truck, title: 'Fast Delivery', desc: 'We partner with reliable logistics to ensure your orders arrive on time.' },
-  { icon: Star, title: 'Quality Assurance', desc: 'Sellers are verified and products are reviewed to maintain high standards.' },
-  { icon: Users, title: 'Community', desc: 'A thriving marketplace where buyers, sellers, and delivery partners grow together.' },
+  {
+    icon: Shield,
+    title: 'Trust & Safety',
+    desc: 'Every transaction is secured with industry-standard encryption and buyer protection.',
+  },
+  {
+    icon: Truck,
+    title: 'Fast Delivery',
+    desc: 'We partner with reliable logistics to ensure your orders arrive on time.',
+  },
+  {
+    icon: Star,
+    title: 'Quality Assurance',
+    desc: 'Sellers are verified and products are reviewed to maintain high standards.',
+  },
+  {
+    icon: Users,
+    title: 'Community',
+    desc: 'A thriving marketplace where buyers, sellers, and delivery partners grow together.',
+  },
 ];
 
 export default function AboutPage() {
@@ -34,7 +54,8 @@ export default function AboutPage() {
           </div>
           <h1 className="mb-4 text-4xl font-extrabold sm:text-5xl">About E-Shop</h1>
           <p className="mx-auto max-w-2xl text-lg text-blue-100">
-            India&apos;s fastest-growing online marketplace connecting millions of shoppers with passionate sellers and reliable delivery partners.
+            India&apos;s fastest-growing online marketplace connecting millions of shoppers with
+            passionate sellers and reliable delivery partners.
           </p>
         </div>
       </section>
@@ -45,8 +66,8 @@ export default function AboutPage() {
           <div className="grid grid-cols-2 gap-6 text-center md:grid-cols-4">
             {STATS.map((s) => (
               <div key={s.label}>
-                <p className="text-4xl font-extrabold text-primary">{s.value}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{s.label}</p>
+                <p className="text-primary text-4xl font-extrabold">{s.value}</p>
+                <p className="text-muted-foreground mt-1 text-sm">{s.label}</p>
               </div>
             ))}
           </div>
@@ -57,8 +78,10 @@ export default function AboutPage() {
       <section className="container mx-auto px-4 py-16">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="mb-4 text-3xl font-bold">Our Mission</h2>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            We exist to democratize commerce. Whether you&apos;re a buyer looking for the best deals, a seller wanting to grow your business, or a delivery partner seeking flexible income — E-Shop is built for you.
+          <p className="text-muted-foreground text-lg leading-relaxed">
+            We exist to democratize commerce. Whether you&apos;re a buyer looking for the best
+            deals, a seller wanting to grow your business, or a delivery partner seeking flexible
+            income — E-Shop is built for you.
           </p>
         </div>
       </section>
@@ -71,11 +94,11 @@ export default function AboutPage() {
             {VALUES.map(({ icon: Icon, title, desc }) => (
               <Card key={title} className="border-0 shadow-sm">
                 <CardContent className="p-6">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                    <Icon className="h-6 w-6 text-primary" />
+                  <div className="bg-primary/10 mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
+                    <Icon className="text-primary h-6 w-6" />
                   </div>
                   <h3 className="mb-2 font-semibold">{title}</h3>
-                  <p className="text-sm text-muted-foreground">{desc}</p>
+                  <p className="text-muted-foreground text-sm">{desc}</p>
                 </CardContent>
               </Card>
             ))}
@@ -88,7 +111,9 @@ export default function AboutPage() {
         <h2 className="mb-4 text-2xl font-bold">Ready to join us?</h2>
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <Button asChild size="lg">
-            <Link href={APP_ROUTES.PRODUCTS}>Start Shopping <ArrowRight className="ml-2 h-5 w-5" /></Link>
+            <Link href={APP_ROUTES.PRODUCTS}>
+              Start Shopping <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
           </Button>
           <Button asChild variant="outline" size="lg">
             <Link href={APP_ROUTES.BECOME_SELLER}>Become a Seller</Link>

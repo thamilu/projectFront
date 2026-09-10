@@ -10,15 +10,21 @@ interface CompressionOptions {
   mimeType?: string;
 }
 
-export async function compressImage(
-  file: File,
-  options: CompressionOptions = {}
-): Promise<File> {
+// Canvas can re-encode these without any special handling; anything else
+// (heic, avif inputs some browsers can decode but not re-encode, etc.)
+// falls back to JPEG rather than producing a mislabeled/broken file.
+const CANVAS_ENCODABLE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+export async function compressImage(file: File, options: CompressionOptions = {}): Promise<File> {
   const {
     maxWidth = 1920,
     maxHeight = 1080,
     quality = 0.8,
-    mimeType = 'image/jpeg'
+    // Preserve the input format by default — forcing JPEG unconditionally
+    // silently destroyed alpha transparency on every PNG (and re-encoded
+    // WebP as JPEG) uploaded through callers that don't explicitly pass
+    // mimeType, flattening transparent backgrounds to opaque black.
+    mimeType = CANVAS_ENCODABLE_TYPES.has(file.type) ? file.type : 'image/jpeg',
   } = options;
 
   // Don't compress if it's already small enough (e.g., under 500KB)
@@ -35,18 +41,16 @@ export async function compressImage(
         let width = img.width;
         let height = img.height;
 
-        // Maintain aspect ratio
-        if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
+        // Scale down to fit within maxWidth x maxHeight, preserving aspect
+        // ratio. A single min() scale factor bounds BOTH dimensions at once —
+        // branching on width>height and checking only that axis's own
+        // threshold (the previous approach) could pass an image through
+        // whose other dimension still exceeded its bound, e.g. a 2000x1500
+        // image against {maxWidth:1920, maxHeight:1080} previously resized
+        // to 1920x1440, still 360px over maxHeight.
+        const scale = Math.min(1, maxWidth / width, maxHeight / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
 
         canvas.width = width;
         canvas.height = height;

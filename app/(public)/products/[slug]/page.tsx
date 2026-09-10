@@ -1,11 +1,12 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { productsApi } from '@/domains/catalog/infrastructure/api/catalog-api';
+import { resolveProductBySlug } from '@/domains/catalog/infrastructure/api/resolve-product';
 import ProductDetailClient from './product-detail-client';
 import { ProductDTO } from '@/domains/catalog/contracts/catalog.types';
 import { ShopDTO } from '@/domains/seller/contracts/seller.types';
 import SafeJsonLd from '@/shared/ui/layout/Seo/SafeJsonLd';
-// import { logger } from '@/lib/logger';
+import { logger } from '@/core/telemetry/logger';
 
 // Enable ISR: Regenerate page every hour
 export const revalidate = 3600;
@@ -21,10 +22,13 @@ export async function generateStaticParams() {
     });
 
     return response.content.map((product: ProductDTO) => ({
-      slug: (product as ProductDTO & { urlSlug?: string }).urlSlug || product.id.toString(),
+      slug: product.urlSlug || product.id.toString(),
     }));
-  } catch (_error) {
-    // error logging removed (logger not defined)
+  } catch (error) {
+    logger.error('[generateStaticParams] Failed to pre-fetch featured products', {
+      component: 'app/(public)/products/[slug]',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
@@ -36,131 +40,100 @@ type Props = {
 
 // Generate dynamic metadata for SEO
 export async function generateMetadata(props: Props): Promise<Metadata> {
-  try {
-    const params = await props.params;
-    // Fetch product data for metadata
-    const product = await fetchProductBySlug(params.slug) as ProductDTO | null;
+  const params = await props.params;
+  const product = await resolveProductBySlug(params.slug);
 
-    if (!product) {
-      return {
-        title: 'Product Not Found',
-      };
-    }
-
-
-
+  if (!product) {
     return {
-      title: `${product.name} | E-Commerce Platform`,
-      description: product.description?.substring(0, 160) || `Buy ${product.name} online`,
-      keywords: [
-        product.name,
-        product.category?.name,
-        product.brand?.name,
-        ...(product.tags?.map((t) => t.name) || []),
-      ].filter(Boolean) as string[],
-      openGraph: {
-        title: product.name,
-        description: product.description || '',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        images: Array.isArray((product as any).images)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ? ((product as any).images as { id?: number; url: string }[]).map((img) => ({
-              url: img.url,
-    // error logging removed (logger not defined)
-              height: 600,
-              alt: product.name,
-            }))
-          : (product.imageUrl ? [{ url: product.imageUrl, width: 800, height: 600, alt: product.name }] : []),
-        type: 'website',
-        siteName: 'E-Commerce Platform',
-      },
-      twitter: {
-        card: 'summary_large_image',
-        title: product.name,
-        description: product.description || '',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        images: Array.isArray((product as any).images) && ((product as any).images as { url: string }[])[0]?.url
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ? [((product as any).images as { url: string }[])[0].url]
-          : (product.imageUrl ? [product.imageUrl] : []),
-      },
-      alternates: {
-        canonical: `/products/${params.slug}`,
-      },
-    };
-  } catch (_error) {
-    return {
-      title: 'Product | E-Commerce Platform',
+      title: 'Product Not Found',
     };
   }
-}
 
-// Helper function to fetch product by slug or ID
-async function fetchProductBySlug(slug: string) {
-  try {
-    // Try to fetch by URL slug first
-    const product = await productsApi.getByUrl(slug);
-    return product;
-  } catch (_error) {
-    // If not found by slug, try by ID
-    const productId = parseInt(slug);
-    if (!isNaN(productId)) {
-      try {
-        return await productsApi.getById(productId);
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  }
+  const images = product.images ?? [];
+
+  return {
+    // Product name only; the layout template supplies the site suffix.
+    title: product.name,
+    description: product.description?.substring(0, 160) || `Buy ${product.name} online`,
+    keywords: [
+      product.name,
+      product.category?.name,
+      product.brand?.name,
+      ...(product.tags?.map((t) => t.name) || []),
+    ].filter(Boolean) as string[],
+    openGraph: {
+      title: product.name,
+      description: product.description || '',
+      images: images.length
+        ? images.map((img) => ({ url: img.url, height: 600, alt: product.name }))
+        : product.imageUrl
+          ? [{ url: product.imageUrl, width: 800, height: 600, alt: product.name }]
+          : [],
+      type: 'website',
+      siteName: 'E-Commerce Platform',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: product.name,
+      description: product.description || '',
+      images: images[0]?.url
+        ? [images[0].url]
+        : product.imageUrl
+          ? [product.imageUrl]
+          : [],
+    },
+    alternates: {
+      canonical: `/products/${params.slug}`,
+    },
+  };
 }
 
 // Server Component - fetch data and render
 export default async function ProductDetailPage(props: Props) {
   const params = await props.params;
-  const product = (await fetchProductBySlug(params.slug)) as ProductDTO | null;
+  const product = await resolveProductBySlug(params.slug);
 
   if (!product) {
     notFound();
   }
+
+  const images = product.images ?? [];
 
   // Generate JSON-LD structured data for SEO
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    image: Array.isArray((product as any).images)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ? ((product as any).images as { url: string }[]).map((img) => img.url)
-      : (product.imageUrl ? [product.imageUrl] : []),
+    image: images.length ? images.map((img) => img.url) : product.imageUrl ? [product.imageUrl] : [],
     sku: product.sku,
-    brand: product.brand ? {
-      '@type': 'Brand',
-      name: product.brand.name,
-    } : undefined,
+    brand: product.brand
+      ? {
+          '@type': 'Brand',
+          name: product.brand.name,
+        }
+      : undefined,
     offers: {
       '@type': 'Offer',
       url: `${process.env.NEXT_PUBLIC_APP_URL}/products/${params.slug}`,
       priceCurrency: 'INR',
       price: product.discountPrice || product.price,
       priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      availability: product.stockQuantity > 0
-        ? 'https://schema.org/InStock'
-        : 'https://schema.org/OutOfStock',
-      seller: product.shop ? {
-        '@type': 'Organization',
-        name: (product.shop as ShopDTO).shopName,
-      } : undefined,
+      availability:
+        product.stockQuantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      seller: product.shop
+        ? {
+            '@type': 'Organization',
+            name: (product.shop as ShopDTO).shopName,
+          }
+        : undefined,
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    aggregateRating: (product as any).averageRating ? {
-      '@type': 'AggregateRating',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ratingValue: (product as any).averageRating,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      reviewCount: (product as any).reviewCount || 0,
-    } : undefined,
+    aggregateRating: product.averageRating
+      ? {
+          '@type': 'AggregateRating',
+          ratingValue: product.averageRating,
+          reviewCount: product.reviewCount || 0,
+        }
+      : undefined,
   };
 
   return (

@@ -1,12 +1,7 @@
 'use client';
 
-import { ReactNode } from 'react';
-import { AuthGuard } from '@/features/auth/components/guards/AuthGuard';
+import { UserRole } from '@/domains/auth/contracts/auth.types';
+import { createRoleGuard } from '@/features/auth/components/guards/createRoleGuard';
 
-export function DeliveryGuard({ children }: { children: ReactNode }) {
-  return (
-    <AuthGuard requiredRoles={['DELIVERY_AGENT']}>
-      {children}
-    </AuthGuard>
-  );
-}
+/** Restricts access to authenticated users with the DELIVERY_AGENT role. */
+export const DeliveryGuard = createRoleGuard(UserRole.DELIVERY_AGENT, 'DeliveryGuard');

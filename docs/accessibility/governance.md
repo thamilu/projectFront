@@ -23,5 +23,6 @@ E-Shop is committed to providing a digital storefront accessible to everyone. We
 ## 🤖 Automated CI Testing
 
 To protect against regression:
-* Run local `axe-core` engines within our Jest/React testing library setups.
-* Ensure all high-volume presentation elements (catalog, checkout, profile) pass strict Lighthouse and Wave audits prior to deployment.
+
+- Run local `axe-core` engines within our Jest/React testing library setups.
+- Ensure all high-volume presentation elements (catalog, checkout, profile) pass strict Lighthouse and Wave audits prior to deployment.

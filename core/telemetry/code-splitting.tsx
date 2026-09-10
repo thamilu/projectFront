@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Code Splitting and Lazy Loading Utilities
  *

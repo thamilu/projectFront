@@ -1,187 +1,94 @@
-/* Tailwind CSS v4 - Import utilities */
+/**
+ * Enterprise Design System — Global Styles Entrypoint
+ *
+ * Architecture:
+ * 1. Framework Imports & Plugins
+ * 2. Cascade Layer Priority Declarations (highest priority last)
+ * 3. Custom Theme Variants
+ * 4. Composable Container Utilities (using Spacing Scale)
+ * 5. Modular Subsystem Imports
+ *
+ * @version 3.2.0
+ * @design-system Enterprise v3
+ */
+
+/* ==========================================================================
+   1. IMPORTS & PLUGINS
+   ========================================================================== */
+
+@import 'tailwindcss';
+@import './styles/tokens.css';
+@import './styles/themes.css';
+@import './styles/base.css';
+@import './styles/accessibility.css';
+@import './styles/animations.css';
+@import './styles/utilities.css';
+@import './styles/components.css';
 
 @plugin 'tailwindcss-animate';
-@import 'tailwindcss';
+
+/* ==========================================================================
+   2. CASCADE LAYER PRIORITY ORDER
+      Controls the precedence of overrides. Leftmost is base, rightmost wins.
+   ========================================================================== */
+
+@layer framework, tokens, themes, base, components, utilities, animations, overrides;
+
+/* ==========================================================================
+   3. CUSTOM VARIANTS
+   ========================================================================== */
 
 @custom-variant dark (&:is(.dark *));
 
 /* ==========================================================================
-   Enterprise Design System - Global Styles
+   4. COMPOSABLE CONTAINER UTILITY (8pt grid spacing scale)
    ========================================================================== */
 
-@theme {
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
-
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
-
-  @keyframes accordion-down {
-    from { height: 0; }
-    to { height: var(--radix-accordion-content-height); }
-  }
-  @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); }
-    to { height: 0; }
-  }
-}
-
 @utility container {
+  /*
+   * [FIXED] Every `padding-inline` below previously referenced a t-shirt-sized
+   * token — `--space-md`, `--space-lg`, `--space-xl`, `--space-2xl`,
+   * `--space-3xl` — and **none of those exist**. The design system's spacing
+   * scale is numeric (`--space-1` … `--space-44`, see styles/tokens.css), so
+   * every one of these declarations was invalid and silently dropped by the
+   * browser. There were no fallbacks, unlike the `var(--space-md, 1rem)` uses
+   * in accessibility.css, so nothing caught it.
+   *
+   * The visible result: the container's responsive horizontal padding never
+   * changed with viewport, and different sections ended up with different
+   * effective widths depending on what other padding happened to apply — 24px
+   * on some, 0 on others, measured on the live homepage. That is what made two
+   * adjacent sections look mismatched at the left edge.
+   *
+   * `max-width` was unaffected because those values are literals, which is why
+   * the breakage was invisible: the layout looked plausible, just inconsistent.
+   *
+   * The numeric tokens below resolve to exactly the values the original
+   * comments intended.
+   */
   width: 100%;
   margin-inline: auto;
-  padding-inline: 1rem;
-  max-width: 1536px; /* High-density majestic standard upper-boundary cap */
+  padding-inline: var(--space-4); /* 16px — mobile base */
 
   @media (min-width: 640px) {
-    padding-inline: 1.5rem;
-    width: 96%;
+    padding-inline: var(--space-6); /* 24px */
+    max-width: 640px;
   }
   @media (min-width: 768px) {
-    padding-inline: 2rem;
-    width: 94%;
+    padding-inline: var(--space-8); /* 32px */
+    max-width: 768px;
   }
   @media (min-width: 1024px) {
-    width: 92%;
+    padding-inline: var(--space-8); /* 32px */
+    max-width: 1024px;
   }
   @media (min-width: 1280px) {
-    width: 91%;
+    padding-inline: var(--space-10); /* 40px */
+    max-width: 1280px;
+  }
+  @media (min-width: 1536px) {
+    padding-inline: var(--space-12); /* 48px */
+    max-width: 1536px;
   }
 }
 
-/* Base Variables */
-@layer base {
-  :root {
-    --background: hsl(0 0% 100%);
-    --foreground: hsl(222.2 84% 4.9%);
-    --card: hsl(0 0% 100%);
-    --card-foreground: hsl(222.2 84% 4.9%);
-    --popover: hsl(0 0% 100%);
-    --popover-foreground: hsl(222.2 84% 4.9%);
-    --primary: hsl(221.2 83.2% 53.3%);
-    --primary-foreground: hsl(210 40% 98%);
-    --secondary: hsl(210 40% 96.1%);
-    --secondary-foreground: hsl(222.2 47.4% 11.2%);
-    --muted: hsl(210 40% 96.1%);
-    --muted-foreground: hsl(215.4 16.3% 46.9%);
-    --accent: hsl(210 40% 96.1%);
-    --accent-foreground: hsl(222.2 47.4% 11.2%);
-    --destructive: hsl(0 84.2% 60.2%);
-    --destructive-foreground: hsl(210 40% 98%);
-    --border: hsl(214.3 31.8% 91.4%);
-    --input: hsl(214.3 31.8% 91.4%);
-    --ring: hsl(221.2 83.2% 53.3%);
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: hsl(222.2 84% 4.9%);
-    --foreground: hsl(210 40% 98%);
-    --card: hsl(222.2 84% 4.9%);
-    --card-foreground: hsl(210 40% 98%);
-    --popover: hsl(222.2 84% 4.9%);
-    --popover-foreground: hsl(210 40% 98%);
-    --primary: hsl(217.2 91.2% 59.8%);
-    --primary-foreground: hsl(222.2 47.4% 11.2%);
-    --secondary: hsl(217.2 32.6% 17.5%);
-    --secondary-foreground: hsl(210 40% 98%);
-    --muted: hsl(217.2 32.6% 17.5%);
-    --muted-foreground: hsl(215 20.2% 65.1%);
-    --accent: hsl(217.2 32.6% 17.5%);
-    --accent-foreground: hsl(210 40% 98%);
-    --destructive: hsl(0 62.8% 30.6%);
-    --destructive-foreground: hsl(210 40% 98%);
-    --border: hsl(217.2 32.6% 17.5%);
-    --input: hsl(217.2 32.6% 17.5%);
-    --ring: hsl(224.3 76.3% 48%);
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-    position: relative;
-    min-height: 100vh;
-  }
-  
-  /* Premium Dynamic Ambient Backdrop System */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -10;
-    background: 
-      radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.04) 0%, transparent 45%),
-      radial-gradient(circle at 85% 75%, rgba(139, 92, 246, 0.05) 0%, transparent 45%);
-    pointer-events: none;
-    transition: background 0.3s ease;
-  }
-}
-
-/* Root Scroll Hardening */
-html {
-  scrollbar-gutter: stable;
-  scroll-behavior: smooth;
-}
-
-body {
-  overflow-x: hidden;
-}
-
-/* Utilities */
-@layer utilities {
-  .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Enterprise Premium Design Utilities [HARDEN] */
-  .glass-premium {
-    @apply border-white/10 bg-background/65 backdrop-blur-2xl saturate-160;
-  }
-
-  .gradient-emerald {
-    @apply bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-500;
-  }
-
-  .gradient-emerald-text {
-    @apply bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-500 bg-clip-text text-transparent;
-  }
-
-  .card-hardened {
-    @apply border-white/10 bg-background/65 backdrop-blur-2xl saturate-160 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)];
-  }
-}

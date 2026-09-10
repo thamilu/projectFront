@@ -4,6 +4,15 @@
  */
 
 import { authApi } from '@/features/auth/api/auth-api';
+import { apiClient } from '@/core/client';
+
+jest.mock('@/core/client', () => ({
+  apiClient: {
+    post: jest.fn(),
+  },
+}));
+
+const mockedClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('Auth API Integration', () => {
   beforeEach(() => {
@@ -14,19 +23,12 @@ describe('Auth API Integration', () => {
   describe('login', () => {
     it('successfully logs in user', async () => {
       const mockResponse = {
-        data: {
-          data: {
-            user: { id: '1', email: 'test@example.com' },
-            token: 'mock-token',
-          },
-        },
+        user: { id: '1', email: 'test@example.com' },
+        token: 'mock-token',
       };
 
       // Mock axios call
-      jest.spyOn(global, 'fetch').mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse.data,
-      } as Response);
+      mockedClient.post.mockResolvedValueOnce({ data: mockResponse });
 
       const result = await authApi.login({
         email: 'test@example.com',
@@ -38,7 +40,7 @@ describe('Auth API Integration', () => {
     });
 
     it('handles login errors', async () => {
-      jest.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('Network error'));
+      mockedClient.post.mockRejectedValueOnce(new Error('Network error'));
 
       await expect(
         authApi.login({ email: 'test@example.com', password: 'wrong' })

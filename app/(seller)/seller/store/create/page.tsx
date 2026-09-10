@@ -3,7 +3,7 @@
 import { useCreateStore } from '@/features/seller/hooks/use-seller';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/routes';
 import { StoreProfileForm } from '@/features/seller/components/StoreProfileForm';
 import { storeCreateRequestFromForm } from '@/features/seller/utils/store-mappers';
 import { type StoreCreateFormData } from '@/domains/seller/contracts/seller.schema';
@@ -29,7 +29,7 @@ export default function CreateStorePage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 py-8 px-4">
+    <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
       <FeatureHeader
         title="Genesis: Store Setup"
         subtitle="Initialize your commercial presence on the marketplace"

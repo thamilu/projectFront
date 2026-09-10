@@ -1,43 +1,75 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
-import { apiClient } from '@/core/client';
+/**
+ * POST /api/onboarding/seller
+ *
+ * Submits a seller registration application to the backend.
+ *
+ * Previously this route: read the session with `process.env.NEXTAUTH_SECRET`
+ * (a name absent from the env schema — see H-01), forwarded an entirely
+ * unvalidated `await req.json()` body straight through, hand-assembled the
+ * backend URL with a `localhost:8082` fallback while its sibling delivery
+ * route used `API_ENDPOINTS`, had no rate limit, and logged with
+ * `console.error`. All four are addressed here; the request contract itself
+ * is unchanged, so existing clients keep working.
+ */
 
-export async function POST(req: NextRequest) {
+import { z } from 'zod';
+import {
+  withRoute,
+  requireSession,
+  readValidatedBody,
+  enforceRateLimit,
+  apiSuccess,
+  mapUpstreamError,
+} from '@/shared/api';
+import { serverBackendFetch } from '@/core/client/server-fetch';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
+
+/**
+ * Edge-level shape check only.
+ *
+ * The backend remains the authority on seller-registration business rules
+ * (GST format by state, bank-account verification, duplicate handles). This
+ * schema exists to reject structurally impossible payloads before they cost a
+ * backend round trip, and to bound field sizes so an oversized value cannot be
+ * used to probe or overload the upstream service.
+ *
+ * `passthrough()` is deliberate: the registration form evolves faster than
+ * this route, and silently stripping a newly added field would surface as a
+ * confusing backend validation error rather than an obvious one here.
+ */
+const sellerApplicationSchema = z
+  .object({
+    storeName: z.string().trim().min(2).max(120),
+    email: z.string().trim().email().max(254),
+    phone: z.string().trim().min(6).max(20),
+  })
+  .passthrough();
+
+/** Applications are expensive to process downstream; throttle per user. */
+const RATE_LIMIT_MESSAGE = 'Too many submissions. Please wait a moment before trying again.';
+
+export const POST = withRoute('onboarding/seller', async (req, { log }) => {
+  const caller = await requireSession(req);
+
+  await enforceRateLimit(`onboarding:seller:${caller.userId}`, RATE_LIMIT_MESSAGE);
+
+  const application = await readValidatedBody(req, sellerApplicationSchema);
+
+  log.info('Submitting seller application', { userId: caller.userId });
+
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const { data } = await serverBackendFetch<unknown>(
+      API_ENDPOINTS.SELLER.REGISTER,
+      caller.accessToken,
+      { method: 'POST', body: application }
+    );
 
-    if (!token) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await req.json();
-    // Prefer server-only env vars for backend calls.
-    // Order of preference:
-    // - BACKEND_API_URL / INTERNAL_API_URL: not exposed to the browser
-    // - NEXT_PUBLIC_API_BASE_URL: fallback (public)
-    const base = (
-      process.env.BACKEND_API_URL ||
-      process.env.INTERNAL_API_URL ||
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      'http://localhost:8082'
-    ).replace(/\/$/, '');
-    const backendUrl = `${base}/api/v1`;
-
-    try {
-      const { data } = await apiClient.post(`${backendUrl}/sellers/register`, body, {
-        headers: {
-          Authorization: `Bearer ${token.accessToken}`,
-        },
-      });
-
-      return NextResponse.json(data, { status: 201 });
-    } catch (err: any) {
-      const status = err?.status || 502;
-      const message = err?.message || 'Failed to submit application';
-      return NextResponse.json({ message }, { status });
-    }
+    log.info('Seller application submitted', { userId: caller.userId });
+    return apiSuccess(data, { status: 201 });
   } catch (error) {
-    console.error('Seller onboarding error:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    // A 4xx from the backend is a real answer the applicant must read
+    // ("handle already taken", "application already in review"), so it is
+    // preserved rather than flattened into a generic 502.
+    throw mapUpstreamError(error, 'Could not submit your application. Please try again.');
   }
-}
+});

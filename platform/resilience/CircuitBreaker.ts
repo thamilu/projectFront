@@ -3,14 +3,14 @@ import { logger } from '@/core/telemetry/logger';
 export type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
 export interface CircuitBreakerConfig {
-  failureThreshold?: number;      // Number of failures before tripping the circuit (default: 5)
-  recoveryTimeoutMs?: number;     // Time in ms before attempting recovery in HALF_OPEN (default: 15000)
-  halfOpenMaxSuccesses?: number;  // Number of consecutive successes required in HALF_OPEN to close the circuit (default: 3)
+  failureThreshold?: number; // Number of failures before tripping the circuit (default: 5)
+  recoveryTimeoutMs?: number; // Time in ms before attempting recovery in HALF_OPEN (default: 15000)
+  halfOpenMaxSuccesses?: number; // Number of consecutive successes required in HALF_OPEN to close the circuit (default: 3)
 }
 
 /**
  * Stateful Client-Side Circuit Breaker
- * 
+ *
  * Protects frontend application threads from cascading backend timeouts and service degradation.
  * Automatically trips to OPEN when failures exceed the threshold, failing fast to prevent UI lockup.
  */
@@ -20,7 +20,7 @@ export class CircuitBreaker {
   private failureCount = 0;
   private successCount = 0;
   private lastStateChange: number = Date.now();
-  
+
   private readonly failureThreshold: number;
   private readonly recoveryTimeoutMs: number;
   private readonly halfOpenMaxSuccesses: number;
@@ -47,7 +47,9 @@ export class CircuitBreaker {
     this.checkRecoveryTimeout();
 
     if (this.state === 'OPEN') {
-      logger.warn(`🔌 [CircuitBreaker:${this.name}] Blocked execution. Circuit is OPEN. Failing fast.`);
+      logger.warn(
+        `🔌 [CircuitBreaker:${this.name}] Blocked execution. Circuit is OPEN. Failing fast.`
+      );
       throw new Error(`Circuit breaker "${this.name}" is OPEN. Fast failing request.`);
     }
 
@@ -72,11 +74,11 @@ export class CircuitBreaker {
     this.failureCount = 0;
 
     logger.warn(`🔌 [CircuitBreaker:${this.name}] Transitioned: ${oldState} ➡️ ${newState}`);
-    
+
     // Register state changes in global window scope for diagnostics
     if (typeof window !== 'undefined') {
       const event = new CustomEvent('circuit-breaker-change', {
-        detail: { name: this.name, from: oldState, to: newState, timestamp: Date.now() }
+        detail: { name: this.name, from: oldState, to: newState, timestamp: Date.now() },
       });
       window.dispatchEvent(event);
     }
@@ -88,8 +90,10 @@ export class CircuitBreaker {
   public recordSuccess() {
     if (this.state === 'HALF_OPEN') {
       this.successCount++;
-      logger.info(`🔌 [CircuitBreaker:${this.name}] Success in HALF_OPEN: ${this.successCount}/${this.halfOpenMaxSuccesses}`);
-      
+      logger.info(
+        `🔌 [CircuitBreaker:${this.name}] Success in HALF_OPEN: ${this.successCount}/${this.halfOpenMaxSuccesses}`
+      );
+
       if (this.successCount >= this.halfOpenMaxSuccesses) {
         this.transitionTo('CLOSED');
       }
@@ -103,7 +107,9 @@ export class CircuitBreaker {
    */
   public recordFailure() {
     this.failureCount++;
-    logger.warn(`🔌 [CircuitBreaker:${this.name}] Failure recorded: ${this.failureCount}/${this.failureThreshold}`);
+    logger.warn(
+      `🔌 [CircuitBreaker:${this.name}] Failure recorded: ${this.failureCount}/${this.failureThreshold}`
+    );
 
     if (this.state === 'CLOSED' && this.failureCount >= this.failureThreshold) {
       this.transitionTo('OPEN');
@@ -118,7 +124,9 @@ export class CircuitBreaker {
    */
   private checkRecoveryTimeout() {
     if (this.state === 'OPEN' && Date.now() - this.lastStateChange > this.recoveryTimeoutMs) {
-      logger.info(`🔌 [CircuitBreaker:${this.name}] Recovery timeout reached. Transitioning to HALF_OPEN.`);
+      logger.info(
+        `🔌 [CircuitBreaker:${this.name}] Recovery timeout reached. Transitioning to HALF_OPEN.`
+      );
       this.transitionTo('HALF_OPEN');
     }
   }

@@ -22,8 +22,8 @@
       "description": "Used to specify the config file path for Tailwind v4."
     },
     {
-       "name": "@tailwind",
-       "description": "Use the `@tailwind` directive to insert Tailwind's `base`, `components`, `utilities` and `screens` styles into your CSS."
+      "name": "@tailwind",
+      "description": "Use the `@tailwind` directive to insert Tailwind's `base`, `components`, `utilities` and `screens` styles into your CSS."
     }
   ]
 }

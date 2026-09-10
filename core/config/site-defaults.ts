@@ -11,7 +11,16 @@ export const siteDefaults = {
   description:
     'Complete enterprise e-commerce platform with shopping cart, wishlist, analytics, and admin dashboard. Built with Next.js, TypeScript, and Tailwind CSS for maximum performance and scalability.',
   url: 'http://localhost:3000',
-  ogImage: '/og-image.png',
+  /**
+   * Fallback share-image path.
+   *
+   * Points at the route `app/opengraph-image.tsx` generates, not a file in
+   * `public/` — the previous `/og-image.png` did not exist and 404'd. Kept
+   * because the config schema requires it and third-party integrations may
+   * read it, but the metadata layer no longer uses it: Next injects the
+   * generated image directly.
+   */
+  ogImage: '/opengraph-image',
   author: {
     name: 'eShop Team',
     email: 'team@eshop.com',

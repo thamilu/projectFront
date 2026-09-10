@@ -19,7 +19,8 @@ const PROMO_BANNERS: PromoBanner[] = [
     href: '/products?filter=flash',
     title: 'Flash Sale',
     subtitle: 'Up to 70% Off',
-    gradient: 'from-amber-600 via-orange-500 to-red-500 dark:from-amber-500 dark:via-orange-400 dark:to-red-400',
+    gradient:
+      'from-amber-600 via-orange-500 to-red-500 dark:from-amber-500 dark:via-orange-400 dark:to-red-400',
     icon: Zap,
     decorativeGlow: 'bg-yellow-400/20',
     badge: 'LIMITED TIME',
@@ -29,7 +30,8 @@ const PROMO_BANNERS: PromoBanner[] = [
     href: '/products?filter=festival',
     title: 'Festival Offers',
     subtitle: 'Extra Savings',
-    gradient: 'from-indigo-600 via-purple-500 to-fuchsia-500 dark:from-indigo-500 dark:via-purple-400 dark:to-fuchsia-400',
+    gradient:
+      'from-indigo-600 via-purple-500 to-fuchsia-500 dark:from-indigo-500 dark:via-purple-400 dark:to-fuchsia-400',
     icon: PartyPopper,
     decorativeGlow: 'bg-purple-400/20',
     badge: 'SEASONAL',
@@ -42,61 +44,72 @@ function PromoBanners() {
       <h2 id="promo-banners-heading" className="sr-only">
         Current promotions
       </h2>
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+      <div className="container mx-auto">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
           {PROMO_BANNERS.map((banner) => {
             const Icon = banner.icon;
             return (
               <Link
                 key={banner.id}
                 href={banner.href}
-                className="group block rounded-2xl overflow-hidden shadow-lg transition-all duration-300
-                  hover:scale-[1.02] hover:shadow-2xl
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
-                  active:scale-[0.98]"
+                className="group focus-visible:ring-ring block overflow-hidden rounded-2xl shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.98]"
               >
                 <div
-                  className={`relative h-48 md:h-60 flex items-center text-white px-6 md:px-10
-                    bg-gradient-to-r ${banner.gradient}`}
+                  className={`relative flex h-48 items-center bg-gradient-to-r px-6 text-white md:h-60 md:px-10 ${banner.gradient}`}
                 >
                   {/* Decorative elements */}
-                  <div className={`absolute -top-16 -right-16 w-64 h-64 rounded-full ${banner.decorativeGlow} blur-3xl`} />
-                  <div className={`absolute -bottom-20 -left-10 w-48 h-48 rounded-full ${banner.decorativeGlow} blur-2xl opacity-60`} />
-                  
+                  <div
+                    className={`absolute -top-16 -right-16 h-64 w-64 rounded-full ${banner.decorativeGlow} blur-3xl`}
+                  />
+                  <div
+                    className={`absolute -bottom-20 -left-10 h-48 w-48 rounded-full ${banner.decorativeGlow} opacity-60 blur-2xl`}
+                  />
+
                   {/* Geometric pattern overlay */}
-                  <div className="absolute inset-0 opacity-[0.04]" style={{
-                    backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-                    backgroundSize: '24px 24px',
-                  }} />
+                  <div
+                    className="absolute inset-0 opacity-[0.04]"
+                    style={{
+                      backgroundImage:
+                        'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+                      backgroundSize: '24px 24px',
+                    }}
+                  />
 
                   {/* Shimmer effect on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-                  
+                  <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-1000 ease-in-out group-hover:translate-x-full" />
+
                   {/* Content */}
-                  <div className="relative z-10 flex items-center justify-between w-full">
+                  <div className="relative z-10 flex w-full items-center justify-between">
                     <div className="space-y-2">
-                      <span className="inline-block text-[10px] font-black tracking-[0.2em] bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20">
+                      <span className="inline-block rounded-full border border-white/20 bg-white/20 px-3 py-1 text-[10px] font-black tracking-[0.2em] backdrop-blur-sm">
                         {banner.badge}
                       </span>
-                      <h3 className="text-2xl sm:text-3xl md:text-4xl font-black leading-tight">
+                      <h3 className="text-2xl leading-tight font-black sm:text-3xl md:text-4xl">
                         {banner.title}
                       </h3>
-                      <p className="text-sm md:text-base font-medium text-white/80">
+                      <p className="text-sm font-medium text-white/80 md:text-base">
                         {banner.subtitle}
                       </p>
-                      <div className="flex items-center gap-2 text-xs font-bold text-white/70 group-hover:text-white transition-colors pt-1">
-                        Shop Now <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                      <div className="flex items-center gap-2 pt-1 text-xs font-bold text-white/70 transition-colors group-hover:text-white">
+                        Shop Now{' '}
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                       </div>
                     </div>
-                    
+
                     {/* Large decorative icon */}
-                    <div className="hidden sm:flex items-center justify-center">
-                      <Icon className="h-20 w-20 md:h-28 md:w-28 text-white/10 group-hover:text-white/20 transition-colors duration-500 group-hover:rotate-12 transform" strokeWidth={1} />
+                    <div className="hidden items-center justify-center sm:flex">
+                      <Icon
+                        className="h-20 w-20 transform text-white/10 transition-colors duration-500 group-hover:rotate-12 group-hover:text-white/20 md:h-28 md:w-28"
+                        strokeWidth={1}
+                      />
                     </div>
                   </div>
-                  
+
                   {/* Bottom dark overlay for depth */}
-                  <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"
+                  />
                 </div>
               </Link>
             );

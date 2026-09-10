@@ -13,7 +13,7 @@ jest.mock('next/navigation', () => ({
 
 describe('useAuthRedirect', () => {
   const mockReplace = jest.fn();
-  const mockOnRedirectStart = jest.fn();
+  const mockOnRedirectStart = jest.fn(() => 1);
 
   let removeItemSpy: jest.SpyInstance;
 
@@ -127,6 +127,29 @@ describe('useAuthRedirect', () => {
     expect(mockOnRedirectStart).toHaveBeenCalledTimes(1);
   });
 
+  it('should still call signIn even if sessionStorage.removeItem throws', () => {
+    removeItemSpy.mockImplementation(() => {
+      throw new Error('storage disabled');
+    });
+
+    renderHook(() =>
+      useAuthRedirect({
+        status: 'unauthenticated',
+        isAuthError: false,
+        sessionExpired: false,
+        callbackUrl: '/dashboard',
+        forceLogin: true,
+        onRedirectStart: mockOnRedirectStart,
+      })
+    );
+
+    expect(signIn).toHaveBeenCalledWith(
+      'keycloak',
+      { callbackUrl: '/dashboard' },
+      { prompt: 'login' }
+    );
+  });
+
   it('should call onRedirectError and reset the redirected guard when signIn rejects', async () => {
     const failure = new Error('network down');
     (signIn as jest.Mock).mockReturnValueOnce(Promise.reject(failure));
@@ -147,6 +170,8 @@ describe('useAuthRedirect', () => {
     // Flush the rejected signIn() microtask.
     await Promise.resolve().then().then();
 
-    expect(mockOnRedirectError).toHaveBeenCalledWith(failure);
+    // The attempt id returned by onRedirectStart() must be echoed back so
+    // the caller can detect whether this rejection is stale.
+    expect(mockOnRedirectError).toHaveBeenCalledWith(failure, 1);
   });
 });

@@ -44,6 +44,12 @@ export const SiteConfigSchema = z.object({
     .optional(),
   links: SocialLinksSchema,
   pagination: PaginationConfigSchema.optional(),
+  verification: z
+    .object({
+      google: z.string().optional(),
+      yandex: z.string().optional(),
+    })
+    .optional(),
 });
 
 export type SiteConfig = z.infer<typeof SiteConfigSchema>;

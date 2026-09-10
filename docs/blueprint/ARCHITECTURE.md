@@ -7,7 +7,9 @@ This document outlines the architectural standards and patterns used in the E-Sh
 The project follows a **Modular, Layered Architecture** designed for high scalability and enterprise-grade maintainability.
 
 ### 1. Route Group Isolation (`app/`)
+
 The `app/` directory is organized into **Route Groups** to isolate business domains and layouts.
+
 - **`(public)`**: Open access routes (Products, Home, About).
 - **`(auth)`**: Authentication flows (NextAuth / Keycloak).
 - **`(customer)`**: Protected customer features (Orders, Cart).
@@ -16,25 +18,31 @@ The `app/` directory is organized into **Route Groups** to isolate business doma
 - **`(admin)`**: System administration.
 
 ### 2. Service Layer Pattern (`services/`)
+
 To adhere to the **DRY Principle** and **Clear Layering**, all business logic and API orchestration is extracted into dedicated services.
+
 - **Thin Components**: JSX only handles rendering and local UI state.
 - **Service Orchestration**: Services handle data fetching, error normalization, and caching.
 - **Registry**: `services/index.ts` provides a single entry point for all feature services.
 
 ### 3. Feature-Based Modularity (`features/`)
+
 Complex features are isolated into the `features/` directory, containing:
+
 - `components/`: Feature-specific UI.
 - `hooks/`: Feature-specific state and service integration.
 - `types/`: Domain-specific type definitions.
 - `schemas/`: Zod validation schemas.
 
 ## 🔄 Data Flow
+
 1. **Component** calls a **Hook**.
 2. **Hook** calls a **Service**.
 3. **Service** calls the **API Client** (`lib/axios.ts`).
 4. **API Client** returns data or throws a normalized **AppError**.
 
 ## 🎨 Styling & Design
+
 - **Tailwind CSS 4**: Utility-first styling with design tokens in `app/globals.css`.
 - **shadcn/ui**: Accessible Radix-based primitives.
 - **Dark Mode**: Native support via `next-themes`.
@@ -46,6 +54,7 @@ Complex features are isolated into the `features/` directory, containing:
 To enforce strict separation of concerns and prevent circular or leaking dependencies, the application strictly distinguishes between the **Core** and **Shared** layers.
 
 ### 🛡️ Core Layer (`core/`)
+
 - **Purpose**: Low-level system configurations, global HTTP adapters, security proxies, auth session bridging, logger adapters, and telemetry integrations.
 - **Constraints**:
   - **Visual-free**: Core contains absolutely no UI, visual rendering, or style rules.
@@ -53,9 +62,28 @@ To enforce strict separation of concerns and prevent circular or leaking depende
   - **Direct Consumption**: Core utilities can be imported directly by any other layer (features, pages, or shared hooks).
 
 ### 🧩 Shared Layer (`shared/`)
+
 - **Purpose**: Domain-agnostic UI kit components (buttons, cards, grids), shared hooks (useMounted, usePerformance), shared types, validation schemas, and constants.
 - **Constraints**:
   - **Domain-agnostic**: Shared modules cannot contain domain-specific business rules or business-specific logic.
   - **Features Dependency Forbidden**: Shared modules **MUST NOT** import from `features/` or `app/` modules.
   - **Import Hierarchy**: Shared code can import from `core/` to access base system facilities.
 
+---
+
+## 📂 Component Folder & Testing Standards
+
+### 1. Component-per-Folder Architecture
+
+To maintain maximum modularity and prevent file bloat in the root of feature component directories, complex components (e.g., `ProfileForm`, `TabContent`, `SecurityItem`) are grouped into self-contained subdirectories:
+
+- **`[Component].tsx`**: The core component implementation.
+- **`index.ts`**: The barrel export to expose only the public component API and shield internal configuration files.
+- **`[Component].test.tsx`**: Colocated unit and integration tests.
+
+### 2. Colocated Testing
+
+Unit tests are colocated inside the component's folder rather than placed in a distant, parallel `__tests__` tree.
+
+- This ensures test files are immediately visible and refactored alongside component changes.
+- **Test Discovery**: Configured in Jest via the `**/features/**/*.test.+(ts|tsx|js)` file match pattern.

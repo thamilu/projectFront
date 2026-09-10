@@ -53,6 +53,19 @@ export interface CreateOrderRequest {
   billingAddress?: string;
   phone?: string;
   notes?: string;
+  /**
+   * Promo code the shopper applied in the cart.
+   *
+   * The **code** is sent, never a discount amount: redemption must be
+   * validated and applied atomically with order creation on the backend, and a
+   * client-supplied figure would be trivially tampered with. `OrderDTO`'s
+   * `discountAmount` on the response is the authoritative result.
+   *
+   * Previously absent entirely, which is why an applied promo silently
+   * vanished between the cart and the placed order — the shopper saw a
+   * discount, then paid full price.
+   */
+  couponCode?: string;
 }
 
 export interface UpdateOrderStatusRequest {

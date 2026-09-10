@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Download, BarChart3, Check } from 'lucide-react';
 import { Button } from '@/shared/ui/atoms/button';
 import { cn } from '@/shared/utils';
+import { PreviewDataBadge } from './PreviewDataBadge';
 
 export type Timeframe = '7D' | '30D' | '90D' | '1Y';
 
@@ -76,7 +77,7 @@ export function RevenueChart({ activeTimeframe, onTimeframeChange }: RevenueChar
   const previousLinePath = previousPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ');
 
   return (
-    <div className="rounded-2xl border border-slate-850 bg-slate-900/40 p-6 flex flex-col justify-between h-full">
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 flex flex-col justify-between h-full">
       <div className="space-y-4">
         {/* Title Area and dataset controls */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -84,6 +85,7 @@ export function RevenueChart({ activeTimeframe, onTimeframeChange }: RevenueChar
             <h3 className="text-base font-black text-white flex items-center gap-2">
               <BarChart3 className="h-4.5 w-4.5 text-indigo-500" />
               Revenue Trends & Comparisons
+              <PreviewDataBadge />
             </h3>
             <p className="text-xs text-slate-400">Monthly e-commerce storefront revenue performance overview</p>
           </div>
@@ -99,7 +101,7 @@ export function RevenueChart({ activeTimeframe, onTimeframeChange }: RevenueChar
                 "h-7 rounded-lg text-[9px] font-black uppercase tracking-wider px-2 transition-all",
                 compareMode
                   ? "bg-indigo-950/40 text-indigo-400 border-indigo-500/30 border-l-2 border-l-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.15)]"
-                  : "bg-slate-900 text-slate-400 border-slate-850 hover:bg-slate-850 hover:text-slate-200"
+                  : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-200"
               )}
             >
               {compareMode && <Check className="h-3 w-3 mr-1" />}
@@ -117,7 +119,7 @@ export function RevenueChart({ activeTimeframe, onTimeframeChange }: RevenueChar
             </Button>
 
             {/* Timeframe switchers */}
-            <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-850 rounded-xl p-0.5">
+            <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 rounded-xl p-0.5">
               {(['7D', '30D', '90D', '1Y'] as Timeframe[]).map((tf) => (
                 <button
                   key={tf}
@@ -129,7 +131,7 @@ export function RevenueChart({ activeTimeframe, onTimeframeChange }: RevenueChar
                     "text-[9px] font-black uppercase tracking-wider px-2 py-1.5 rounded-lg transition-colors cursor-pointer",
                     activeTimeframe === tf
                       ? "bg-slate-800 text-white font-bold"
-                      : "text-slate-450 hover:text-slate-200"
+                      : "text-slate-400 hover:text-slate-200"
                   )}
                 >
                   {tf}
@@ -147,7 +149,7 @@ export function RevenueChart({ activeTimeframe, onTimeframeChange }: RevenueChar
           </div>
           {compareMode && (
             <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-slate-650 border border-dashed border-slate-400" />
+              <span className="h-2 w-2 rounded-full bg-slate-600 border border-dashed border-slate-400" />
               <span>Previous Period (₹)</span>
             </div>
           )}
@@ -167,7 +169,7 @@ export function RevenueChart({ activeTimeframe, onTimeframeChange }: RevenueChar
               </p>
               <div className="flex items-center gap-3.5 text-xs font-semibold text-slate-200">
                 <div>
-                  <span className="text-slate-450 text-[10px]">Sales:</span> ₹{chartData[hoveredIndex].current.toLocaleString('en-IN')}
+                  <span className="text-slate-400 text-[10px]">Sales:</span> ₹{chartData[hoveredIndex].current.toLocaleString('en-IN')}
                 </div>
                 {compareMode && (
                   <div>
@@ -210,7 +212,7 @@ export function RevenueChart({ activeTimeframe, onTimeframeChange }: RevenueChar
                     x2={width - paddingX}
                     y2={yVal}
                     stroke="currentColor"
-                    className="text-slate-800/40 dark:text-slate-850/60"
+                    className="text-slate-800/40 dark:text-slate-800/60"
                     strokeWidth="1"
                     strokeDasharray="4 4"
                   />

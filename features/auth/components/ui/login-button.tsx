@@ -1,13 +1,14 @@
-/**
 // ============================================================
 // features/auth/components/ui/login-button.tsx
 // Login trigger component consuming useAuth hook.
 // Handles AuthResult — no raw error propagation to the DOM:
 // AuthError.message is always a curated literal set by the service
-// layer (see AR.fail() call sites in auth-service.ts), never the raw
-// caught error, so surfacing it directly here is safe by construction.
+// layer (see AR.fail() call sites in auth-service.ts, both of which are
+// reached unconditionally regardless of the `provider` argument — there
+// is no provider-specific branch that could bypass this curation), never
+// the raw caught error, so surfacing it directly here is safe by
+// construction.
 // ============================================================
- */
 
 'use client';
 
@@ -16,9 +17,10 @@ import { Button, type ButtonProps } from '@/shared/ui/atoms/button';
 import { LogIn } from 'lucide-react';
 
 import { cn } from '@/shared/utils';
-import { useAuth } from '../../hooks/use-auth';
-import { sanitizeCallbackUrl } from '../../utils/sanitize-callback-url';
-import type { AuthProvider } from '../../services/auth.constants';
+import { APP_ROUTES } from '@/shared/routes';
+import { useAuth } from '@/domains/auth/hooks/use-auth';
+import { sanitizeCallbackUrl } from '@/domains/auth/utils/sanitize-callback-url';
+import type { AuthProvider } from '@/domains/auth/services/auth.constants';
 
 // =============================================================================
 // Types
@@ -31,10 +33,11 @@ export interface LoginButtonProps {
   /**
    * URL to redirect to after successful authentication.
    * Must be a same-origin relative path for security.
-   * @default '/customer/dashboard'
+   * @default '/dashboard' — the role-based redirect hub, which sends the
+   *   user to their actual role-specific dashboard (or home for customers).
    * @example '/profile', '/orders', '/dashboard'
    */
-  callbackUrl?: string;
+  redirectTo?: string;
 
   /**
    * Additional CSS classes to apply to the button
@@ -78,7 +81,10 @@ export interface LoginButtonProps {
   provider?: AuthProvider;
 }
 
-const DEFAULT_CALLBACK_URL = '/customer/dashboard';
+// No dedicated /customer/dashboard page exists — APP_ROUTES.DASHBOARD is
+// the real role-based redirect hub (app/(customer)/dashboard/page.tsx),
+// which sends the freshly-authenticated user wherever their role belongs.
+const DEFAULT_CALLBACK_URL = APP_ROUTES.DASHBOARD;
 
 // =============================================================================
 // Component
@@ -92,8 +98,10 @@ const DEFAULT_CALLBACK_URL = '/customer/dashboard';
  * why this component doesn't generate its own state/nonce), loading
  * states, and error handling.
  */
+const LOGIN_ERROR_MESSAGE_ID = 'login-button-error-message';
+
 export function LoginButton({
-  callbackUrl,
+  redirectTo,
   className,
   variant = 'default',
   size = 'default',
@@ -104,13 +112,19 @@ export function LoginButton({
 }: LoginButtonProps) {
   const { login, isLoggingIn, loginError, clearLoginError } = useAuth();
 
-  // Validated once per callbackUrl change — same shared validator used by
+  // Validated once per redirectTo change — same shared validator used by
   // the login page, register gateway, and ModernAuthUI (sanitize-callback-url.ts),
   // so there is exactly one place that decides what a "safe" redirect looks like.
-  const safeCallbackUrl = sanitizeCallbackUrl(callbackUrl, DEFAULT_CALLBACK_URL);
+  const safeCallbackUrl = sanitizeCallbackUrl(redirectTo, DEFAULT_CALLBACK_URL);
 
   const handleLogin = useCallback(async () => {
-    if (isLoggingIn) return; // Prevent double-clicks
+    // Belt-and-suspenders: the Button atom's own `loading` state already
+    // disables the native element, which should already prevent this
+    // handler from firing on a double-click. Kept as an explicit guard
+    // anyway since this initiates an auth flow specifically — cheap
+    // insurance that survives even if Button's disabled-while-loading
+    // behavior ever changes.
+    if (isLoggingIn) return;
     clearLoginError();
     await login(safeCallbackUrl, provider);
   }, [isLoggingIn, safeCallbackUrl, login, provider, clearLoginError]);
@@ -126,25 +140,35 @@ export function LoginButton({
       size={size}
       className={cn('transition-all duration-200', className)}
       leftIcon={showIcon ? <LogIn aria-hidden="true" /> : undefined}
+      aria-describedby={loginError ? LOGIN_ERROR_MESSAGE_ID : undefined}
     >
       {children || 'Sign In'}
     </Button>
   );
 
-  if (!loginError) {
-    return buttonElement;
-  }
-
+  // Wrapper is always rendered (not swapped in only on error) so the DOM
+  // shape — and therefore this component's width behavior in whatever
+  // flex/grid context it sits in (e.g. a header toolbar, its real usage in
+  // user-nav.tsx) — never shifts at the exact moment an error appears.
+  // Width follows the `fullWidth` prop, same as the Button itself, rather
+  // than being unconditionally w-full.
   return (
-    <div className="flex w-full flex-col items-start gap-2">
+    <div className={cn('flex flex-col items-start gap-2', fullWidth && 'w-full')}>
       {buttonElement}
       {/* Accessible error display — the sole error channel (no duplicate
           toast): a persistent, always-visible role="alert" outlives a
           toast's auto-dismiss timer and avoids two live regions announcing
           the same message. Retrying is just clicking the button again. */}
-      <p role="alert" aria-live="assertive" className="text-destructive mt-1 text-sm font-medium">
-        {loginError.message}
-      </p>
+      {loginError && (
+        <p
+          id={LOGIN_ERROR_MESSAGE_ID}
+          role="alert"
+          aria-live="assertive"
+          className="text-destructive text-sm font-medium"
+        >
+          {loginError.message}
+        </p>
+      )}
     </div>
   );
 }

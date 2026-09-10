@@ -1,137 +1,61 @@
 'use client';
 
-import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+/**
+ * SellerGuard - Centralized route protection component for sellers.
+ * Pure presentational / session-sync recovery component.
+ * Real edge-level redirects are executed by the edge middleware.
+ */
+
+import { memo, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
-import { useAuth } from '@/features/auth/hooks/use-auth';
-import { signIn } from 'next-auth/react';
-import { sellerApi } from '@/features/seller/api/seller-api';
-import { toast } from 'sonner';
+import { useAuth } from '@/domains/auth/hooks/use-auth';
+import { useSellerGuard } from '@/features/seller/hooks/useSellerGuard';
+import { useI18n } from '@/core/i18n';
 
 interface SellerGuardProps {
   children: React.ReactNode;
 }
 
-/**
- * SellerGuard - Centralized route protection for sellers
- * Enforces that a user has a SELLER role.
- */
-export function SellerGuard({ children }: SellerGuardProps) {
-  console.log('[SellerGuard] Component MOUNTING - Top Level');
+export const SellerGuard = memo(function SellerGuard({ children }: SellerGuardProps) {
+  const { t } = useI18n();
   const { user, isLoading: isAuthLoading, isAuthenticated } = useAuth();
-
-  // Derived state
-  const isUnauthenticated = !isAuthenticated;
-
-  const router = useRouter();
   const pathname = usePathname();
 
-  const roles = (user?.roles || []).map((r: string) => r.toUpperCase());
-  const isSeller = roles.includes('SELLER');
-  // Use startsWith to be safe against trailing slashes or sub-routes
-  const isOnboardPath = pathname?.startsWith('/seller/register');
+  const roles = useMemo(() => (user?.roles ?? []).map((r) => r.toUpperCase()), [user?.roles]);
 
-  useEffect(() => {
-    let isMounted = true;
+  const isOnboardPath = pathname?.startsWith('/seller/register') ?? false;
 
-    async function verifySellerStatus() {
-      // 1. Default auth check
-      if (isUnauthenticated) {
-        router.push(APP_ROUTES.AUTH_LOGIN);
-        return;
-      }
+  useSellerGuard({
+    isAuthLoading,
+    isAuthenticated,
+    roles,
+    isOnboardPath,
+    pathname,
+  });
 
-      // 2. Allow onboarding path for everyone authenticated
-      if (isOnboardPath) {
-        return;
-      }
-
-      // 3. Prevent redirect loops when navigating AWAY from the seller layout
-      if (pathname && !pathname.startsWith('/seller')) {
-        return;
-      }
-
-      // 4. For other seller paths, check SELLER role
-      if (isSeller) {
-        return; // All good
-      }
-
-      // 5. ROLE MISSING - Deep check with backend before redirecting
-      console.log('[SellerGuard] Role missing, checking backend status...');
-      try {
-        const profile = await sellerApi.getMyProfile();
-
-        if (!isMounted) return;
-
-        if (profile?.status?.toUpperCase() === 'ACTIVE') {
-          console.log('[SellerGuard] Found ACTIVE backend profile but NO role. Refreshing session...');
-          toast.info('Synchronizing account status...', {
-            description: 'We found your verified seller profile. Updating your session roles.',
-          });
-
-          // Trigger session refresh via Keycloak (will re-run JWT callback)
-          signIn('keycloak', { redirect: false });
-          return;
-        }
-
-        // If not active, but we're on a dashboard route, redirect to registration
-        console.log('[SellerGuard] Access denied (No active profile). Redirecting to onboarding.');
-        router.push(APP_ROUTES.SELLER.REGISTER);
-      } catch (error: any) {
-        const status = error?.status || error?.response?.status;
-        console.error('[SellerGuard] Profile fetch error:', {
-          status,
-          message: error?.message || error?.response?.data?.message,
-          error
-        });
-
-        // Handle 403 Forbidden specifically as a sync issue
-        const hasAttemptedSync = sessionStorage.getItem('seller_sync_attempted') === 'true';
-
-        if (status === 403 && !hasAttemptedSync) {
-          console.log('[SellerGuard] 403 Forbidden - Role sync issue suspected. Attempting refresh...');
-          sessionStorage.setItem('seller_sync_attempted', 'true');
-          toast.info('Synchronizing account...', {
-            description: 'Updating your seller permissions.',
-          });
-
-          // Re-authenticating with Keycloak will pull fresh roles into the JWT
-          signIn('keycloak', { callbackUrl: pathname || APP_ROUTES.SELLER.DASHBOARD });
-          return;
-        }
-
-        if (isMounted) {
-          router.push(APP_ROUTES.SELLER.REGISTER);
-        }
-      }
-    }
-
-    if (!isAuthLoading) {
-      verifySellerStatus();
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isAuthLoading, isUnauthenticated, isSeller, isOnboardPath, router, pathname]);
-
-  // If we're on the onboarding page, don't block (otherwise we get infinite loops)
   if (isOnboardPath) {
     return <>{children}</>;
   }
 
   if (isAuthLoading) {
     return (
-      <div className="flex min-h-96 flex-col items-center justify-center gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+      <div
+        role="status"
+        aria-label={t('sellerGuard.loading.ariaLabel')}
+        aria-live="polite"
+        className="flex min-h-96 flex-col items-center justify-center gap-4"
+        data-testid="seller-guard-loading"
+      >
+        <Loader2 className="text-primary h-10 w-10 animate-spin" aria-hidden="true" />
         <p className="text-muted-foreground animate-pulse font-medium">
-          Verifying seller status...
+          {t('sellerGuard.loading.message')}
         </p>
       </div>
     );
   }
 
-  // User is authenticated and has the SELLER role
-  return <>{children}</>;
-}
+  return <div data-testid="seller-guard-authorized">{children}</div>;
+});
+
+SellerGuard.displayName = 'SellerGuard';

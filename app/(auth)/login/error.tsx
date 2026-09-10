@@ -9,10 +9,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { Button } from '@/shared/ui/atoms/button';
+import { Button } from '@/shared/ui/atoms/button/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
 import { logger } from '@/core/telemetry/logger';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/routes';
 
 interface LoginErrorProps {
   error: Error & { digest?: string };
@@ -37,7 +37,7 @@ export default function LoginError({ error, reset }: LoginErrorProps) {
         });
       } catch (logErr) {
         // Ensure logging failures do not break the error boundary
-         
+
         console.error('Failed to log login page error:', logErr);
       }
     };
@@ -57,53 +57,56 @@ export default function LoginError({ error, reset }: LoginErrorProps) {
 
   return (
     <div
-      className="relative flex min-h-dvh flex-col bg-gradient-to-br from-background to-muted/20"
+      className="from-background to-muted/20 relative flex min-h-dvh flex-col bg-gradient-to-br"
       style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
     >
-      <main id="main-content" className="flex flex-1 items-center justify-center p-4 sm:p-6 lg:p-8">
+      {/* Plain <div>: error surfaces render inside the root layout's
+          `<main id="main-content">`, so a nested one would duplicate both
+          the landmark and the skip-link target id. */}
+      <div className="flex flex-1 items-center justify-center p-4 sm:p-6 lg:p-8">
         <Card className="w-full max-w-md">
-            <CardHeader className="text-center space-y-4">
+          <CardHeader className="space-y-4 text-center">
             {/* Error icon */}
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-              <AlertTriangle className="h-6 w-6 text-destructive" aria-hidden="true" />
+            <div className="bg-destructive/10 mx-auto flex h-12 w-12 items-center justify-center rounded-full">
+              <AlertTriangle className="text-destructive h-6 w-6" aria-hidden="true" />
             </div>
-            
+
             <CardTitle className="text-xl" ref={headingRef} tabIndex={-1}>
               Something went wrong
             </CardTitle>
           </CardHeader>
-          
+
           <CardContent className="space-y-4 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               We couldn&apos;t load the login page. This might be a temporary issue.
             </p>
-            
+
             {/* Error details for debugging */}
             {error.digest && (
-              <div className="rounded-md bg-muted p-3 text-left">
-                <p className="text-xs text-muted-foreground font-mono break-words">
+              <div className="bg-muted rounded-md p-3 text-left">
+                <p className="text-muted-foreground font-mono text-xs break-words">
                   Error ID: {error.digest}
                 </p>
               </div>
             )}
-            
+
             {process.env.NODE_ENV === 'development' && (
-              <details className="text-left text-xs group">
-                <summary className="cursor-pointer text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded px-2 py-1">
+              <details className="group text-left text-xs">
+                <summary className="text-muted-foreground hover:text-foreground focus:ring-primary cursor-pointer rounded px-2 py-1 focus:ring-2 focus:ring-offset-2 focus:outline-none">
                   Technical details
                 </summary>
-                <pre className="mt-2 overflow-auto rounded bg-muted p-3 text-xs max-h-40">
+                <pre className="bg-muted mt-2 max-h-40 overflow-auto rounded p-3 text-xs">
                   <code>{error.message}</code>
                 </pre>
               </details>
             )}
-            
+
             {/* Recovery actions */}
             {/* Recovery actions */}
             <div className="space-y-4 pt-2">
-              <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                <Button 
-                  onClick={handleRetry} 
+              <div className="flex flex-col justify-center gap-2 sm:flex-row">
+                <Button
+                  onClick={handleRetry}
                   variant="default"
                   disabled={retryCount >= maxRetries}
                   className="w-full sm:w-auto"
@@ -111,8 +114,8 @@ export default function LoginError({ error, reset }: LoginErrorProps) {
                   <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
                   {retryCount >= maxRetries ? 'Max retries reached' : 'Try again'}
                 </Button>
-                
-                <Button 
+
+                <Button
                   onClick={() => router.push(APP_ROUTES.HOME)}
                   variant="outline"
                   className="w-full sm:w-auto"
@@ -123,14 +126,18 @@ export default function LoginError({ error, reset }: LoginErrorProps) {
               </div>
 
               {retryCount >= maxRetries && (
-                <p className="text-xs text-muted-foreground">
-                  Please <a href="/support" className="text-primary hover:underline">contact support</a> if the issue persists.
+                <p className="text-muted-foreground text-xs">
+                  Please{' '}
+                  <a href="/support" className="text-primary hover:underline">
+                    contact support
+                  </a>{' '}
+                  if the issue persists.
                 </p>
               )}
             </div>
           </CardContent>
         </Card>
-      </main>
+      </div>
     </div>
   );
 }

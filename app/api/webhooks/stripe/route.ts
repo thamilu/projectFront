@@ -1,272 +1,352 @@
 /**
  * POST /api/webhooks/stripe
  *
- * Handles Stripe webhook events for payment processing
+ * Applies Stripe payment lifecycle events to the corresponding order.
  *
- * Events handled:
- * - payment_intent.succeeded
- * - payment_intent.payment_failed
- * - payment_intent.canceled
- * - charge.refunded
- * - customer.created
- * - customer.updated
+ * Three properties make this handler safe under Stripe's *at-least-once*
+ * delivery contract. Each replaces a specific defect in the previous version:
+ *
+ * 1. **Idempotent.** Every `event.id` is claimed atomically before processing
+ *    (see `shared/api/idempotency`). Previously `event.id` was logged but never
+ *    deduplicated, so a retried `charge.refunded` could apply a second refund.
+ *
+ * 2. **Failures are retried, not swallowed.** Every handler previously caught
+ *    its own errors, logged them, and returned 200 with the comment *"Don't
+ *    throw - we don't want to reject the webhook"*. The effect was that a
+ *    payment could succeed while the order update failed, Stripe would never
+ *    retry because it saw a 200, and no alert fired — money taken, order never
+ *    marked paid. A processing failure now releases the idempotency claim and
+ *    returns 5xx so Stripe retries on its own backoff schedule.
+ *
+ * 3. **The order id is validated.** With `metadata.orderId` absent the previous
+ *    code issued `PATCH /orders/undefined/payment-status`. A missing or
+ *    malformed id is now an explicit, alertable condition.
+ *
+ * [SECURITY] Signature verification is mandatory and has no fallback path. Only
+ * `getStripeServerClient()` (the real `stripe` SDK, secret key) can verify a
+ * Stripe signature — the `@stripe/stripe-js` browser client used elsewhere in
+ * this codebase cannot. An earlier revision fell back to `JSON.parse(body)`
+ * whenever the client lacked a `.webhooks` namespace, which was always, so
+ * verification never actually ran: anyone who found this endpoint could POST a
+ * fabricated `payment_intent.succeeded` and have an arbitrary order marked PAID.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getStripe } from '@/infrastructure/payments/stripe-client';
+import type { NextRequest } from 'next/server';
+import type Stripe from 'stripe';
+import { getStripeServerClient } from '@/infrastructure/payments/stripe-server';
+import { env } from '@/env';
 import { getRequestLogger } from '@/core/telemetry/logger';
-import { apiClient } from '@/core/client';
+import { serverBackendFetch } from '@/core/client/server-fetch';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
+import { claimEvent } from '@/shared/api/idempotency';
+// Imported from the specific modules rather than the `@/shared/api` barrel:
+// the barrel re-exports the session guards, which pull in `next-auth/jwt`.
+// A webhook authenticates a signature, not a user session, so dragging the
+// session-decoding module graph into this route would be both wasted bundle
+// weight and a misleading dependency.
+import { apiSuccess, apiError } from '@/shared/api/response';
+import { ApiError } from '@/shared/api/errors';
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
+/** Signature verification needs the raw body and Node crypto — not Edge. */
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+/** Guards against an oversized body being buffered before verification. */
+const MAX_PAYLOAD_BYTES = 1024 * 1024; // 1 MB — well above any real Stripe event
+
+// ============================================================
+// 1. DOMAIN MAPPING
+// ============================================================
+
+/** Payment status values the backend accepts on an order. */
+type OrderPaymentStatus = 'PAID' | 'PAYMENT_FAILED' | 'PAYMENT_CANCELED' | 'REFUNDED' | 'DISPUTED';
+
+/** Fields patched onto an order. Assembled per event type below. */
+interface PaymentStatusPatch {
+  status: OrderPaymentStatus;
+  paymentIntentId?: string;
+  paidAt?: string;
+  failureReason?: string;
+  refundedAt?: string;
+  refundAmount?: number;
+  disputeReason?: string;
+  /** Echoed so the backend can dedupe independently of this route's store. */
+  stripeEventId: string;
+}
 
 /**
- * Verify webhook signature and construct event
+ * Stripe reports monetary values as integer minor units (paise, cents).
+ * Converting at exactly one place stops the `/100` from being repeated — or
+ * forgotten — per handler, which is how currency bugs get introduced.
  */
- 
-function constructEvent(
-  body: string,
-  signature: string,
-  log: ReturnType<typeof getRequestLogger>
-): any {
-  try {
-    const stripe = getStripe() as any;
-    if (stripe && typeof stripe.webhooks?.constructEvent === 'function') {
-      return stripe.webhooks.constructEvent(body, signature, webhookSecret);
+function toMajorUnits(minorUnits: number | null | undefined): number {
+  return typeof minorUnits === 'number' && Number.isFinite(minorUnits) ? minorUnits / 100 : 0;
+}
+
+/**
+ * Extract and validate the order id carried in event metadata.
+ *
+ * Throws rather than defaulting: an event whose order cannot be identified is
+ * unprocessable, and silently continuing is what produced requests to
+ * `/orders/undefined/payment-status`.
+ */
+function requireOrderId(metadata: Stripe.Metadata | null | undefined): string {
+  const raw = metadata?.orderId;
+  if (!raw) {
+    throw new UnprocessableEventError('Event metadata carries no orderId');
+  }
+
+  // Order ids are numeric (OrderDTO.id). Validating before the value reaches a
+  // URL closes a path-traversal / request-forgery vector.
+  if (!/^\d+$/.test(raw)) {
+    throw new UnprocessableEventError(`Event metadata carries a non-numeric orderId: ${raw}`);
+  }
+
+  return raw;
+}
+
+/**
+ * A well-formed, correctly signed event this handler cannot act on — a missing
+ * or malformed order id, say.
+ *
+ * Distinguished from a transient failure because retrying will never help: the
+ * event is acknowledged with 200 (so Stripe stops) and logged at `error` so it
+ * is alertable and can be reconciled by hand. Returning 5xx instead would
+ * produce days of pointless retries for an event that can never succeed.
+ */
+class UnprocessableEventError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnprocessableEventError';
+  }
+}
+
+// ============================================================
+// 2. EVENT HANDLERS
+// ============================================================
+
+/**
+ * Build the patch for a supported event, or return `null` for an event type
+ * this application does not act on.
+ *
+ * Returning data rather than performing I/O keeps every branch pure and
+ * unit-testable, and confines the network call to one place below.
+ */
+function buildPatch(event: Stripe.Event): PaymentStatusPatch | null {
+  switch (event.type) {
+    case 'payment_intent.succeeded': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      return {
+        status: 'PAID',
+        paymentIntentId: intent.id,
+        paidAt: new Date(event.created * 1000).toISOString(),
+        stripeEventId: event.id,
+      };
     }
-    // Fallback to manual parsing for testing/mock mode when Node Stripe SDK is not present
-    return JSON.parse(body);
-  } catch (error) {
-    log.error('Webhook signature verification failed', { error });
-    throw new Error('Invalid webhook signature');
+
+    case 'payment_intent.payment_failed': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      return {
+        status: 'PAYMENT_FAILED',
+        paymentIntentId: intent.id,
+        failureReason: intent.last_payment_error?.message ?? 'Payment failed',
+        stripeEventId: event.id,
+      };
+    }
+
+    case 'payment_intent.canceled': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      return {
+        status: 'PAYMENT_CANCELED',
+        paymentIntentId: intent.id,
+        stripeEventId: event.id,
+      };
+    }
+
+    case 'charge.refunded': {
+      const charge = event.data.object as Stripe.Charge;
+      return {
+        status: 'REFUNDED',
+        refundedAt: new Date(event.created * 1000).toISOString(),
+        refundAmount: toMajorUnits(charge.amount_refunded),
+        stripeEventId: event.id,
+      };
+    }
+
+    /**
+     * Disputes were previously unhandled entirely. A chargeback freezes funds
+     * and carries a response deadline, so the order must be flagged the moment
+     * it is raised rather than discovered later in the Stripe dashboard.
+     */
+    case 'charge.dispute.created': {
+      const dispute = event.data.object as Stripe.Dispute;
+      return {
+        status: 'DISPUTED',
+        disputeReason: dispute.reason ?? 'unknown',
+        stripeEventId: event.id,
+      };
+    }
+
+    default:
+      return null;
   }
 }
 
 /**
- * Handle payment_intent.succeeded event
+ * Read the order id from whichever object this event carries.
+ *
+ * `Charge` and `PaymentIntent` both expose `metadata`, but they are distinct
+ * types, so the narrowing happens here rather than being repeated per handler.
  */
- 
-async function handlePaymentSucceeded(
-  paymentIntent: any,
-  log: ReturnType<typeof getRequestLogger>
-) {
-  const orderId = paymentIntent.metadata?.orderId;
-
-  const amountNumber = typeof paymentIntent.amount === 'number' ? paymentIntent.amount : 0;
-
-  log.info('Payment succeeded', {
-    paymentIntentId: paymentIntent.id,
-    orderId,
-    amount: amountNumber / 100,
-  });
-
-  // Update order status in database
-  try {
-    await apiClient.patch(`/orders/${orderId}/payment-status`, {
-      status: 'PAID',
-      paymentIntentId: paymentIntent.id,
-      paidAt: new Date().toISOString(),
-    }, {
-      headers: {
-        Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
-      },
-    });
-
-    log.info('Order payment status updated', { orderId });
-  } catch (error) {
-    log.error('Failed to update order after payment success', {
-      error,
-      orderId,
-      paymentIntentId: paymentIntent.id,
-    });
-    // Don't throw - we don't want to reject the webhook
-  }
+function extractOrderId(event: Stripe.Event): string {
+  const object = event.data.object as { metadata?: Stripe.Metadata | null };
+  return requireOrderId(object.metadata);
 }
 
-/**
- * Handle payment_intent.payment_failed event
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function handlePaymentFailed(paymentIntent: any, log: ReturnType<typeof getRequestLogger>) {
-  const orderId = paymentIntent.metadata?.orderId;
+// ============================================================
+// 3. ROUTE
+// ============================================================
 
-  const lastPaymentErrorMsg = paymentIntent.last_payment_error?.message || '';
-
-  log.warn('Payment failed', {
-    paymentIntentId: paymentIntent.id,
-    orderId,
-    lastPaymentError: lastPaymentErrorMsg,
-  });
-
-  try {
-    await apiClient.patch(`/orders/${orderId}/payment-status`, {
-      status: 'PAYMENT_FAILED',
-      paymentIntentId: paymentIntent?.id,
-      failureReason: lastPaymentErrorMsg,
-    }, {
-      headers: {
-        Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
-      },
-    });
-  } catch (error) {
-    log.error('Failed to update order after payment failure', {
-      error,
-      orderId,
-    });
-  }
-}
-
-/**
- * Handle payment_intent.canceled event
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function handlePaymentCanceled(paymentIntent: any, log: ReturnType<typeof getRequestLogger>) {
-  const orderId = paymentIntent.metadata?.orderId;
-
-  log.info('Payment canceled', {
-    paymentIntentId: paymentIntent.id,
-    orderId,
-  });
-
-  try {
-    await apiClient.patch(`/orders/${orderId}/payment-status`, {
-      status: 'PAYMENT_CANCELED',
-      paymentIntentId: paymentIntent?.id,
-    }, {
-      headers: {
-        Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
-      },
-    });
-  } catch (error) {
-    log.error('Failed to update order after payment cancellation', {
-      error,
-      orderId,
-    });
-  }
-}
-
-/**
- * Handle charge.refunded event
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function handleChargeRefunded(charge: any, log: ReturnType<typeof getRequestLogger>) {
-  const orderId = charge.metadata?.orderId;
-
-  const refundNumber = typeof charge.amount_refunded === 'number' ? charge.amount_refunded : 0;
-
-  log.info('Refund processed', {
-    chargeId: charge.id,
-    orderId,
-    amount: refundNumber / 100,
-  });
-
-  try {
-    await apiClient.patch(`/orders/${orderId}/payment-status`, {
-      status: 'REFUNDED',
-      refundedAt: new Date().toISOString(),
-      refundAmount: refundNumber / 100,
-    }, {
-      headers: {
-        Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
-      },
-    });
-  } catch (error) {
-    log.error('Failed to update order after refund', {
-      error,
-      orderId,
-    });
-  }
-}
-
-/**
- * Main webhook handler
- */
 export async function POST(request: NextRequest) {
-  const requestId = crypto.randomUUID();
-  const log = getRequestLogger(requestId);
+  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
+  const path = request.nextUrl.pathname;
+  const log = getRequestLogger(requestId, { route: 'webhooks/stripe' });
 
+  // ---------- Verify ----------
+  let event: Stripe.Event;
   try {
-    const body = await request.text();
-    const signature = request.headers.get('stripe-signature');
-
-    if (!signature) {
-      log.error('Missing Stripe signature header', { requestId });
-      return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
-    }
-
-    // Verify webhook signature
-    const event = constructEvent(body, signature, log);
-
-    log.info('Webhook event received', {
-      type: event?.type,
-      eventId: event?.id,
-      requestId,
-    });
-
-    // Handle events
-    switch (event.type) {
-      case 'payment_intent.succeeded': {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const paymentIntent = event.data.object as any;
-        await handlePaymentSucceeded(paymentIntent, log);
-        break;
-      }
-
-      case 'payment_intent.payment_failed': {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const paymentIntent = event.data.object as any;
-        await handlePaymentFailed(paymentIntent, log);
-        break;
-      }
-
-      case 'payment_intent.canceled': {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const paymentIntent = event.data.object as any;
-        await handlePaymentCanceled(paymentIntent, log);
-        break;
-      }
-
-      case 'charge.refunded': {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const charge = event.data.object as any;
-        await handleChargeRefunded(charge, log);
-        break;
-      }
-
-      case 'customer.created':
-      case 'customer.updated': {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const customer = event.data.object as any;
-        log.info('Customer event', {
-          type: event.type,
-          customerId: customer.id,
-        });
-        break;
-      }
-
-      default:
-        log.info('Unhandled webhook event type', {
-          type: event.type,
-          requestId,
-        });
-    }
-
-    return NextResponse.json(
-      { received: true },
-      {
-        status: 200,
-        headers: { 'X-Request-ID': requestId },
-      }
-    );
+    event = await verifyRequest(request);
   } catch (error) {
-    log.error('Webhook processing failed', {
-      error,
-      requestId,
+    // A verification failure is either a misconfiguration or a forgery
+    // attempt. Both warrant a log line; neither warrants detail in the reply.
+    log.error('[StripeWebhook] Signature verification failed', {
+      error: error instanceof Error ? error.message : String(error),
     });
+    return apiError(ApiError.validation('Invalid webhook signature.'), { requestId, path });
+  }
 
-    if (error instanceof Error && error.message === 'Invalid webhook signature') {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+  const eventLog = getRequestLogger(requestId, {
+    route: 'webhooks/stripe',
+    eventId: event.id,
+    eventType: event.type,
+  });
+
+  // ---------- Claim ----------
+  const claim = await claimEvent('stripe', event.id);
+  if (claim.outcome === 'duplicate') {
+    // Acknowledged, not reprocessed. This is the expected path for a Stripe
+    // retry following a delivery it could not record.
+    eventLog.info('[StripeWebhook] Duplicate event ignored');
+    return acknowledge(requestId, { duplicate: true });
+  }
+
+  // ---------- Apply ----------
+  try {
+    const patch = buildPatch(event);
+
+    if (!patch) {
+      eventLog.info('[StripeWebhook] Event type not handled');
+      return acknowledge(requestId, { handled: false });
     }
 
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
+    const orderId = extractOrderId(event);
+
+    eventLog.info('[StripeWebhook] Applying payment status', {
+      orderId,
+      status: patch.status,
+    });
+
+    await applyPaymentStatus(orderId, patch);
+
+    eventLog.info('[StripeWebhook] Payment status applied', { orderId, status: patch.status });
+    return acknowledge(requestId, { handled: true });
+  } catch (error) {
+    // ---------- Permanently unprocessable ----------
+    if (error instanceof UnprocessableEventError) {
+      // Logged at `error` so monitoring surfaces it for manual reconciliation,
+      // but acknowledged so Stripe stops retrying something that can never
+      // succeed. This is the dead-letter signal.
+      eventLog.error('[StripeWebhook] Event cannot be processed and will not be retried', {
+        reason: error.message,
+        deadLetter: true,
+      });
+      return acknowledge(requestId, { handled: false, deadLettered: true });
+    }
+
+    // ---------- Transient ----------
+    // Release the claim so Stripe's retry is allowed to reprocess. Without
+    // this the claim would suppress every subsequent attempt and strand the
+    // event — the failure mode the idempotency guard must not introduce.
+    if (claim.outcome === 'claimed') {
+      await claim.release();
+    }
+
+    eventLog.error('[StripeWebhook] Processing failed; returning 5xx so Stripe retries', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    // 5xx is deliberate: it is the only way to ask Stripe to deliver again.
+    return apiError(
+      ApiError.upstream('Webhook processing failed. The event will be retried.'),
+      { requestId, path }
+    );
   }
+}
+
+// ============================================================
+// 4. HELPERS
+// ============================================================
+
+/** Read the raw body and cryptographically verify it against the signature. */
+async function verifyRequest(request: NextRequest): Promise<Stripe.Event> {
+  const signature = request.headers.get('stripe-signature');
+  if (!signature) {
+    throw new Error('Missing stripe-signature header');
+  }
+
+  const body = await request.text();
+  if (new TextEncoder().encode(body).byteLength > MAX_PAYLOAD_BYTES) {
+    throw new Error('Payload exceeds the maximum accepted size');
+  }
+
+  const stripe = getStripeServerClient();
+  if (!stripe) {
+    throw new Error('Stripe is not configured on this server');
+  }
+  if (!env.STRIPE_WEBHOOK_SECRET) {
+    throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
+  }
+
+  // Throws on any mismatch, replayed timestamp, or malformed signature.
+  return stripe.webhooks.constructEvent(body, signature, env.STRIPE_WEBHOOK_SECRET);
+}
+
+/**
+ * Patch the order's payment status via the backend.
+ *
+ * Authenticated with `INTERNAL_API_SECRET`: this call is made on Stripe's
+ * behalf, not a user's, so there is no session token to forward. A missing
+ * secret is raised explicitly rather than sending `Bearer undefined`, which is
+ * what the previous `process.env` lookup did when the variable was unset.
+ */
+async function applyPaymentStatus(orderId: string, patch: PaymentStatusPatch): Promise<void> {
+  // Read from the validated env object, not a raw process.env lookup —
+  // see the INTERNAL_API_SECRET declaration in env.ts.
+  const internalSecret = env.INTERNAL_API_SECRET;
+  if (!internalSecret) {
+    // A transient-shaped error on purpose: it is fixable by configuration, so
+    // Stripe should keep retrying while an operator repairs the deployment,
+    // rather than the event being dead-lettered.
+    throw new Error('INTERNAL_API_SECRET is not configured; cannot update the order');
+  }
+
+  await serverBackendFetch(API_ENDPOINTS.ORDERS.UPDATE_PAYMENT(orderId), internalSecret, {
+    method: 'PATCH',
+    body: patch,
+  });
+}
+
+/** 200 response telling Stripe the event was received. */
+function acknowledge(requestId: string, detail: Record<string, boolean>) {
+  return apiSuccess({ received: true, ...detail }, { requestId });
 }

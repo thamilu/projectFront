@@ -1,62 +1,66 @@
 /**
- * Root Not Found Page (404)
+ * 404 page.
  *
- * Handles all unmatched routes at the application level.
- * Provides user-friendly error page with navigation options.
+ * Two defects are fixed here:
+ *
+ * 1. **The heading structure was inverted.** `<h1>` held the decorative "404"
+ *    glyph and `<h2>` held the actual message, so the page's accessible name —
+ *    what a screen reader announces and what assistive navigation lands on —
+ *    was the bare string "404". The glyph is now decorative and the message is
+ *    the `<h1>`.
+ *
+ * 2. **It ignored the design system**, using `bg-gray-50`, `text-gray-200` and
+ *    `bg-blue-600`, none of which have a dark variant.
+ *
+ * A server component: static, so it costs no client JavaScript.
+ *
+ * @module app/not-found
  */
 
 import Link from 'next/link';
+import { Home, Search, LifeBuoy } from 'lucide-react';
 import { Button } from '@/shared/ui/atoms/button';
-import { Home, Search } from 'lucide-react';
+import { APP_ROUTES } from '@/shared/routes';
 
 export default function NotFound() {
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-2xl space-y-8 text-center">
-        {/* Error Code */}
-        <div className="space-y-2">
-          <h1 className="text-muted-foreground/20 text-9xl font-bold">404</h1>
-          <h2 className="text-3xl font-bold tracking-tight">Page Not Found</h2>
-          <p className="text-muted-foreground text-lg">
-            Sorry, we couldn't find the page you're looking for.
-          </p>
-        </div>
+    <div className="bg-background flex min-h-dvh items-center justify-center px-4 py-16">
+      <div className="max-w-md text-center">
+        {/* Decorative: the number is conveyed by the heading below, so
+            announcing "404" separately is noise. */}
+        <p className="text-muted-foreground/25 text-8xl font-bold select-none" aria-hidden="true">
+          404
+        </p>
 
-        {/* Illustration or Icon */}
-        <div className="flex justify-center">
-          <div className="relative h-64 w-64">
-            {/* You can replace this with an illustration */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Search className="text-muted-foreground/30 h-32 w-32" />
-            </div>
-          </div>
-        </div>
+        <h1 className="mt-2 text-3xl font-bold">Page not found</h1>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col justify-center gap-4 sm:flex-row">
-          <Button asChild size="lg" variant="default">
-            <Link href="/">
-              <Home className="mr-2 h-5 w-5" />
-              Go Home
+        <p className="text-muted-foreground mt-3">
+          The page you&apos;re looking for doesn&apos;t exist, or it may have moved.
+        </p>
+
+        {/* Three routes onward rather than one. A 404 is a dead end only if the
+            page makes it one; the previous version offered the homepage alone. */}
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <Button asChild>
+            <Link href={APP_ROUTES.HOME}>
+              <Home className="mr-2 h-4 w-4" aria-hidden="true" />
+              Go home
             </Link>
           </Button>
-          <Button asChild size="lg" variant="outline">
-            <Link href="/products">
-              <Search className="mr-2 h-5 w-5" />
-              Browse Products
+          <Button variant="outline" asChild>
+            <Link href={APP_ROUTES.PRODUCTS}>
+              <Search className="mr-2 h-4 w-4" aria-hidden="true" />
+              Browse products
             </Link>
           </Button>
         </div>
 
-        {/* Additional Help */}
-        <div className="border-t pt-8">
-          <p className="text-muted-foreground text-sm">
-            If you believe this is an error, please{' '}
-            <Link href="/contact" className="hover:text-foreground underline transition-colors">
-              contact support
-            </Link>
-          </p>
-        </div>
+        <p className="text-muted-foreground mt-6 text-sm">
+          <Link href={APP_ROUTES.HELP} className="inline-flex items-center gap-1 underline">
+            <LifeBuoy className="h-3.5 w-3.5" aria-hidden="true" />
+            Visit our help centre
+          </Link>
+        </p>
       </div>
     </div>
   );

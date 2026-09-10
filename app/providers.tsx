@@ -4,101 +4,57 @@
 
 'use client';
 
-import { useState, useEffect, type ReactNode, Suspense } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { ThemeProvider } from '@/core/providers/theme-provider';
-import NextAuthProvider from '@/core/providers/NextAuthProvider';
-import { ToastProvider } from '@/core/providers/toast-provider';
-import { Toaster } from 'sonner';
-import { AnalyticsProvider } from '@/core/providers/analytics-provider';
+import { useMemo, Suspense, type ReactNode } from 'react';
+import dynamic from 'next/dynamic';
+import type { Session } from 'next-auth';
 import { ErrorBoundary } from '@/shared/ui/feedback/error-boundary';
-import { NetworkStatus } from '@/shared/ui/common/network-status';
-import { ScreenReaderAnnouncer } from '@/shared/ui/common/screen-reader-announcer';
-import { useAppIntegrations } from '@/shared/hooks';
+import { getQueryClient } from '@/core/providers/query-client';
+import { ComposeProviders } from '@/core/providers/compose-providers';
+import { getAppProviders } from '@/core/providers/provider-registry';
+import { useProviderTelemetry } from '@/core/providers/provider-telemetry';
+import { ToastSetup } from '@/core/providers/toast-setup';
+import { ProviderLoadingFallback } from '@/core/providers/provider-loading-fallback';
+import { ThemeShortcutListener } from '@/core/providers/theme-shortcut-listener';
 
-import { I18nProvider } from '@/core/i18n';
-import { FeatureFlagProvider } from '@/core/feature-flags';
+const ReactQueryDevtools = dynamic(
+  () =>
+    import('@tanstack/react-query-devtools').then((mod) => ({
+      default: mod.ReactQueryDevtools,
+    })),
+  { ssr: false }
+);
 
 interface ProvidersProps {
   children: ReactNode;
+  /** Server-fetched session (see app/layout.tsx) — seeds NextAuthProvider. */
+  session: Session | null;
 }
 
-function makeQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5 * 60 * 1000,
-        gcTime: 10 * 60 * 1000,
-        retry: (failureCount, error) => {
-          if (error instanceof Error && 'status' in error) {
-            const status = (error as { status: number }).status;
-            if (status >= 400 && status < 500) return false;
-          }
-          return failureCount < 2;
-        },
-        refetchOnWindowFocus: false,
-        structuralSharing: true,
-      },
-    },
-  });
-}
+export function Providers({ children, session }: ProvidersProps) {
+  // Memoize QueryClient to keep the reference stable
+  const qc = useMemo(() => getQueryClient(), []);
 
-let browserQueryClient: QueryClient | undefined = undefined;
+  // Log and trace client-side initialization health
+  useProviderTelemetry();
 
-function getQueryClient() {
-  if (typeof window === 'undefined') return makeQueryClient();
-  if (!browserQueryClient) browserQueryClient = makeQueryClient();
-  return browserQueryClient;
-}
-
-function LegacyIntegrations({ children }: { children: ReactNode }) {
-  const { trackPurchase } = useAppIntegrations();
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).trackPurchase = trackPurchase;
-    }
-  }, [trackPurchase]);
-
-  return <>{children}</>;
-}
-
-export function Providers({ children }: ProvidersProps) {
-  const [qc] = useState(() => getQueryClient());
+  // Memoize the provider list to prevent unnecessary unmount/remount cycles
+  const providersConfig = useMemo(() => getAppProviders(qc, session), [qc, session]);
 
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={qc}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          storageKey="eshop-theme"
-        >
-          <NextAuthProvider>
-            <LegacyIntegrations>
-              <ToastProvider />
-              <Suspense fallback={null}>
-                <AnalyticsProvider>
-                  <ScreenReaderAnnouncer />
-                  <NetworkStatus />
-                  <FeatureFlagProvider>
-                    <I18nProvider>
-                      {children}
-                    </I18nProvider>
-                  </FeatureFlagProvider>
-                  <Toaster position="top-right" richColors closeButton />
-                  {process.env.NODE_ENV === 'development' && (
-                    <ReactQueryDevtools initialIsOpen={false} />
-                  )}
-                </AnalyticsProvider>
-              </Suspense>
-            </LegacyIntegrations>
-          </NextAuthProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
+    <ErrorBoundary name="GlobalProvidersErrorBoundary">
+      {/* Global toast notification system (renders overlay outside providers but inside boundary) */}
+      <ToastSetup />
+
+      {/* Composed application-level context providers */}
+      <ComposeProviders providers={providersConfig}>
+        {/* Global theme shortcut listener (Ctrl+Shift+L) */}
+        <ThemeShortcutListener />
+
+        {/* Support loading state boundaries for dynamic nested components */}
+        <Suspense fallback={<ProviderLoadingFallback />}>{children}</Suspense>
+
+        {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+      </ComposeProviders>
     </ErrorBoundary>
   );
 }

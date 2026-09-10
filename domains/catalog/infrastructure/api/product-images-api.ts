@@ -31,32 +31,44 @@ export const productImagesApi = {
     formData.append('altText', altText);
     formData.append('isPrimary', String(isPrimary));
 
-    const { data } = await apiClient.post<ProductImage>('/api/product-images', formData, {
+    const { data: resp } = await apiClient.post<any>('/api/v1/productImages', formData, {
       signal: options.signal,
       headers: {
         'Content-Type': 'multipart/form-data',
         ...(options.correlationId ? { 'X-Correlation-ID': options.correlationId } : {}),
       },
     });
-    return data;
+    return resp?.data ?? resp;
   },
 
   /**
    * Delete a product image by its ID.
    */
   delete: async (imageId: string, options: RequestOptions = {}): Promise<void> => {
-    await apiClient.delete(`/api/product-images/${imageId}`, {
+    const { data: resp } = await apiClient.delete<any>(`/api/v1/productImages/${imageId}`, {
       signal: options.signal,
+      headers: options.correlationId ? { 'X-Correlation-ID': options.correlationId } : undefined,
     });
+    return resp?.data ?? resp;
   },
 
   /**
    * Set a specific image as the primary image for a product.
    */
-  setPrimary: async (productId: string, imageId: string, options: RequestOptions = {}): Promise<void> => {
-    await apiClient.put(`/api/product-images/product/${productId}/primary/${imageId}`, null, {
-      signal: options.signal,
-    });
+  setPrimary: async (
+    productId: string,
+    imageId: string,
+    options: RequestOptions = {}
+  ): Promise<void> => {
+    const { data: resp } = await apiClient.put<any>(
+      `/api/v1/productImages/product/${productId}/primary/${imageId}`,
+      null,
+      {
+        signal: options.signal,
+        headers: options.correlationId ? { 'X-Correlation-ID': options.correlationId } : undefined,
+      }
+    );
+    return resp?.data ?? resp;
   },
 
   /**
@@ -64,15 +76,14 @@ export const productImagesApi = {
    */
   updateMetadata: async (
     imageId: string,
-    metadata: { altText?: string; displayOrder?: number },
+    metadata: { productId?: string; imageUrl?: string; altText?: string; displayOrder?: number },
     options: RequestOptions = {}
   ): Promise<ProductImage> => {
-    const { data } = await apiClient.put<ProductImage>(
-      `/api/product-images/${imageId}`,
-      metadata,
-      { signal: options.signal }
-    );
-    return data;
+    const { data: resp } = await apiClient.put<any>(`/api/v1/productImages/${imageId}`, metadata, {
+      signal: options.signal,
+      headers: options.correlationId ? { 'X-Correlation-ID': options.correlationId } : undefined,
+    });
+    return resp?.data ?? resp;
   },
 };
 

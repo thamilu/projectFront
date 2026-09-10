@@ -27,6 +27,12 @@ jobs:
         env:
           SKIP_ENV_VALIDATION: true
           
+      - name: Validate API Contracts Drift
+        run: npm run check:api-types
+
+      - name: Validate Lucide Icon Types Drift
+        run: npm run check:icons
+
       - name: Linting (Boundaries & RSC)
         run: npm run lint
         

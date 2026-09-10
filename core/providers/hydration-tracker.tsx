@@ -10,7 +10,7 @@ const RuntimeTelemetryPanel = dynamic(
 
 /**
  * HydrationTracker
- * 
+ *
  * Performance Platform Utility:
  * Measures the precise time from DOMContentLoaded or page navigation start to full React client-side hydration.
  * Reports metrics to the central Observability Platform.
@@ -26,14 +26,18 @@ export function HydrationTracker() {
     const measureHydration = () => {
       try {
         if (typeof window !== 'undefined' && window.performance) {
-          const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+          const navigation = performance.getEntriesByType(
+            'navigation'
+          )[0] as PerformanceNavigationTiming;
           if (navigation) {
             // Precise duration: elapsed time from initial HTML document completion (DOMContentLoaded) to client mounting
             const hydrationTime = Date.now() - navigation.domContentLoadedEventEnd;
-            
-            import('@/platform/observability').then(({ observability }) => {
-              observability.trackHydrationTime(Math.max(0, hydrationTime));
-            }).catch(() => {});
+
+            import('@/platform/observability')
+              .then(({ observability }) => {
+                observability.trackHydrationTime(Math.max(0, hydrationTime));
+              })
+              .catch(() => {});
           }
         }
       } catch (err) {
@@ -43,7 +47,9 @@ export function HydrationTracker() {
 
     // Defer execution slightly to avoid blocking the main interaction thread
     const hasIdle = typeof window !== 'undefined' && 'requestIdleCallback' in window;
-    const idleId = hasIdle ? (window as any).requestIdleCallback(measureHydration) : setTimeout(measureHydration, 50);
+    const idleId = hasIdle
+      ? (window as any).requestIdleCallback(measureHydration)
+      : setTimeout(measureHydration, 50);
 
     return () => {
       if (hasIdle) {
@@ -54,6 +60,13 @@ export function HydrationTracker() {
     };
   }, []);
 
+  // The panel exposes live circuit-breaker state, real API endpoint paths,
+  // and per-endpoint call/failure/latency metrics — internal system
+  // diagnostics, not something any real visitor should be able to open.
+  // Hydration/Web-Vitals tracking above stays unconditional (it only
+  // reports internally via observability.trackHydrationTime, exposing
+  // nothing) — only the visible HUD is environment-gated.
+  if (process.env.NODE_ENV === 'production') return null;
   return <RuntimeTelemetryPanel />;
 }
 

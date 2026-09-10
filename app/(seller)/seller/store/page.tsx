@@ -7,12 +7,12 @@ import { useCreateStore, useSellerStore, useUpdateStore } from '@/features/selle
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
 import { Loader2, Store as StoreIcon } from 'lucide-react';
 import { Button } from '@/shared/ui/atoms/button';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/routes';
 import { queryKeys } from '@/core/cache/query-keys';
 import { sellerApi } from '@/features/seller/api/seller-api';
 import {
   storeCreateRequestFromSellerProfile,
-  storeCreateRequestFromForm
+  storeCreateRequestFromForm,
 } from '@/features/seller/utils/store-mappers';
 import { type StoreCreateFormData } from '@/domains/seller/contracts/seller.schema';
 import { StoreProfileForm } from '@/features/seller/components/StoreProfileForm';
@@ -26,7 +26,11 @@ export default function SellerStorePage() {
   const createStore = useCreateStore();
   const updateStore = useUpdateStore();
 
-  const { data: sellerProfile, isLoading: isProfileLoading, error: profileError } = useQuery({
+  const {
+    data: sellerProfile,
+    isLoading: isProfileLoading,
+    error: profileError,
+  } = useQuery({
     queryKey: queryKeys.seller.profile,
     queryFn: sellerApi.getMyProfile,
   });
@@ -64,13 +68,19 @@ export default function SellerStorePage() {
   }
 
   if (error) {
+    const appError = error as { statusCode?: number; message?: string };
+    const statusCode = appError?.statusCode;
+    const errorMsg =
+      appError?.message || 'Failed to load store profile. Please try again or contact support.';
+
     return (
       <div className="flex h-[50vh] flex-col items-center justify-center p-4 text-center">
         <StoreIcon className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
-        <h2 className="mb-2 text-xl font-semibold">Couldn't Load Store Profile</h2>
-        <p className="text-muted-foreground">
-          {(error as { message?: string })?.message || 'Failed to load store profile'}
-        </p>
+        <h2 className="mb-2 text-xl font-semibold">Couldn&apos;t Load Store Profile</h2>
+        {statusCode && (
+          <p className="text-muted-foreground mb-1 font-mono text-xs">Error {statusCode}</p>
+        )}
+        <p className="text-muted-foreground max-w-sm text-sm">{errorMsg}</p>
         <div className="mt-6 flex gap-3">
           <Button onClick={() => window.location.reload()}>Retry</Button>
           <Button variant="outline" onClick={() => router.push(APP_ROUTES.SELLER.SETTINGS)}>
@@ -117,17 +127,18 @@ export default function SellerStorePage() {
 
         {/* DEBUGGING OVERLAY: To help identify why sellerProfile didn't render the form */}
         {profileError && (
-          <p className="mt-4 text-red-500 font-mono text-sm">
+          <p className="mt-4 font-mono text-sm text-red-500">
             Profile Error: {(profileError as any)?.message}
           </p>
         )}
         {!sellerProfile && !profileError && (
-          <div className="mt-6 p-4 rounded-xl bg-orange-500/5 border border-orange-500/20">
-            <p className="text-orange-500 font-medium text-sm">
-              Your seller profile was not found. If you haven't applied yet, please complete your onboarding.
+          <div className="mt-6 rounded-xl border border-orange-500/20 bg-orange-500/5 p-4">
+            <p className="text-sm font-medium text-orange-500">
+              Your seller profile was not found. If you haven't applied yet, please complete your
+              onboarding.
             </p>
-            <Button 
-              className="mt-4 bg-orange-600 hover:bg-orange-700 text-white border-none"
+            <Button
+              className="mt-4 border-none bg-orange-600 text-white hover:bg-orange-700"
               onClick={() => router.push(APP_ROUTES.SELLER.REGISTER)}
             >
               Start Onboarding
@@ -136,7 +147,9 @@ export default function SellerStorePage() {
         )}
 
         <div className="mt-6 flex gap-3">
-          <Button variant="ghost" onClick={() => window.location.reload()}>Retry</Button>
+          <Button variant="ghost" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
           <Button variant="outline" onClick={() => router.push(APP_ROUTES.SELLER.SETTINGS)}>
             Go to Settings
           </Button>
@@ -153,7 +166,10 @@ export default function SellerStorePage() {
         icon={StoreIcon}
         actions={
           !isEditing && (
-            <Button onClick={() => setIsEditing(true)} className="rounded-xl shadow-lg shadow-primary/10">
+            <Button
+              onClick={() => setIsEditing(true)}
+              className="shadow-primary/10 rounded-xl shadow-lg"
+            >
               Edit Profile
             </Button>
           )
@@ -161,48 +177,55 @@ export default function SellerStorePage() {
       />
 
       {!isEditing ? (
-        <Card className="border-2 border-primary/20">
-          <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-4 border-b border-white/[0.05]">
+        <Card className="border-primary/20 border-2">
+          <CardHeader className="flex flex-row items-center gap-4 space-y-0 border-b border-white/[0.05] pb-4">
             <div className="relative">
               {store.logoUrl ? (
-                <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl group-hover:border-primary/40 transition-colors">
-                  <img 
-                    src={store.logoUrl} 
-                    alt={store.storeName} 
+                <div className="border-primary/20 group-hover:border-primary/40 h-16 w-16 overflow-hidden rounded-2xl border-2 shadow-2xl transition-colors">
+                  <img
+                    src={store.logoUrl}
+                    alt={store.storeName}
                     className="h-full w-full object-cover"
                     onError={(e) => {
                       // Fallback if image fails
-                      (e.target as any).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(store.storeName)}&background=0D8ABC&color=fff&size=128`;
+                      (e.target as any).src =
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(store.storeName)}&background=0D8ABC&color=fff&size=128`;
                     }}
                   />
                 </div>
               ) : (
-                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center border-2 border-primary/20 shadow-xl">
+                <div className="bg-primary/10 border-primary/20 flex h-16 w-16 items-center justify-center rounded-2xl border-2 shadow-xl">
                   <StoreIcon className="text-primary h-8 w-8" />
                 </div>
               )}
               {store.isVerified && (
-                <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-[#05070a] shadow-lg">
-                  <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                <div className="absolute -top-1 -right-1 rounded-full border-2 border-[#05070a] bg-green-500 p-1 shadow-lg">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
                 </div>
               )}
             </div>
-            
+
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <CardTitle className="text-2xl font-black italic tracking-tight">{store.storeName}</CardTitle>
-                <div className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
-                  store.isVerified 
-                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                    : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                }`}>
+                <CardTitle className="text-2xl font-black tracking-tight italic">
+                  {store.storeName}
+                </CardTitle>
+                <div
+                  className={`rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
+                    store.isVerified
+                      ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+                      : 'border-amber-500/20 bg-amber-500/10 text-amber-500'
+                  }`}
+                >
                   {store.isVerified ? 'Verified' : 'Unverified'}
                 </div>
               </div>
-              <p className="text-muted-foreground text-xs font-mono mt-1">{store.email || 'contact@eshop.com'}</p>
+              <p className="text-muted-foreground mt-1 font-mono text-xs">
+                {store.email || 'contact@eshop.com'}
+              </p>
             </div>
           </CardHeader>
-          <CardContent className="mt-6 grid gap-6 md:grid-cols-2 text-sm leading-relaxed">
+          <CardContent className="mt-6 grid gap-6 text-sm leading-relaxed md:grid-cols-2">
             <div>
               <span className="text-muted-foreground font-semibold">Description: </span>
               <span>{store.description}</span>
@@ -213,15 +236,23 @@ export default function SellerStorePage() {
             </div>
             <div>
               <span className="text-muted-foreground font-semibold">Shop Handle: </span>
-              <span className="font-mono text-primary">{store.shopHandle || 'N/A'}</span>
+              <span className="text-primary font-mono">{store.shopHandle || 'N/A'}</span>
             </div>
             <div>
               <span className="text-muted-foreground font-semibold">Store Address: </span>
               <span>{store.address || 'N/A'}</span>
             </div>
             <div>
+              <span className="text-muted-foreground font-semibold">Store Currency: </span>
+              <span className="font-mono font-bold text-amber-500">
+                {store.currencyCode || 'INR'}
+              </span>
+            </div>
+            <div>
               <span className="text-muted-foreground font-semibold">Rating: </span>
-              <span>{store.rating ?? 0} ({store.totalRatings ?? 0} reviews)</span>
+              <span>
+                {store.rating ?? 0} ({store.totalRatings ?? 0} reviews)
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -243,6 +274,7 @@ export default function SellerStorePage() {
               shopLogoUrl: store.logoUrl || '',
               shopHandle: store.shopHandle || '',
               googleMapsUrl: store.googleMapsUrl || '',
+              currencyCode: store.currencyCode || 'INR',
             }}
             onSubmit={handleSubmit}
             isPending={updateStore.isPending}

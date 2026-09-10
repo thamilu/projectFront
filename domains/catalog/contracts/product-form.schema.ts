@@ -1,14 +1,11 @@
 import { z } from 'zod';
+import { ProductBaseSchema, productAttributesSchema } from './product.schema';
 
-// Product form schema with all necessary fields
-export const productFormSchema = z.object({
-  name: z.string().min(3, 'Product name must be at least 3 characters').max(200),
-  sku: z.string().min(3, 'SKU must be at least 3 characters').max(50),
-  categoryId: z.number(),
+// Product form schema that extends canonical ProductBaseSchema
+export const productFormSchema = ProductBaseSchema.extend({
   subCategoryId: z.union([z.number(), z.undefined(), z.null()]).optional(),
   thirdLevelCategoryId: z.union([z.number(), z.undefined(), z.null()]).optional(),
   fourthLevelCategoryId: z.union([z.number(), z.undefined(), z.null()]).optional(),
-  brandId: z.union([z.number(), z.undefined(), z.null()]).optional(),
   shortDescription: z.string().max(500).optional(),
   description: z.string().min(10, 'Description must be at least 10 characters'),
 
@@ -30,16 +27,20 @@ export const productFormSchema = z.object({
   primaryImageIndex: z.number().int().min(0).default(0),
   videoUrl: z.string().optional(),
 
-  attributes: z.record(z.string(), z.any()).optional(),
-  
+  attributes: productAttributesSchema.optional(),
+
   hasVariants: z.boolean().default(false),
-  variants: z.array(z.object({
-    type: z.string(),
-    value: z.string(),
-    price: z.number().min(0),
-    stock: z.number().int().min(0),
-    sku: z.string(),
-  })).optional(),
+  variants: z
+    .array(
+      z.object({
+        type: z.string(),
+        value: z.string(),
+        price: z.number().min(0),
+        stock: z.number().int().min(0),
+        sku: z.string(),
+      })
+    )
+    .optional(),
 
   weight: z.number().min(0).optional(),
   weightUnit: z.enum(['KG', 'G', 'LB']).default('KG'),
@@ -54,7 +55,10 @@ export const productFormSchema = z.object({
   seoTitle: z.string().max(60).optional(),
   seoDescription: z.string().max(160).optional(),
   seoKeywords: z.array(z.string()).optional(),
-  slug: z.string().regex(/^[a-z0-9-]+$/, 'Slug must be lowercase with hyphens').optional(),
+  slug: z
+    .string()
+    .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase with hyphens')
+    .optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'INACTIVE']).default('DRAFT'),
   featured: z.boolean().default(false),
   newArrival: z.boolean().default(false),
@@ -66,24 +70,30 @@ export const productFormSchema = z.object({
   warrantyUnit: z.enum(['DAYS', 'MONTHS', 'YEARS']).optional(),
   returnPolicy: z.string().optional(),
   countryOfOrigin: z.string().default('India'),
-}).refine((data) => data.sellingPrice <= data.mrp, {
-  message: 'Selling price cannot be greater than MRP',
-  path: ['sellingPrice'],
-}).refine((data) => {
-  if (data.discountType === 'PERCENTAGE') {
-    return data.discountValue <= 100;
-  }
-  if (data.discountType === 'FLAT') {
-    return data.discountValue <= data.sellingPrice;
-  }
-  return true;
-}, {
-  message: 'Invalid discount value',
-  path: ['discountValue'],
-}).refine((data) => data.maxOrderQuantity >= data.minOrderQuantity, {
-  message: 'Max order quantity must be greater than or equal to min order quantity',
-  path: ['maxOrderQuantity'],
-});
+})
+  .refine((data) => data.sellingPrice <= data.mrp, {
+    message: 'Selling price cannot be greater than MRP',
+    path: ['sellingPrice'],
+  })
+  .refine(
+    (data) => {
+      if (data.discountType === 'PERCENTAGE') {
+        return data.discountValue <= 100;
+      }
+      if (data.discountType === 'FLAT') {
+        return data.discountValue <= data.sellingPrice;
+      }
+      return true;
+    },
+    {
+      message: 'Invalid discount value',
+      path: ['discountValue'],
+    }
+  )
+  .refine((data) => data.maxOrderQuantity >= data.minOrderQuantity, {
+    message: 'Max order quantity must be greater than or equal to min order quantity',
+    path: ['maxOrderQuantity'],
+  });
 
 export type ProductFormData = z.infer<typeof productFormSchema>;
 

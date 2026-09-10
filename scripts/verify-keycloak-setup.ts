@@ -3,7 +3,8 @@
  * scripts/verify-keycloak-setup.ts
  *
  * Improved Keycloak Authentication Test Script (TypeScript)
- * - Validates presence of key frontend directories/files
+ * - Loads environment configuration automatically using @next/env
+ * - Validates presence of key frontend directories/files for NextAuth v5
  * - Validates required env vars via process.env (works in CI)
  * - Performs basic URL validation for URL-shaped vars
  * - Supports `--ci` flag (concise output) and `--json` for machine-readable results
@@ -15,6 +16,10 @@
 import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
+import { loadEnvConfig } from '@next/env';
+
+// Load environment variables from .env and .env.local
+loadEnvConfig(process.cwd());
 
 type Result = {
   ok: boolean;
@@ -28,29 +33,34 @@ const isCi = argv.includes('--ci');
 const outJson = argv.includes('--json');
 const failFast = argv.includes('--fail-fast');
 
-const REQUIRED_DIRS = [
-  'hooks',
-  'components/auth',
-  'app/login',
-];
+const REQUIRED_DIRS = ['features/auth', 'lib/auth', 'app/api/auth/[...nextauth]'];
 
 const REQUIRED_FILES = [
-  'lib/axios.ts',
-  'lib/auth/config.ts',
-  'lib/auth/pkce.ts',
-  'lib/auth/session.ts',
-  'app/api/auth/keycloak/callback/route.ts',
+  'auth.ts',
+  'lib/auth/index.ts',
+  'lib/auth/handlers.ts',
+  'lib/auth/sign-out.ts',
+  'lib/auth/token-refresh.ts',
+  'lib/auth/backend-role.ts',
+  'app/api/auth/[...nextauth]/route.ts',
 ];
 
 const REQUIRED_ENV_VARS = [
-  'NEXT_PUBLIC_API_BASE_URL',
-  'NEXT_PUBLIC_API_AUTH_URL',
-  'NEXT_PUBLIC_KEYCLOAK_URL',
   'NEXT_PUBLIC_APP_URL',
-  'NEXT_PUBLIC_ENABLE_OAUTH',
+  'NEXT_PUBLIC_API_URL',
+  'NEXT_PUBLIC_KEYCLOAK_URL',
+  'KEYCLOAK_ISSUER',
+  'KEYCLOAK_CLIENT_ID',
+  'KEYCLOAK_CLIENT_SECRET',
+  'AUTH_SECRET',
 ];
 
-const URL_ENV_VARS = ['NEXT_PUBLIC_API_BASE_URL', 'NEXT_PUBLIC_KEYCLOAK_URL', 'NEXT_PUBLIC_APP_URL', 'NEXTAUTH_URL'];
+const URL_ENV_VARS = [
+  'NEXT_PUBLIC_APP_URL',
+  'NEXT_PUBLIC_API_URL',
+  'NEXT_PUBLIC_KEYCLOAK_URL',
+  'KEYCLOAK_ISSUER',
+];
 
 function log(msg: string) {
   if (isCi) {
@@ -116,10 +126,11 @@ async function run(): Promise<Result> {
   // Static export checks for critical modules
   log('\n🔎 Validating module exports (static checks)...');
   const exportChecks: Record<string, string[]> = {
-    'lib/auth/pkce.ts': ['generatePKCEChallenge', 'buildAuthorizationUrl'],
-    'lib/auth/session.ts': ['storePkceState', 'retrievePkceState', 'clearPkceState'],
-    'lib/auth/config.ts': ['loadAuthConfig', 'getAuthorizationEndpoint'],
-    'lib/auth/tokens.ts': ['validateIdToken'],
+    'auth.ts': ['handlers', 'signIn', 'signOut', 'auth'],
+    'lib/auth/index.ts': ['handlers', 'signIn', 'signOut', 'auth'],
+    'lib/auth/sign-out.ts': ['handleKeycloakSignOut'],
+    'lib/auth/token-refresh.ts': ['refreshAccessTokenWithLock'],
+    'lib/auth/backend-role.ts': ['fetchUserRoleWithRetry'],
   };
 
   for (const [modPath, names] of Object.entries(exportChecks)) {
@@ -173,8 +184,13 @@ async function run(): Promise<Result> {
     try {
       const base = new URL(process.env.NEXT_PUBLIC_KEYCLOAK_URL).origin;
       log(`\n[info] Keycloak base URL: ${base}`);
-      if (process.env.NEXT_PUBLIC_APP_URL && validateUrlEnv('NEXT_PUBLIC_APP_URL', process.env.NEXT_PUBLIC_APP_URL)) {
-        log(`[info] Ensure Keycloak Valid Redirect URIs contain: ${new URL(process.env.NEXT_PUBLIC_APP_URL).origin}`);
+      if (
+        process.env.NEXT_PUBLIC_APP_URL &&
+        validateUrlEnv('NEXT_PUBLIC_APP_URL', process.env.NEXT_PUBLIC_APP_URL)
+      ) {
+        log(
+          `[info] Ensure Keycloak Valid Redirect URIs contain: ${new URL(process.env.NEXT_PUBLIC_APP_URL).origin}`
+        );
       }
     } catch {
       // ignore
@@ -185,26 +201,30 @@ async function run(): Promise<Result> {
   return { ok, missingFiles, missingEnv, invalidEnv };
 }
 
-run().then(result => {
-  console.log('\n' + '='.repeat(50));
-  if (outJson) {
-    console.log(JSON.stringify(result));
-  }
-  if (result.ok) {
-    log('✅ All checks passed! Keycloak authentication is properly set up.');
-    if (!isCi) {
-      log('\n📝 Next steps:');
-      log('1. Start your backend API on port 8082 (if applicable)');
-      log('2. Run: npm run dev');
-      log('3. Visit: http://localhost:3000/login');
-      log('4. Test login with your credentials');
+run()
+  .then((result) => {
+    console.log('\n' + '='.repeat(50));
+    if (outJson) {
+      console.log(JSON.stringify(result));
     }
-    exitWithCode(0);
-  }
+    if (result.ok) {
+      log('✅ All checks passed! Keycloak authentication is properly set up.');
+      if (!isCi) {
+        log('\n📝 Next steps:');
+        log('1. Start your backend API on port 8082 (if applicable)');
+        log('2. Run: npm run dev');
+        log('3. Visit: http://localhost:3000/login');
+        log('4. Test login with your credentials');
+      }
+      exitWithCode(0);
+    }
 
-  log(`❌ Found ${result.missingFiles.length + result.missingEnv.length + result.invalidEnv.length} missing/invalid items.`);
-  exitWithCode(1);
-}).catch(err => {
-  console.error('[verify] Unexpected error:', err);
-  process.exit(2);
-});
+    log(
+      `❌ Found ${result.missingFiles.length + result.missingEnv.length + result.invalidEnv.length} missing/invalid items.`
+    );
+    exitWithCode(1);
+  })
+  .catch((err) => {
+    console.error('[verify] Unexpected error:', err);
+    process.exit(2);
+  });

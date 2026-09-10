@@ -8,7 +8,7 @@
  */
 
 import { siteDefaults, getEnv, getEnvUrl } from './site-defaults';
-import { SiteConfig, SiteConfigSchema, PaginationConfigSchema } from './site-schema';
+import { SiteConfig, SiteConfigSchema } from './site-schema';
 
 function createSiteConfig(): SiteConfig {
   const appUrl = getEnvUrl('NEXT_PUBLIC_APP_URL', siteDefaults.url);
@@ -25,7 +25,7 @@ function createSiteConfig(): SiteConfig {
     },
     keywords: [...siteDefaults.keywords],
     locale: getEnv('NEXT_PUBLIC_SITE_LOCALE', siteDefaults.locale),
-    twitterHandle: getEnv('NEXT_PUBLIC_SITE_TWITTER', siteDefaults.twitterHandle),
+    twitterHandle: getEnv('NEXT_PUBLIC_SITE_TWITTER', siteDefaults.twitterHandle) as any,
     links: {
       twitter: getEnv('NEXT_PUBLIC_SITE_LINK_TWITTER', siteDefaults.links.twitter),
       github: getEnv('NEXT_PUBLIC_SITE_LINK_GITHUB', siteDefaults.links.github),
@@ -43,6 +43,10 @@ function createSiteConfig(): SiteConfig {
       searchDebounceMs: Number(
         getEnv('NEXT_PUBLIC_SEARCH_DEBOUNCE_MS', String(siteDefaults.pagination.searchDebounceMs))
       ),
+    },
+    verification: {
+      google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION || undefined,
+      yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || undefined,
     },
   };
 

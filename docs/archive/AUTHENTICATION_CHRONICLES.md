@@ -1,6 +1,7 @@
 ﻿# Authentication & Identity Chronicles
 
 ## File: Authentication-Overview.md
+
 # Enterprise Authentication System Documentation
 
 ## Overview
@@ -640,7 +641,9 @@ Configuration is in environment variables - back up your `.env` files securely.
 **Maintainer:** Platform Engineering Team
 
 ---
+
 ## File: Keycloak-Auth-Implementation.md
+
 # Keycloak Authentication Implementation Guide
 
 ## âœ… Implementation Complete
@@ -650,43 +653,51 @@ The Keycloak authentication system has been successfully implemented in your Nex
 ## ðŸ“ Files Created/Updated
 
 ### Core Configuration
+
 - `.env.local` - Environment variables with Keycloak endpoints
 - `src/env.ts` - Type-safe environment config
 - `src/types/auth.types.ts` - TypeScript types for auth
 
 ### Authentication Layer
+
 - `src/lib/axios.ts` - Axios instance with token management & auto-refresh
 - `src/services/authService.ts` - Keycloak authentication service
 - `src/store/auth-store.ts` - Zustand store for auth state (with Keycloak support)
 
 ### Custom Hooks
+
 - `src/hooks/useAuth.ts` - Main auth hook with initialization
 - `src/hooks/useLogin.ts` - Login mutation hook
 - `src/hooks/useLogout.ts` - Logout mutation hook
 - `src/hooks/useUser.ts` - User data query hook
 
 ### UI Components
+
 - `src/components/auth/LoginForm.tsx` - Login form (direct + OAuth)
 - `src/components/auth/RegisterForm.tsx` - Registration form
 - `src/components/auth/LogoutButton.tsx` - Logout button component
 
 ### Pages
+
 - `app/login/page.tsx` - Login page
 - `app/register/page.tsx` - Registration page
 - `app/callback/page.tsx` - OAuth callback handler
 
 ### Providers
+
 - `app/providers.tsx` - Updated with Sonner toast integration
 
 ## ðŸš€ Features Implemented
 
 ### âœ… Authentication Methods
+
 - **Direct Login**: Username/password authentication
 - **OAuth2 Flow**: Keycloak SSO login
 - **Token Auto-Refresh**: Automatic token renewal
 - **Secure Storage**: Tokens in localStorage with expiry tracking
 
 ### âœ… Security Features
+
 - CSRF protection with state parameter
 - Token expiry validation
 - Auto-refresh before token expires (30s buffer)
@@ -694,6 +705,7 @@ The Keycloak authentication system has been successfully implemented in your Nex
 - 401 auto-redirect to login
 
 ### âœ… User Experience
+
 - Loading states
 - Toast notifications (Sonner)
 - Form validation (Zod)
@@ -704,7 +716,9 @@ The Keycloak authentication system has been successfully implemented in your Nex
 ## ðŸ”§ Configuration Required
 
 ### 1. Environment Variables
+
 Already configured in `.env.local`:
+
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8082
 NEXT_PUBLIC_API_AUTH_URL=http://localhost:8082/api/auth
@@ -715,7 +729,9 @@ NEXT_PUBLIC_ENABLE_DIRECT_LOGIN=true
 ```
 
 ### 2. Backend API Endpoints
+
 Ensure your backend (port 8082) has these endpoints:
+
 - `POST /api/auth/login` - Direct login
 - `POST /api/auth/register` - User registration
 - `GET /api/auth/login-url` - Get OAuth authorization URL
@@ -726,20 +742,24 @@ Ensure your backend (port 8082) has these endpoints:
 - `GET /api/auth/userinfo` - Get detailed user info
 
 ### 3. Token Response Format
+
 Your backend should return tokens in this format:
+
 ```json
 {
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "expires_in": 300,
   "token_type": "Bearer",
-  "id_token": "eyJ...",  // optional
+  "id_token": "eyJ...", // optional
   "scope": "openid profile email"
 }
 ```
 
 ### 4. User Info Format
+
 User info endpoint should return:
+
 ```json
 {
   "sub": "user-id",
@@ -756,38 +776,41 @@ User info endpoint should return:
 ## ðŸŽ¯ Usage Examples
 
 ### In a Component
+
 ```typescript
 import { useAuth } from '@/hooks/useAuth';
 
 function MyComponent() {
   const { user, isAuthenticated, isLoading } = useAuth();
-  
+
   if (isLoading) return <div>Loading...</div>;
   if (!isAuthenticated) return <div>Please login</div>;
-  
+
   return <div>Welcome {user?.name}</div>;
 }
 ```
 
 ### Login
+
 ```typescript
 import { useLogin } from '@/hooks/useLogin';
 
 function LoginComponent() {
   const loginMutation = useLogin();
-  
+
   const handleSubmit = (data) => {
     loginMutation.mutate({
       username: data.username,
       password: data.password
     });
   };
-  
+
   return <form onSubmit={handleSubmit}>...</form>;
 }
 ```
 
 ### Protected API Calls
+
 ```typescript
 import axiosInstance from '@/lib/axios';
 
@@ -798,6 +821,7 @@ const { data } = await axiosInstance.get('/api/protected-resource');
 ## ðŸ”„ Authentication Flow
 
 ### Direct Login Flow
+
 1. User enters credentials
 2. POST to `/api/auth/login`
 3. Tokens stored in localStorage
@@ -805,6 +829,7 @@ const { data } = await axiosInstance.get('/api/protected-resource');
 5. Tokens auto-refreshed before expiry
 
 ### OAuth2 Flow
+
 1. User clicks "Sign in with Keycloak"
 2. GET `/api/auth/login-url` for authorization URL
 3. Redirect to Keycloak login
@@ -813,6 +838,7 @@ const { data } = await axiosInstance.get('/api/protected-resource');
 6. Store tokens and redirect to dashboard
 
 ### Token Refresh Flow
+
 1. Before each API call, check token expiry
 2. If expired/expiring soon, use refresh token
 3. POST `/api/auth/refresh` with refresh token
@@ -822,17 +848,20 @@ const { data } = await axiosInstance.get('/api/protected-resource');
 ## ðŸ§ª Testing
 
 ### 1. Start Backend
+
 ```bash
 # Make sure your backend is running on port 8082
 ```
 
 ### 2. Start Frontend
+
 ```bash
 cd frontend
 npm run dev
 ```
 
 ### 3. Test Flows
+
 - Visit `http://localhost:3000/login`
 - Test direct login with credentials
 - Test OAuth login (if enabled)
@@ -853,21 +882,25 @@ npm run dev
 ## ðŸ› Troubleshooting
 
 ### Token not attached to requests
+
 - Check if token exists in localStorage
 - Verify axios interceptor is working
 - Check console for errors
 
 ### Auto-refresh not working
+
 - Verify `expires_in` is returned from backend
 - Check token_expiry in localStorage
 - Ensure refresh endpoint returns new tokens
 
 ### OAuth callback fails
+
 - Verify state parameter matches
 - Check redirect URI configuration
 - Ensure code exchange endpoint works
 
 ### 401 Errors
+
 - Check if backend validates tokens correctly
 - Verify token format (JWT)
 - Check if token is expired
@@ -882,6 +915,7 @@ npm run dev
 ## ðŸŽ‰ Summary
 
 Your Keycloak authentication system is now fully implemented with:
+
 - âœ… Secure token management
 - âœ… Auto-refresh functionality
 - âœ… OAuth2 and direct login support
@@ -894,12 +928,15 @@ Your Keycloak authentication system is now fully implemented with:
 The system is production-ready and follows industry best practices!
 
 ---
+
 ## File: Keycloak-Client-Setup.md
+
 # Keycloak Client Configuration Guide
 
 ## Issue Fixed: "Invalid parameter: redirect_uri" during Registration
 
 ### Problem
+
 When clicking "Register", Keycloak showed error: **"We are sorry... Invalid parameter: redirect_uri"**
 
 This happened because the redirect URI sent to Keycloak's registration endpoint wasn't in the client's "Valid Redirect URIs" list.
@@ -923,17 +960,20 @@ This happened because the redirect URI sent to Keycloak's registration endpoint 
 ### Step 3: Update Redirect URIs
 
 **Valid Redirect URIs** (add these):
+
 ```
 http://localhost:3000/*
 http://localhost:3000/api/auth/callback/keycloak
 ```
 
 **Valid Post Logout Redirect URIs** (add these):
+
 ```
 http://localhost:3000/*
 ```
 
 **Web Origins** (for CORS):
+
 ```
 http://localhost:3000
 ```
@@ -961,12 +1001,14 @@ Make sure these are configured:
 ### Updated: `src/lib/auth/authConfig.ts`
 
 **Before:**
+
 ```typescript
 // âŒ Was redirecting to /callback (not registered in Keycloak)
 redirect = `${appBase}/callback`;
 ```
 
 **After:**
+
 ```typescript
 // âœ… Now redirects to NextAuth callback URL
 const redirect = `${appBase}/api/auth/callback/keycloak`;
@@ -1030,6 +1072,7 @@ const redirect = `${appBase}/api/auth/callback/keycloak`;
 ### Want to test with production domain?
 
 Add your production domain to Valid Redirect URIs:
+
 ```
 https://yourdomain.com/*
 https://yourdomain.com/api/auth/callback/keycloak
@@ -1074,9 +1117,10 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 âœ… **Required**: Keycloak client must have redirect URIs whitelisted
 âœ… **Result**: Registration flow works seamlessly with NextAuth + Keycloak
 
-
 ---
+
 ## File: Keycloak-Configuration.md
+
 # Keycloak Configuration Guide â€” EShop (frontend + backend)
 
 This document provides exact, copy-paste friendly steps to configure Keycloak for the EShop application.
@@ -1117,6 +1161,7 @@ and a Confidential client for the server/API (`eshop-backend`). Follow these ste
    - Use PKCE S256 in your frontend implementation.
 
 Notes:
+
 - Public clients must not use client secrets. Use PKCE (S256) to protect the authorization code.
 - Do not enable Direct Access Grants (ROPC) in production.
 
@@ -1145,12 +1190,14 @@ Notes:
 4. Optional: enable Service Accounts if backend needs client-credentials flows.
 
 Notes:
+
 - Confidential client secret must only be used server-side.
 - Use this client for server-to-server token exchanges and privileged flows.
 
 ## 4. Environment variables (examples)
 
 Add to frontend `.env.local` (public values):
+
 ```
 NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
 NEXT_PUBLIC_KEYCLOAK_REALM=eshop
@@ -1159,6 +1206,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 Add to backend server env (private values):
+
 ```
 KEYCLOAK_AUTH_SERVER_URL=http://localhost:8080
 KEYCLOAK_REALM=eshop
@@ -1173,21 +1221,25 @@ Do NOT prefix confidential secrets with `NEXT_PUBLIC_` and do not commit `.env.l
 ## 5. Recommended Flow Architectures
 
 Option A â€” Backendâ€‘mediated exchange (Recommended):
+
 - Frontend (PKCE) starts auth (popup/redirect) â†’ Keycloak returns code to configured callback â†’ Backend (`eshop-backend`) exchanges code for tokens using its secret â†’ Backend issues a secure httpOnly session cookie to the browser.
 - Pros: tokens and refresh are kept server-side; safer for eâ€‘commerce payment and order flows.
 
 Option B â€” Pure SPA PKCE (Client-only):
+
 - Frontend performs codeâ†’token exchange using PKCE S256 without a secret.
 - Pros: simpler; Cons: client must manage token storage/refresh and is exposed to XSS risks.
 
 ## 6. Keycloak Admin step-by-step (field values to paste)
 
 For `eshop-client` (Settings):
+
 - `Access Type`: public
 - `Valid Redirect URIs` (example): `http://localhost:3000/api/auth/keycloak/callback`
 - `Web Origins`: `http://localhost:3000`
 
 For `eshop-backend` (Settings):
+
 - `Access Type`: confidential
 - `Valid Redirect URIs` (example): `http://localhost:3000/api/auth/keycloak/callback`
 - Credentials â†’ copy `Secret` and store in server env.
@@ -1195,6 +1247,7 @@ For `eshop-backend` (Settings):
 ## 7. Verification & debugging checklist
 
 1. Generate authorization URL from the app (Debug page or JSON authorize endpoint). Example:
+
 ```
 http://localhost:8080/realms/eshop/protocol/openid-connect/auth?client_id=eshop-client&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fauth%2Fkeycloak%2Fcallback&response_type=code&scope=openid+profile+email
 ```
@@ -1215,6 +1268,7 @@ http://localhost:8080/realms/eshop/protocol/openid-connect/auth?client_id=eshop-
 ## 8. Useful curl examples
 
 # Exchange code for tokens (confidential client):
+
 ```
 curl -X POST \
   -d "grant_type=authorization_code" \
@@ -1226,6 +1280,7 @@ curl -X POST \
 ```
 
 # Exchange code for tokens (public client using PKCE): include `code_verifier` instead of `client_secret`:
+
 ```
 curl -X POST \
   -d "grant_type=authorization_code" \
@@ -1237,6 +1292,7 @@ curl -X POST \
 ```
 
 ## 9. Security checklist
+
 - Use HTTPS in production for all redirect URIs.
 - Never expose `KEYCLOAK_CLIENT_SECRET` to the frontend.
 - Use short access token TTL and rotate refresh tokens.
@@ -1248,10 +1304,12 @@ curl -X POST \
 This section describes the recommended role model, how to add protocol mappers so roles appear in tokens, token lifetime recommendations, and how to set up service accounts for the backend client.
 
 ### Roles (Realm vs Client)
+
 - **Realm Roles**: Create for global permissions that span multiple clients. Examples: `admin`, `support`, `customer`.
 - **Client Roles**: Create when permissions are specific to a client (e.g., `seller_dashboard_manage`).
 
 Recommended role names and purpose:
+
 - `customer` â€” browse and purchase products.
 - `seller` â€” manage catalogue and view own orders.
 - `admin` â€” full administrative access.
@@ -1259,82 +1317,95 @@ Recommended role names and purpose:
 - `service` â€” backend-only automation/service account role.
 
 Where to create:
+
 - Realm Roles: Keycloak â†’ Realm Settings â†’ Roles â†’ Add Role.
 - Client Roles: Keycloak â†’ Clients â†’ <client> â†’ Roles â†’ Add Role.
 
 Assign roles to users:
+
 - Keycloak â†’ Users â†’ Select user â†’ Role Mappings â†’ Available Roles â†’ Add selected roles.
 
 ### Protocol Mappers (include roles in tokens)
+
 Keycloak already places realm roles under `realm_access.roles` and client roles under `resource_access.<client>.roles`. For easier server-side checks you can add mappers that flatten roles into a single `roles` claim.
 
 Add a `roles` mapper (flattened) for a client:
+
 1. Clients â†’ `eshop-client` (or the backend client) â†’ Mappers â†’ Create.
 2. Mapper Type: `User Realm Role` (this will include realm roles). Set:
-    - Name: `realm-roles-to-roles-claim`
-    - Token Claim Name: `roles`
-    - Claim JSON Type: `String` (or `JSON` if you prefer array)
-    - Add to ID token: ON
-    - Add to access token: ON
-    - Add to userinfo: ON
-    - Multivalued: ON
+   - Name: `realm-roles-to-roles-claim`
+   - Token Claim Name: `roles`
+   - Claim JSON Type: `String` (or `JSON` if you prefer array)
+   - Add to ID token: ON
+   - Add to access token: ON
+   - Add to userinfo: ON
+   - Multivalued: ON
 3. Create another mapper for client roles (if needed): Mapper Type `User Client Role` â†’ select Client ID `eshop-backend` â†’ Token Claim Name `roles` (multivalued). This will add client-scoped roles to the same `roles` claim or separate by prefix if you prefer.
 
 Audience mapping (API audience):
+
 1. Clients â†’ `eshop-backend` â†’ Mappers â†’ Create.
 2. Mapper Type: `Audience` (or `Audience` protocol mapper), Name: `audience-api`, Included Client Audience: `eshop-backend`.
 3. This ensures the `aud` claim contains the backend API client id so resource servers can validate audience.
 
 Notes:
+
 - `realm_access` and `resource_access` are default claims â€” you may not need extra mappers unless you want a flattened `roles` claim or a specific `aud` claim.
 
 ### Token and Refresh Settings (recommended)
+
 - Access Token Lifespan: 5â€“15 minutes (realm-level or client-level override).
 - Refresh Token Lifespan: 30 minutes to a few hours (use rotation for improved security).
 - Refresh Token Rotation: ENABLE (client settings or realm tokens) â€” prevents replay of refresh tokens.
 - Offline Tokens: enable only when needed (long-lived tokens), and protect them tightly.
 
 Where to set:
+
 - Realm â†’ Tokens: default lifespans (affects all clients unless overridden).
 - Clients â†’ `Advanced Settings` or `Tokens` (client-specific overrides) â€” set Access Token Lifespan and Refresh Token settings per client.
 
 ### Service Accounts (backend automation)
+
 1. Clients â†’ `eshop-backend` â†’ Service Account Enabled: ON â†’ Save.
 2. After enabling, open `Service Account Roles` tab and assign only the required roles (e.g., `service` or specific admin roles).
 3. Use the client credentials flow from the backend to request tokens for automation tasks.
 
 ### Logout and Token Revocation
+
 - Enable front-channel and/or back-channel logout if you need single sign-out across apps.
 - Revoke refresh tokens on logout â€” configure in client or realm token settings and implement logout endpoints in your backend.
 
 ### How to verify roles appear in tokens
+
 1. Login and capture the access token or ID token (use the browser debug tools or userinfo endpoint).
 2. Decode the JWT (https://jwt.io or jwt-cli) and inspect claims:
-    - `realm_access.roles` should list realm roles.
-    - `resource_access` should include client roles by client id.
-    - The flattened `roles` claim (if you added a mapper) should contain combined roles.
+   - `realm_access.roles` should list realm roles.
+   - `resource_access` should include client roles by client id.
+   - The flattened `roles` claim (if you added a mapper) should contain combined roles.
 
 ### Example mapper configuration (copyable)
+
 - Realm roles to `roles` claim:
-   - Name: `realm-roles-to-roles-claim`
-   - Mapper Type: `User Realm Role`
-   - Token Claim Name: `roles`
-   - Claim JSON Type: `JSON`
-   - Add to ID token: ON
-   - Add to access token: ON
-   - Multivalued: ON
+  - Name: `realm-roles-to-roles-claim`
+  - Mapper Type: `User Realm Role`
+  - Token Claim Name: `roles`
+  - Claim JSON Type: `JSON`
+  - Add to ID token: ON
+  - Add to access token: ON
+  - Multivalued: ON
 
 - Client roles to `roles` claim:
-   - Name: `client-roles-to-roles-claim`
-   - Mapper Type: `User Client Role`
-   - Client ID: `eshop-backend`
-   - Token Claim Name: `roles`
-   - Claim JSON Type: `JSON`
-   - Add to ID token: ON
-   - Add to access token: ON
-   - Multivalued: ON
+  - Name: `client-roles-to-roles-claim`
+  - Mapper Type: `User Client Role`
+  - Client ID: `eshop-backend`
+  - Token Claim Name: `roles`
+  - Claim JSON Type: `JSON`
+  - Add to ID token: ON
+  - Add to access token: ON
+  - Multivalued: ON
 
 ## 11. Final checklist (roles & mappers)
+
 - [ ] Create Realm roles: `customer`, `seller`, `admin`, `support`, `service`.
 - [ ] Create client roles where needed (e.g., `seller_dashboard_manage`).
 - [ ] Add protocol mappers to include roles in tokens (realm + client mappers if desired).
@@ -1345,6 +1416,7 @@ Where to set:
 ---
 
 If you'd like, I can also:
+
 - (A) Produce a click-by-click screenshot-style guide for the Keycloak admin pages.
 - (B) Implement the backend-mediated exchange in this repository: add a server callback route that uses `eshop-backend` and `KEYCLOAK_CLIENT_SECRET` to exchange the code and create a session cookie.
 - (C) Add CI checks or a small script to automate Keycloak client creation via the Keycloak Admin API.
@@ -1352,7 +1424,9 @@ If you'd like, I can also:
 Pick one and I will proceed.
 
 ---
+
 ## File: NextAuth-Keycloak-Guide.md
+
 # NextAuth + Keycloak Implementation Guide
 
 **Enterprise E-Commerce Frontend Authentication**
@@ -1492,12 +1566,12 @@ This guide provides complete step-by-step instructions for implementing and usin
    ```
    Root URL: http://localhost:3000
    Home URL: http://localhost:3000
-   Valid redirect URIs: 
+   Valid redirect URIs:
      - http://localhost:3000/api/auth/callback/keycloak
      - http://localhost:3000/*
    Valid post logout redirect URIs:
      - http://localhost:3000
-   Web origins: 
+   Web origins:
      - http://localhost:3000
    ```
 7. Click **"Save"**
@@ -1594,6 +1668,7 @@ npm install
 ```
 
 This installs all required packages including:
+
 - `next-auth@^4.24.13`
 - `@testing-library/react@^16.0.0`
 - `@testing-library/jest-dom@^6.6.0`
@@ -1676,11 +1751,7 @@ export default function SignInPage() {
           </p>
         </div>
 
-        <Button
-          onClick={() => signIn('keycloak', { callbackUrl })}
-          className="w-full"
-          size="lg"
-        >
+        <Button onClick={() => signIn('keycloak', { callbackUrl })} className="w-full" size="lg">
           Sign in with Keycloak
         </Button>
       </div>
@@ -1782,11 +1853,7 @@ export function MyComponent() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <button onClick={login}>
-        Sign In
-      </button>
-    );
+    return <button onClick={login}>Sign In</button>;
   }
 
   return (
@@ -1856,7 +1923,7 @@ export function ProductList() {
 
   return (
     <div>
-      {data?.map(product => (
+      {data?.map((product) => (
         <div key={product.id}>{product.name}</div>
       ))}
     </div>
@@ -1877,7 +1944,7 @@ export function ManualFetch() {
   const fetchData = async () => {
     const response = await fetch('http://localhost:8082/api/v1/data', {
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
     });
@@ -1898,11 +1965,7 @@ import { useAuth } from '@/hooks/use-auth-nextauth';
 export function LogoutButton() {
   const { logout } = useAuth();
 
-  return (
-    <button onClick={logout}>
-      Sign Out
-    </button>
-  );
+  return <button onClick={logout}>Sign Out</button>;
 }
 ```
 
@@ -1925,7 +1988,7 @@ export function UserProfile() {
       <div>
         <strong>Roles:</strong>
         <ul>
-          {roles.map(role => (
+          {roles.map((role) => (
             <li key={role}>{role}</li>
           ))}
         </ul>
@@ -1949,7 +2012,7 @@ import { useKeycloakAuth } from '@/hooks/useKeycloakAuth';
 
 export function LegacyComponent() {
   const { isAuthenticated, user, login, logout } = useKeycloakAuth();
-  
+
   // Same API, now backed by NextAuth
   return <div>{user?.name}</div>;
 }
@@ -1993,6 +2056,7 @@ export function LegacyComponent() {
 ### Manual Testing Checklist
 
 #### 1. Login Flow
+
 ```bash
 # Start application
 npm run dev
@@ -2006,6 +2070,7 @@ http://localhost:3000/account
 ```
 
 #### 2. Session Persistence
+
 ```bash
 # After login, check cookies
 # Browser DevTools â†’ Application â†’ Cookies
@@ -2016,6 +2081,7 @@ http://localhost:3000/account
 ```
 
 #### 3. Token Refresh
+
 ```bash
 # Wait 4 minutes (session refetch interval)
 # Check Network tab for auth requests
@@ -2023,6 +2089,7 @@ http://localhost:3000/account
 ```
 
 #### 4. Role-Based Access
+
 ```bash
 # Navigate to admin route
 http://localhost:3000/admin
@@ -2032,9 +2099,10 @@ http://localhost:3000/admin
 ```
 
 #### 5. Logout Flow
+
 ```bash
 # Click logout button
-# Expected: 
+# Expected:
 #   1. Next.js session cleared
 #   2. Redirect to Keycloak logout
 #   3. Keycloak session cleared
@@ -2096,7 +2164,7 @@ test.describe('Authentication', () => {
 
     // Should redirect back to app
     await expect(page).toHaveURL('http://localhost:3000/account');
-    
+
     // Should see user info
     await expect(page.locator('text=testuser')).toBeVisible();
   });
@@ -2123,6 +2191,7 @@ test.describe('Authentication', () => {
 #### Issue 1: "NextAuth route not configured"
 
 **Symptoms:**
+
 ```json
 {
   "error": "NextAuth route not configured"
@@ -2130,6 +2199,7 @@ test.describe('Authentication', () => {
 ```
 
 **Solution:**
+
 - Verify `app/api/auth/[...nextauth]/route.ts` exists
 - Check file exports `GET` and `POST` handlers
 - Restart dev server
@@ -2137,10 +2207,12 @@ test.describe('Authentication', () => {
 #### Issue 2: Redirect Loop
 
 **Symptoms:**
+
 - Infinite redirect between app and Keycloak
 - Browser shows "Too many redirects"
 
 **Solution:**
+
 1. Check `NEXTAUTH_URL` matches your app URL exactly
 2. Verify Keycloak redirect URIs include callback:
    ```
@@ -2151,26 +2223,30 @@ test.describe('Authentication', () => {
 #### Issue 3: Token Refresh Fails
 
 **Symptoms:**
+
 - Session expires after 5 minutes
 - Logged out unexpectedly
 
 **Solution:**
+
 1. Check Keycloak token lifespan settings:
    - Realm Settings â†’ Tokens â†’ Access Token Lifespan
    - Should be > 5 minutes
 2. Verify refresh token is being stored:
    ```typescript
    // In route.ts
-   refreshToken: account.refresh_token // âœ… Should exist
+   refreshToken: account.refresh_token; // âœ… Should exist
    ```
 
 #### Issue 4: Roles Not Available
 
 **Symptoms:**
+
 - `user.roles` is empty
 - Role checks always fail
 
 **Solution:**
+
 1. Verify roles are assigned in Keycloak:
    - Users â†’ [user] â†’ Role mapping
 2. Check role extraction logic:
@@ -2183,11 +2259,13 @@ test.describe('Authentication', () => {
 #### Issue 5: CORS Errors
 
 **Symptoms:**
+
 ```
 Access to fetch at 'http://localhost:8080' from origin 'http://localhost:3000' has been blocked by CORS
 ```
 
 **Solution:**
+
 1. Add to Keycloak client settings:
    ```
    Web Origins: http://localhost:3000
@@ -2204,6 +2282,7 @@ NEXTAUTH_DEBUG=true
 ```
 
 Check server console for detailed logs:
+
 ```
 [next-auth][debug] JWT callback called
 [next-auth][debug] Token: {...}
@@ -2221,14 +2300,10 @@ import { useSession } from 'next-auth/react';
 
 export function SessionDebug() {
   const { data: session } = useSession();
-  
+
   if (process.env.NODE_ENV !== 'development') return null;
 
-  return (
-    <pre className="bg-gray-100 p-4 text-xs">
-      {JSON.stringify(session, null, 2)}
-    </pre>
-  );
+  return <pre className="bg-gray-100 p-4 text-xs">{JSON.stringify(session, null, 2)}</pre>;
 }
 ```
 
@@ -2325,6 +2400,7 @@ export async function GET(req: NextRequest) {
 ### Support
 
 For issues or questions:
+
 1. Check this guide's [Troubleshooting](#troubleshooting) section
 2. Review NextAuth.js documentation
 3. Check Keycloak server logs
@@ -2407,7 +2483,9 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 **Version**: 2.0.0
 
 ---
+
 ## File: OAuth2-Implementation.md
+
 # Enterprise Authentication Implementation Guide
 
 ## ðŸ“‹ Executive Summary
@@ -2421,6 +2499,7 @@ This document describes the **enterprise-grade OAuth2/OIDC authentication system
 ## ðŸŽ¯ Architecture Overview
 
 ### Technology Stack
+
 - **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript (strict mode)
 - **Auth Protocol:** OAuth2 PKCE + OpenID Connect
@@ -2429,6 +2508,7 @@ This document describes the **enterprise-grade OAuth2/OIDC authentication system
 - **Security:** Timing-safe comparisons, CSRF protection, replay protection
 
 ### Core Principles
+
 1. **Security First:** All security features from enterprise review implemented
 2. **Stateless:** No server-side session store required (horizontally scalable)
 3. **Standards Compliant:** Follows OAuth2/OIDC specifications exactly
@@ -2441,34 +2521,34 @@ This document describes the **enterprise-grade OAuth2/OIDC authentication system
 
 ### Critical Security (P0) âœ…
 
-| Feature | Status | Implementation |
-|---------|--------|----------------|
-| **PKCE (code_verifier/challenge)** | âœ… Complete | `src/lib/auth/pkce.ts` |
-| **State parameter (CSRF)** | âœ… Complete | Timing-safe validation in callback |
-| **Nonce (replay protection)** | âœ… Complete | Validated in ID token |
-| **REALM usage fix** | âœ… Complete | Fixed in config utilities |
-| **Callback handler** | âœ… Complete | Enterprise refactor with all validations |
-| **Token exchange** | âœ… Complete | Secure token endpoint integration |
-| **Session management** | âœ… Complete | Encrypted JWT cookies |
-| **Logout flow** | âœ… Complete | Local + SSO logout support |
-| **Token refresh** | âœ… Complete | Automatic token rotation |
+| Feature                            | Status       | Implementation                           |
+| ---------------------------------- | ------------ | ---------------------------------------- |
+| **PKCE (code_verifier/challenge)** | âœ… Complete | `src/lib/auth/pkce.ts`                   |
+| **State parameter (CSRF)**         | âœ… Complete | Timing-safe validation in callback       |
+| **Nonce (replay protection)**      | âœ… Complete | Validated in ID token                    |
+| **REALM usage fix**                | âœ… Complete | Fixed in config utilities                |
+| **Callback handler**               | âœ… Complete | Enterprise refactor with all validations |
+| **Token exchange**                 | âœ… Complete | Secure token endpoint integration        |
+| **Session management**             | âœ… Complete | Encrypted JWT cookies                    |
+| **Logout flow**                    | âœ… Complete | Local + SSO logout support               |
+| **Token refresh**                  | âœ… Complete | Automatic token rotation                 |
 
 ### High Priority (P1) âœ…
 
-| Feature | Status | Implementation |
-|---------|--------|----------------|
-| **JWT validation** | âœ… Complete | JWKS-based signature verification |
-| **Timing-safe comparison** | âœ… Complete | `src/lib/security/crypto.ts` |
-| **Error handling** | âœ… Complete | Typed error classes + user-friendly messages |
-| **Structured logging** | âœ… Complete | Request IDs throughout auth flow |
-| **URL validation (SSRF)** | âœ… Complete | Allowed hosts whitelist |
+| Feature                    | Status       | Implementation                               |
+| -------------------------- | ------------ | -------------------------------------------- |
+| **JWT validation**         | âœ… Complete | JWKS-based signature verification            |
+| **Timing-safe comparison** | âœ… Complete | `src/lib/security/crypto.ts`                 |
+| **Error handling**         | âœ… Complete | Typed error classes + user-friendly messages |
+| **Structured logging**     | âœ… Complete | Request IDs throughout auth flow             |
+| **URL validation (SSRF)**  | âœ… Complete | Allowed hosts whitelist                      |
 
 ### Medium Priority (P2) âš ï¸
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| **Rate limiting** | â³ Pending | Integration needed with existing rate limiter |
-| **Metrics (Prometheus)** | â³ Pending | Observability hooks ready |
+| Feature                  | Status     | Notes                                         |
+| ------------------------ | ---------- | --------------------------------------------- |
+| **Rate limiting**        | â³ Pending | Integration needed with existing rate limiter |
+| **Metrics (Prometheus)** | â³ Pending | Observability hooks ready                     |
 
 ---
 
@@ -2520,6 +2600,7 @@ SESSION_SECRET=<minimum 32 characters>
 ### Configuration Validation
 
 The system validates configuration on startup:
+
 - **URL format validation**
 - **SSRF protection** via allowed hosts
 - **Secret length validation** (min 32 chars)
@@ -2545,6 +2626,7 @@ The system validates configuration on startup:
 ```
 
 **Security Features:**
+
 - âœ… 256-bit PKCE verifier entropy
 - âœ… SHA-256 challenge
 - âœ… 128-bit state (CSRF protection)
@@ -2569,6 +2651,7 @@ The system validates configuration on startup:
 ```
 
 **Security Validations:**
+
 - âœ… State mismatch â†’ CSRF attack detected
 - âœ… Nonce mismatch â†’ Replay attack detected
 - âœ… JWT signature verification via JWKS
@@ -2617,6 +2700,7 @@ The system validates configuration on startup:
 ```
 
 **Features:**
+
 - âœ… Automatic token rotation support
 - âœ… Session destruction on refresh failure
 - âœ… Sliding window expiration
@@ -2637,6 +2721,7 @@ The system validates configuration on startup:
 ```
 
 **Features:**
+
 - âœ… Local-only logout option
 - âœ… SSO logout with id_token_hint
 - âœ… Configurable post-logout redirect
@@ -2647,6 +2732,7 @@ The system validates configuration on startup:
 ## ðŸ›¡ï¸ Security Hardening
 
 ### CSRF Protection
+
 ```typescript
 // State parameter generated with 128-bit entropy
 const state = crypto.randomBytes(16).toString('base64url');
@@ -2658,6 +2744,7 @@ if (!timingSafeEqual(storedState, receivedState)) {
 ```
 
 ### Replay Attack Prevention
+
 ```typescript
 // Nonce generated with 128-bit entropy
 const nonce = crypto.randomBytes(16).toString('base64url');
@@ -2669,12 +2756,10 @@ if (idToken.nonce !== storedNonce) {
 ```
 
 ### SSRF Protection
+
 ```typescript
 // Only allow known Keycloak hosts
-const ALLOWED_AUTH_HOSTS = [
-  'localhost',
-  'keycloak.yourdomain.com',
-];
+const ALLOWED_AUTH_HOSTS = ['localhost', 'keycloak.yourdomain.com'];
 
 if (!ALLOWED_AUTH_HOSTS.includes(url.hostname)) {
   throw new Error('Unauthorized auth host');
@@ -2682,6 +2767,7 @@ if (!ALLOWED_AUTH_HOSTS.includes(url.hostname)) {
 ```
 
 ### XSS Protection
+
 - âœ… All cookies are `httpOnly` (no JavaScript access)
 - âœ… Session data encrypted server-side
 - âœ… No tokens in localStorage
@@ -2694,12 +2780,14 @@ if (!ALLOWED_AUTH_HOSTS.includes(url.hostname)) {
 ### Structured Logging
 
 Every auth operation logs with:
+
 - **Request ID:** Correlation across services
 - **Performance timing:** Duration in milliseconds
 - **Security events:** CSRF/replay attack attempts
 - **Error context:** Stack traces in development
 
 Example log entry:
+
 ```json
 {
   "level": "info",
@@ -2714,6 +2802,7 @@ Example log entry:
 ### Error Tracking
 
 All errors are:
+
 - âœ… **Typed** (AuthError, SessionError, etc.)
 - âœ… **Categorized** (4xx client errors, 5xx server errors)
 - âœ… **Logged** with appropriate severity
@@ -2726,13 +2815,14 @@ All errors are:
 ### Manual Testing Flow
 
 1. **Login Flow**
+
    ```bash
    # 1. Navigate to app
    curl http://localhost:3000/
-   
+
    # 2. Click "Login" â†’ redirects to start route
    curl -L http://localhost:3000/api/auth/keycloak/start
-   
+
    # 3. Should redirect to Keycloak with params:
    # - client_id
    # - redirect_uri
@@ -2741,49 +2831,53 @@ All errors are:
    # - code_challenge + code_challenge_method
    # - state
    # - nonce
-   
+
    # 4. Complete login on Keycloak
-   
+
    # 5. Keycloak redirects to callback with code + state
-   
+
    # 6. Callback validates and creates session
-   
+
    # 7. User redirected to dashboard with session cookie
    ```
 
 2. **Token Refresh**
+
    ```bash
    # When access token expires (or manually)
    curl -X POST http://localhost:3000/api/auth/keycloak/refresh \
      -H "Cookie: session=..." \
      -H "Content-Type: application/json"
-   
+
    # Should return: {"success": true, "expiresAt": ...}
    ```
 
 3. **Logout**
+
    ```bash
    # SSO logout
    curl -L http://localhost:3000/api/auth/keycloak/logout
-   
+
    # Should destroy session and redirect to Keycloak logout
    ```
 
 ### Security Testing
 
 1. **CSRF Attack Simulation**
+
    ```bash
    # Modify state parameter in callback
    curl "http://localhost:3000/api/auth/keycloak/callback?code=valid&state=wrong"
-   
+
    # Expected: Redirect to /auth/error?code=STATE_MISMATCH
    ```
 
 2. **Replay Attack Simulation**
+
    ```bash
    # Reuse same authorization code
    curl "http://localhost:3000/api/auth/keycloak/callback?code=used&state=valid"
-   
+
    # Expected: Token exchange fails (code already used)
    ```
 
@@ -2821,14 +2915,15 @@ All errors are:
 
 ## ðŸ“ˆ Performance Characteristics
 
-| Operation | Latency | Notes |
-|-----------|---------|-------|
-| **Start route** | ~50ms | Config load + PKCE generation + redirect |
-| **Callback** | ~500ms | Token exchange + JWT validation + session creation |
-| **Refresh** | ~200ms | Token exchange only |
-| **Logout** | ~20ms | Session destruction + redirect |
+| Operation       | Latency | Notes                                              |
+| --------------- | ------- | -------------------------------------------------- |
+| **Start route** | ~50ms   | Config load + PKCE generation + redirect           |
+| **Callback**    | ~500ms  | Token exchange + JWT validation + session creation |
+| **Refresh**     | ~200ms  | Token exchange only                                |
+| **Logout**      | ~20ms   | Session destruction + redirect                     |
 
 **Optimization Opportunities:**
+
 - âœ… Config caching (1-min TTL dev, permanent prod)
 - âœ… JWKS caching (1-hour TTL with auto-refresh)
 - â³ Rate limiting to prevent abuse
@@ -2839,6 +2934,7 @@ All errors are:
 ## ðŸ”® Future Enhancements
 
 ### High Priority
+
 1. **Rate Limiting Integration**
    - Protect auth endpoints from brute force
    - Implement exponential backoff
@@ -2851,6 +2947,7 @@ All errors are:
    - Session duration analytics
 
 ### Medium Priority
+
 3. **Back-Channel Logout**
    - Keycloak back-channel endpoint
    - Server-initiated session invalidation
@@ -2873,48 +2970,59 @@ All errors are:
 ### Common Issues
 
 #### 1. "Client not found" Error
+
 **Symptom:** Keycloak shows "Client not found for clientId: ..."
 
 **Fix:**
+
 - Verify `KEYCLOAK_CLIENT_ID` matches Keycloak client configuration
 - Check client is enabled in Keycloak admin console
 - Verify realm name is correct
 
 #### 2. State Mismatch
+
 **Symptom:** Redirected to `/auth/error?code=STATE_MISMATCH`
 
 **Causes:**
+
 - Cookie not being set (check browser dev tools)
 - Cookie expired (5-minute window)
 - Multiple tabs/windows interfering
 - Browser blocking third-party cookies
 
 **Fix:**
+
 - Check `SameSite` cookie attribute
 - Ensure HTTPS in production
 - Clear cookies and retry
 
 #### 3. Nonce Mismatch
+
 **Symptom:** Redirected to `/auth/error?code=NONCE_MISMATCH`
 
 **Causes:**
+
 - Keycloak not returning nonce in ID token
 - Cookie not persisted
 - Token replay attempt
 
 **Fix:**
+
 - Verify Keycloak client configuration includes nonce
 - Check cookie storage
 
 #### 4. Token Refresh Fails
+
 **Symptom:** 401 error on refresh, session destroyed
 
 **Causes:**
+
 - Refresh token expired
 - Keycloak session ended
 - Refresh token rotation enabled but not handled
 
 **Fix:**
+
 - Check Keycloak refresh token lifespan settings
 - Verify refresh token is stored in session
 - Force re-authentication if refresh fails
@@ -2935,6 +3043,7 @@ All errors are:
 ## âœ… Implementation Checklist
 
 ### Security Features âœ…
+
 - [x] PKCE (code_verifier + code_challenge)
 - [x] State parameter (CSRF protection)
 - [x] Nonce (replay protection)
@@ -2945,6 +3054,7 @@ All errors are:
 - [x] Encrypted sessions
 
 ### Authentication Flow âœ…
+
 - [x] OAuth initiation route
 - [x] Callback handler with validation
 - [x] Token exchange
@@ -2953,6 +3063,7 @@ All errors are:
 - [x] Logout (local + SSO)
 
 ### Error Handling âœ…
+
 - [x] Typed error classes
 - [x] User-friendly error messages
 - [x] Error page UI
@@ -2960,12 +3071,14 @@ All errors are:
 - [x] Security event logging
 
 ### Observability âœ…
+
 - [x] Request correlation IDs
 - [x] Performance timing
 - [x] Structured logging
 - [x] Error tracking
 
 ### Pending â³
+
 - [ ] Rate limiting integration
 - [ ] Prometheus metrics
 - [ ] E2E tests
@@ -2978,7 +3091,9 @@ All errors are:
 **Production Ready:** Yes (with rate limiting recommended)
 
 ---
+
 ## File: OAuth2-PKCE-Integration.md
+
 # Keycloak OAuth2 PKCE Integration Guide
 
 ## ðŸŽ‰ Implementation Complete
@@ -2990,20 +3105,24 @@ Your Next.js application now has **enterprise-grade Keycloak authentication** us
 ## ðŸ“ New Files Created
 
 ### Core Configuration
+
 - **`src/lib/auth/authConfig.ts`** - Keycloak OAuth2 configuration (clientId, endpoints, scopes)
 - **`src/hooks/useKeycloakAuth.ts`** - Type-safe authentication hook
 - **`src/components/providers/keycloak-pkce-provider.tsx`** - PKCE Auth Provider wrapper
 
 ### UI Components
+
 - **`src/components/auth/ModernAuthUI.tsx`** - Modern login/register UI with shadcn/ui
 - **`src/components/auth/ProtectedRoute.tsx`** - HOC and component for route protection
 - **`app/auth/callback/page.tsx`** - OAuth2 callback handler page
 - **`app/auth/login/page.tsx`** - Modern login page (alternative to /login)
 
 ### Middleware
+
 - **`middleware-enhanced.ts`** - Enhanced middleware with token-based protection
 
 ### Updated Files
+
 - **`app/providers.tsx`** - Added KeycloakPKCEProvider to provider hierarchy
 
 ---
@@ -3039,16 +3158,8 @@ NEXT_PUBLIC_ENABLE_DIRECT_LOGIN=false
 import { useKeycloakAuth } from '@/hooks/useKeycloakAuth';
 
 export function MyComponent() {
-  const { 
-    user, 
-    isAuthenticated, 
-    isLoading, 
-    login, 
-    logout, 
-    register,
-    hasRole,
-    getAccessToken 
-  } = useKeycloakAuth();
+  const { user, isAuthenticated, isLoading, login, logout, register, hasRole, getAccessToken } =
+    useKeycloakAuth();
 
   if (isLoading) return <div>Loading...</div>;
 
@@ -3076,7 +3187,7 @@ import { useKeycloakAuth } from '@/hooks/useKeycloakAuth';
 
 function DashboardContent() {
   const { user } = useKeycloakAuth();
-  
+
   return (
     <div>
       <h1>Dashboard</h1>
@@ -3140,14 +3251,14 @@ export function useApi() {
 
   const fetchData = async () => {
     const token = getAccessToken();
-    
+
     const response = await fetch('/api/data', {
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
-    
+
     return response.json();
   };
 
@@ -3163,11 +3274,8 @@ import { ModernAuthUI } from '@/components/auth/ModernAuthUI';
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <ModernAuthUI 
-        redirectTo="/dashboard" 
-        showRegister={true} 
-      />
+    <div className="flex min-h-screen items-center justify-center">
+      <ModernAuthUI redirectTo="/dashboard" showRegister={true} />
     </div>
   );
 }
@@ -3224,10 +3332,10 @@ The decoded token (`tokenData`) contains:
 The `ModernAuthUI` component uses shadcn/ui and Tailwind CSS:
 
 ```tsx
-<ModernAuthUI 
-  redirectTo="/dashboard"      // Where to go after login
-  showRegister={true}          // Show register button
-  className="custom-class"     // Add custom classes
+<ModernAuthUI
+  redirectTo="/dashboard" // Where to go after login
+  showRegister={true} // Show register button
+  className="custom-class" // Add custom classes
 />
 ```
 
@@ -3293,6 +3401,7 @@ The `ModernAuthUI` component uses shadcn/ui and Tailwind CSS:
 ## ðŸ§ª Testing
 
 ### Test Login Flow
+
 1. Start your app: `npm run dev`
 2. Navigate to `/auth/login`
 3. Click "Sign In with Keycloak"
@@ -3300,17 +3409,20 @@ The `ModernAuthUI` component uses shadcn/ui and Tailwind CSS:
 5. Verify redirect to `/dashboard`
 
 ### Test Registration
+
 1. Go to `/auth/login`
 2. Click "Create Account"
 3. Complete Keycloak registration
 4. Verify redirect back to app
 
 ### Test Protected Routes
+
 1. Try accessing `/dashboard` without auth
 2. Verify redirect to `/login`
 3. Login and verify access granted
 
 ### Test Logout
+
 1. Login to app
 2. Click logout
 3. Verify redirect to Keycloak logout
@@ -3321,18 +3433,22 @@ The `ModernAuthUI` component uses shadcn/ui and Tailwind CSS:
 ## ðŸ› Troubleshooting
 
 ### "useKeycloakAuth must be used within AuthProvider"
+
 - Ensure `KeycloakPKCEProvider` is in `app/providers.tsx`
 - Check that it wraps your component tree
 
 ### Callback page shows error
+
 - Verify `NEXT_PUBLIC_APP_URL/callback` is registered in Keycloak
 - Check Keycloak client configuration has correct redirect URIs
 
 ### Tokens not refreshing
+
 - Verify `offline_access` scope is requested
 - Check Keycloak client has "Refresh Token" enabled
 
 ### Role checks failing
+
 - Inspect `tokenData` structure: `console.log(tokenData)`
 - Verify roles are in `realm_access.roles` array
 - Check Keycloak role mapping configuration
@@ -3361,7 +3477,9 @@ The `ModernAuthUI` component uses shadcn/ui and Tailwind CSS:
 **Happy Authenticating! ðŸ”**
 
 ---
+
 ## File: Two-Layer-Auth-Implementation.md
+
 # Two-Layer Authentication Implementation for Seller Dashboard
 
 ## âœ… Implementation Complete
@@ -3400,7 +3518,9 @@ This document describes the comprehensive two-layer authentication system implem
 ## ðŸ“ Files Modified/Created
 
 ### 1. **Middleware** (`middleware.ts`)
+
 **What was changed:**
+
 - âœ… Added comprehensive console logging for every step
 - âœ… Logs user, roles, token presence
 - âœ… Logs access decisions (granted/denied)
@@ -3408,6 +3528,7 @@ This document describes the comprehensive two-layer authentication system implem
 - âœ… Redirects unauthorized users to `/access-denied`
 
 **Key features:**
+
 ```typescript
 // Logs before every decision
 console.log('ðŸ”¥ [Middleware] Executing for:', pathname);
@@ -3426,13 +3547,16 @@ if (pathname.startsWith('/seller')) {
 ---
 
 ### 2. **NextAuth Configuration** (`app/api/auth/[...nextauth]/route.ts`)
+
 **What was changed:**
+
 - âœ… Enhanced JWT callback with role extraction and logging
 - âœ… Enhanced session callback with comprehensive logging
 - âœ… Logs when token is refreshed
 - âœ… Logs user email and roles during session building
 
 **Key features:**
+
 ```typescript
 async jwt({ token, account }) {
   if (account?.access_token) {
@@ -3457,7 +3581,9 @@ async session({ session, token }) {
 ---
 
 ### 3. **Seller Dashboard Page** (`app/seller/dashboard/page.tsx`) â­ NEW
+
 **What it does:**
+
 - âœ… **Server-side component** that runs on Next.js server
 - âœ… Uses `getServerSession()` to check authentication
 - âœ… Double-checks user has SELLER role (defense in depth)
@@ -3466,6 +3592,7 @@ async session({ session, token }) {
 - âœ… Passes session and data to client component
 
 **Key features:**
+
 ```typescript
 // Server-side authentication check
 const session = await getServerSession(authOptions);
@@ -3490,7 +3617,9 @@ return <SellerDashboardClient session={session} initialData={data} />;
 ---
 
 ### 4. **Seller Dashboard Client Component** (`app/seller/dashboard/SellerDashboardClient.tsx`) â­ NEW
+
 **What it does:**
+
 - âœ… **Client-side component** for interactive features
 - âœ… Makes API calls with Bearer token from session
 - âœ… Displays dashboard stats and products
@@ -3499,19 +3628,17 @@ return <SellerDashboardClient session={session} initialData={data} />;
 - âœ… Comprehensive logging for all API calls
 
 **Key features:**
+
 ```typescript
 // Fetch products with Bearer token
 const fetchProducts = async () => {
   console.log('[Dashboard/Client] ðŸ”„ Fetching products...');
-  
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/seller/products`,
-    {
-      headers: {
-        'Authorization': `Bearer ${(session as any).accessToken}`,
-      },
-    }
-  );
+
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/seller/products`, {
+    headers: {
+      Authorization: `Bearer ${(session as any).accessToken}`,
+    },
+  });
 
   if (response.status === 401) {
     console.log('[Dashboard/Client] âŒ Unauthorized, signing out');
@@ -3527,7 +3654,9 @@ const fetchProducts = async () => {
 ---
 
 ### 5. **Access Denied Page** (`app/access-denied/page.tsx`) â­ NEW
+
 **What it does:**
+
 - âœ… Shows when user tries to access protected route without permission
 - âœ… Displays user's current roles
 - âœ… Provides "Go Home" and "Sign Out" buttons
@@ -3536,7 +3665,9 @@ const fetchProducts = async () => {
 ---
 
 ### 6. **Updated Existing Seller Page** (`app/seller/page.tsx`)
+
 **What was changed:**
+
 - âœ… Added comprehensive logging throughout
 - âœ… Logs session status, user, and roles
 - âœ… Logs API calls to backend
@@ -3603,7 +3734,9 @@ const fetchProducts = async () => {
 ## ðŸ” Debugging Checklist
 
 ### âœ… **Check 1: Is Middleware Running?**
+
 **Look for:**
+
 ```log
 ðŸ”¥ [Middleware] Executing for: /seller/dashboard
 [Middleware] Token check: âœ… exists
@@ -3612,6 +3745,7 @@ const fetchProducts = async () => {
 ```
 
 **If missing:**
+
 - Middleware might not be enabled for this route
 - Check `middleware.ts` matcher configuration
 - Restart dev server
@@ -3619,13 +3753,16 @@ const fetchProducts = async () => {
 ---
 
 ### âœ… **Check 2: Are Roles Being Extracted?**
+
 **Look for:**
+
 ```log
 [Auth/JWT] Roles extracted: SELLER, SELLER_RETAILER
 [Auth/Session] Roles: SELLER, SELLER_RETAILER
 ```
 
 **If roles are empty:**
+
 - Keycloak might not be sending roles in JWT
 - Check `extractRoles` function in `token-service.ts`
 - Verify Keycloak client mapper configuration
@@ -3634,7 +3771,9 @@ const fetchProducts = async () => {
 ---
 
 ### âœ… **Check 3: Is Backend API Being Called?**
+
 **Check browser Network tab:**
+
 - Open Developer Tools (F12)
 - Go to **Network** tab
 - Filter by **Fetch/XHR**
@@ -3644,13 +3783,16 @@ const fetchProducts = async () => {
 ---
 
 ### âœ… **Check 4: Is Authorization Header Present?**
+
 **Look for:**
+
 ```log
 [Dashboard/Client] Token: eyJhbGciOiJSUzI1NiIs...
 [Dashboard/Client] Response status: 200
 ```
 
 **If 401 Unauthorized:**
+
 - Token might be expired
 - Token might be invalid
 - Backend might not be configured to accept the token
@@ -3659,13 +3801,16 @@ const fetchProducts = async () => {
 ---
 
 ### âœ… **Check 5: Does User Have Required Role?**
+
 **Look for:**
+
 ```log
 [Middleware] isSeller: true
 [Middleware] âœ… SELLER access granted
 ```
 
 **If redirected to /access-denied:**
+
 - User doesn't have SELLER role
 - Check Keycloak user's role assignments
 - Verify role mapping in Keycloak client
@@ -3675,12 +3820,14 @@ const fetchProducts = async () => {
 ## ðŸ› ï¸ How to Test
 
 ### **Test Case 1: Successful SELLER Access**
+
 1. Login with user that has SELLER role
 2. Navigate to `/seller` or `/seller/dashboard`
 3. **Expected:** Dashboard loads, shows stats, can fetch products
 4. **Logs should show:** All âœ… checkmarks
 
 ### **Test Case 2: Non-SELLER User**
+
 1. Login with user that does NOT have SELLER role
 2. Try to navigate to `/seller`
 3. **Expected:** Redirected to `/access-denied`
@@ -3690,6 +3837,7 @@ const fetchProducts = async () => {
    ```
 
 ### **Test Case 3: Not Authenticated**
+
 1. **Don't login** (clear cookies)
 2. Try to navigate to `/seller`
 3. **Expected:** Redirected to `/login?callbackUrl=/seller`
@@ -3699,6 +3847,7 @@ const fetchProducts = async () => {
    ```
 
 ### **Test Case 4: Token Expired (401)**
+
 1. Login successfully
 2. Wait for token to expire (or manually invalidate in Keycloak)
 3. Click "Load Products" button
@@ -3715,9 +3864,11 @@ const fetchProducts = async () => {
 The implementation expects these backend endpoints:
 
 ### 1. **GET `/api/v1/seller/dashboard`**
+
 - **Auth:** Bearer token required
 - **Role:** SELLER
 - **Response:**
+
 ```json
 {
   "stats": {
@@ -3731,9 +3882,11 @@ The implementation expects these backend endpoints:
 ```
 
 ### 2. **GET `/api/v1/seller/products`**
+
 - **Auth:** Bearer token required
 - **Role:** SELLER
 - **Response:**
+
 ```json
 [
   {
@@ -3747,8 +3900,10 @@ The implementation expects these backend endpoints:
 ```
 
 ### 3. **GET `/api/users/profile`** (existing)
+
 - **Auth:** Bearer token required
 - **Response:**
+
 ```json
 {
   "email": "seller@example.com",
@@ -3778,6 +3933,7 @@ The implementation expects these backend endpoints:
    - **Never trust the frontend**
 
 ### **âŒ Never Expose Tokens to Client JavaScript**
+
 - Access tokens are stored in JWT (HTTP-only via NextAuth)
 - Refresh tokens are **never** sent to client
 - Client components access tokens via `(session as any).accessToken` only when needed for API calls
@@ -3788,6 +3944,7 @@ The implementation expects these backend endpoints:
 ## ðŸ“ Summary
 
 **âœ… What we implemented:**
+
 1. âœ… Comprehensive middleware logging and role checks
 2. âœ… Enhanced NextAuth configuration with logging
 3. âœ… New server-side Seller Dashboard page with backend data fetching
@@ -3799,6 +3956,7 @@ The implementation expects these backend endpoints:
 9. âœ… Error handling for 403 (insufficient permissions)
 
 **ðŸŽ¯ Result:**
+
 - Clear visibility into authentication flow
 - Easy debugging with comprehensive logs
 - Proper two-layer security architecture
@@ -3831,7 +3989,9 @@ The implementation expects these backend endpoints:
 **Questions or issues?** Check the logs first - they're designed to tell you exactly what's happening at every step! ðŸ”
 
 ---
+
 ## File: Frontend-Auth-Fix-Summary.md
+
 # Frontend Authentication Fix Summary
 
 **Date:** December 29, 2025  
@@ -3862,51 +4022,56 @@ The implementation expects these backend endpoints:
 ### 1. NextAuth Configuration (`src/lib/auth-config.ts`)
 
 **Added offline_access scope:**
+
 ```typescript
-scope: 'openid email profile offline_access'
+scope: 'openid email profile offline_access';
 ```
 
 **Fixed jwt() callback to prevent duplicate refreshes:**
+
 - Added refresh token validation (don't refresh if missing)
 - Added trigger check (skip refresh on explicit 'update' calls)
 - Added 60-second buffer before expiry to prevent premature refresh
 - Only refresh when token actually expired
 
 **Before:**
+
 ```typescript
 // Token expired, refresh it
 if (Date.now() < (token.accessTokenExpires as number)) {
-  return token
+  return token;
 }
-return refreshAccessToken(token)
+return refreshAccessToken(token);
 ```
 
 **After:**
+
 ```typescript
 // Don't refresh if no refresh token available
 if (!token.refreshToken) {
-  return token
+  return token;
 }
 
 // Don't refresh on explicit update triggers
 if (trigger === 'update') {
-  return token
+  return token;
 }
 
 // Return token if not expired (with 60 second buffer)
-const now = Date.now()
-const expiresAt = (token.accessTokenExpires as number) || 0
+const now = Date.now();
+const expiresAt = (token.accessTokenExpires as number) || 0;
 if (expiresAt > now + 60_000) {
-  return token
+  return token;
 }
 
 // Token is expired or expiring soon - refresh it (only once)
-return refreshAccessToken(token)
+return refreshAccessToken(token);
 ```
 
 ### 2. NextAuth Provider (`src/components/NextAuthProvider.tsx`)
 
 **Disabled aggressive session refetching:**
+
 ```typescript
 <SessionProvider
   refetchInterval={0} // Disable automatic polling
@@ -3919,18 +4084,21 @@ return refreshAccessToken(token)
 ### 3. Axios Interceptors (`src/lib/axios.ts`)
 
 **Removed ALL manual token refresh logic:**
+
 - âœ… Removed refresh logic from `axiosInstance` request interceptor
 - âœ… Removed refresh logic from `axiosInstance` response 401 handler
 - âœ… Removed refresh logic from `apiClient` 401 handler
 - âœ… Removed unused `isRefreshing` flag and `failedQueue`
 
 **Now interceptors only:**
+
 - Attach access token from localStorage
 - Redirect to /login on 401 (NextAuth handles refresh)
 
 ### 4. PKCE Callback (`app/auth/pkce-callback/page.tsx`)
 
 **Added credentials to exchange request:**
+
 ```typescript
 const resp = await fetch('/api/auth/keycloak/exchange', {
   method: 'POST',
@@ -3941,6 +4109,7 @@ const resp = await fetch('/api/auth/keycloak/exchange', {
 ```
 
 **Added PKCE cleanup on success:**
+
 ```typescript
 // Clear PKCE values after successful exchange
 sessionStorage.removeItem('pkce_code_verifier');
@@ -3952,6 +4121,7 @@ sessionStorage.removeItem('pkce_redirect_to');
 ### 5. Middleware (`middleware.ts`)
 
 **Marked as deprecated:**
+
 ```typescript
 /**
  * @deprecated This file is kept for backward compatibility.
@@ -3994,14 +4164,16 @@ Component continues with new token
 âœ… SessionProvider refetch disabled  
 âœ… Axios interceptors simplified (no refresh logic)  
 âœ… PKCE callback includes credentials  
-âœ… Middleware marked deprecated  
+âœ… Middleware marked deprecated
 
 ## Testing Steps
 
 1. **Login Flow:**
+
    ```bash
    npm run dev
    ```
+
    - Navigate to http://localhost:3000/login
    - Complete Keycloak login
    - Verify session cookie is set
@@ -4026,11 +4198,12 @@ Component continues with new token
 âœ… No `invalid_grant` errors  
 âœ… Session persists across page reloads  
 âœ… User profile displays after login  
-âœ… No AUTH_2001 errors  
+âœ… No AUTH_2001 errors
 
 ## Backend Configuration (NO CHANGES NEEDED)
 
 Your Spring Boot backend is correctly configured:
+
 - âœ… JWT validation with Keycloak issuer
 - âœ… Role-based access control
 - âœ… Resource server security
@@ -4048,16 +4221,19 @@ Your Spring Boot backend is correctly configured:
 ## Troubleshooting
 
 **If you still see AUTH_2001:**
+
 - Clear browser localStorage and cookies
 - Restart dev server
 - Try login in incognito window
 
 **If you see invalid_grant:**
+
 - Verify Keycloak client has "Offline Access" scope enabled
 - Check Keycloak logs for rejected refresh attempts
 - Ensure SESSION_SECRET env var is set and consistent
 
 **If session is lost:**
+
 - Check browser DevTools â†’ Application â†’ Cookies
 - Verify `auth_session` cookie is present
 - Verify cookie has correct domain and path
@@ -4089,7 +4265,9 @@ Your Spring Boot backend is correctly configured:
 **Impact:** Zero duplicate refresh attempts, stable session, no invalid_grant errors, clean auth flow.
 
 ---
+
 ## File: Frontend-Auth-Fixes-Applied.md
+
 # Frontend Auth Fixes Applied âœ…
 
 **Date**: 2025-12-29  
@@ -4104,11 +4282,13 @@ All critical frontend authentication issues have been addressed following the re
 ## âœ… 1. Unified Auth System (NextAuth + Keycloak)
 
 ### What Was Fixed
+
 - **Removed**: Duplicate custom PKCE implementation
 - **Kept**: NextAuth with Keycloak provider (already implements PKCE correctly)
 - **Deprecated**: Custom `/api/auth/keycloak/authorize` and `/api/auth/keycloak/exchange` routes
 
 ### Files Updated
+
 - `app/api/auth/keycloak/authorize/DEPRECATED.md` - Added deprecation notice
 - `app/api/auth/keycloak/exchange/DEPRECATED.md` - Added deprecation notice
 - `app/login/page.tsx` - Now uses NextAuth signin endpoint
@@ -4116,6 +4296,7 @@ All critical frontend authentication issues have been addressed following the re
 - `src/hooks/useKeycloakAuth.ts` - Removed custom PKCE registration flow
 
 ### Current State
+
 ```typescript
 // âœ… Correct: Use NextAuth only
 import { signIn } from 'next-auth/react';
@@ -4130,29 +4311,33 @@ signIn('keycloak', { callbackUrl: '/dashboard' });
 ## âœ… 2. Fixed Refresh Token Loop
 
 ### Root Cause
+
 Multiple refresh attempts happening simultaneously:
+
 - NextAuth's `jwt()` callback
 - Manual refresh in axios interceptors
 - UI component calls
 - Session polling
 
 ### What Was Fixed
+
 Already implemented in `src/lib/auth-config.ts`:
 
 ```typescript
 async jwt({ token, account, trigger }) {
   // Only refresh in jwt() callback, nowhere else
   if (trigger === 'update') return token; // Skip on session() calls
-  
+
   // Check expiry with 60s buffer
   if (token.expiresAt > Date.now() + 60_000) return token;
-  
+
   // Refresh ONLY here
   return refreshAccessToken(token);
 }
 ```
 
 ### Verified Configuration
+
 - âœ… Refresh ONLY happens in `jwt()` callback
 - âœ… 60-second buffer prevents premature refresh
 - âœ… `trigger === 'update'` prevents refresh on `/api/auth/session` calls
@@ -4163,11 +4348,13 @@ async jwt({ token, account, trigger }) {
 ## âœ… 3. Prevented Accidental Session Clearing
 
 ### What Was Fixed
+
 - Removed manual sessionStorage clearing for PKCE keys (no longer used)
 - NextAuth cookies are never touched by custom code
 - Session lifecycle fully managed by NextAuth
 
 ### Files Updated
+
 - `src/hooks/useKeycloakAuth.ts` - Removed PKCE sessionStorage logic from `register()`
 
 ---
@@ -4175,20 +4362,22 @@ async jwt({ token, account, trigger }) {
 ## âœ… 4. Correct Keycloak Scope
 
 ### Current Configuration
+
 **File**: `src/lib/auth-config.ts`
 
 ```typescript
 KeycloakProvider({
   authorization: {
-    params: { 
-      scope: 'openid email profile offline_access' // âœ… Correct
+    params: {
+      scope: 'openid email profile offline_access', // âœ… Correct
     },
   },
   // ...
-})
+});
 ```
 
 ### Verified
+
 - âœ… `offline_access` scope included
 - âœ… Refresh tokens are returned by Keycloak
 - âœ… Scope matches Keycloak client configuration
@@ -4198,11 +4387,14 @@ KeycloakProvider({
 ## âœ… 5. Fixed Invalid Link Errors
 
 ### Root Cause
+
 Next.js 13+ does not allow `<Link><a>` nesting. Must use either:
-- `<Link>text</Link>` 
+
+- `<Link>text</Link>`
 - `<Button asChild><Link>text</Link></Button>`
 
 ### Files Fixed
+
 1. **`src/components/home/FeaturedProductsSection.tsx`**
    - Removed nested className on Link inside Button with asChild
    - Removed inline-flex wrapper classes
@@ -4212,6 +4404,7 @@ Next.js 13+ does not allow `<Link><a>` nesting. Must use either:
    - Added `import Link from 'next/link'`
 
 ### Pattern Applied
+
 ```tsx
 // âœ… Correct
 <Button asChild>
@@ -4243,12 +4436,15 @@ Per your instructions, **backend auth is already correct**. No changes made to:
 ## âš ï¸ Remaining Backend Issue (Separate from Auth)
 
 ### Issue: Missing DTO Class
+
 ```
 NoClassDefFoundError: TopSellingProductResponse
 ```
 
 ### Recommendation
+
 This is a **classpath/build issue**, not auth. Check:
+
 1. Class exists: `com.eshop.app.dto.response.TopSellingProductResponse`
 2. Module dependency: `implementation project(":dto")` in `build.gradle`
 3. Clean build: `./gradlew clean build`
@@ -4260,6 +4456,7 @@ This is independent of auth fixes and should be addressed separately.
 ## ðŸ“‹ Middleware Deprecation Note
 
 Per your request:
+
 - **Middleware file is deprecated** âœ…
 - **Use proxy configuration in `next.config.js`** âœ…
 - Already implemented via rewrites (no changes needed)
@@ -4271,6 +4468,7 @@ Per your request:
 To verify these fixes work:
 
 1. **Clear browser state**:
+
    ```javascript
    localStorage.clear();
    sessionStorage.clear();
@@ -4278,6 +4476,7 @@ To verify these fixes work:
    ```
 
 2. **Restart dev server**:
+
    ```bash
    npm run dev
    ```
@@ -4338,16 +4537,19 @@ To verify these fixes work:
 
 After these fixes:
 
-âœ… **Auth works reliably**  
+âœ… **Auth works reliably**
+
 - No duplicate PKCE flows
 - No refresh token conflicts
 - No session loss (AUTH_2001)
 
-âœ… **Dev server runs cleanly**  
+âœ… **Dev server runs cleanly**
+
 - No invalid Link errors
 - No React hydration errors
 
-âœ… **Single source of truth**  
+âœ… **Single source of truth**
+
 - NextAuth manages ALL auth
 - Backend validates JWT passively
 
@@ -4365,7 +4567,9 @@ After these fixes:
 **All critical frontend auth fixes have been applied successfully.** âœ…
 
 ---
+
 ## File: Keycloak-Public-Client-Fix.md
+
 # ðŸš¨ KEYCLOAK CLIENT CONFIGURATION FIX REQUIRED
 
 ## âŒ Current Error
@@ -4405,18 +4609,18 @@ General Settings:
   âœ… Client ID: eshop-client
 
 Capability config:
-  âŒ Client authentication: OFF        # â† CRITICAL: Must be OFF for public client
+  âŒ Client authentication: OFF # â† CRITICAL: Must be OFF for public client
   âœ… Authorization: OFF
   âœ… Standard flow: ON
   âœ… Direct access grants: ON
   âŒ Implicit flow: OFF
   âŒ Service accounts roles: OFF
-  
-OAuth 2.0 Device Authorization Grant:
-  âŒ OFF
+
+OAuth 2.0 Device Authorization Grant: âŒ OFF
 ```
 
-**IMPORTANT:** 
+**IMPORTANT:**
+
 - `Client authentication: OFF` = PUBLIC client
 - `Client authentication: ON` = CONFIDENTIAL client
 
@@ -4425,20 +4629,15 @@ OAuth 2.0 Device Authorization Grant:
 ### **Step 4: Access Settings**
 
 ```yaml
-Root URL: 
-  (leave empty or http://localhost:3000)
+Root URL: (leave empty or http://localhost:3000)
 
-Valid redirect URIs:
-  http://localhost:3000/api/auth/callback/keycloak
+Valid redirect URIs: http://localhost:3000/api/auth/callback/keycloak
 
-Valid post logout redirect URIs:
-  http://localhost:3000/*
+Valid post logout redirect URIs: http://localhost:3000/*
 
-Web origins:
-  http://localhost:3000
-  
-Admin URL:
-  (leave empty)
+Web origins: http://localhost:3000
+
+Admin URL: (leave empty)
 ```
 
 ---
@@ -4448,8 +4647,7 @@ Admin URL:
 Scroll down to find:
 
 ```yaml
-Proof Key for Code Exchange (PKCE) Code Challenge Method:
-  âœ… S256        # â† Select this
+Proof Key for Code Exchange (PKCE) Code Challenge Method: âœ… S256 # â† Select this
 ```
 
 ---
@@ -4457,6 +4655,7 @@ Proof Key for Code Exchange (PKCE) Code Challenge Method:
 ### **Step 6: Credentials Tab**
 
 **After setting `Client authentication: OFF`**, this tab should either:
+
 - Disappear completely, OR
 - Show "No client credentials available"
 
@@ -4468,10 +4667,11 @@ Proof Key for Code Exchange (PKCE) Code Challenge Method:
 
 1. Click **Save** at the bottom of Settings page
 2. **Restart Keycloak** (optional but recommended):
+
    ```bash
    # If using Docker
    docker restart keycloak-container-name
-   
+
    # If using standalone
    # Stop and start Keycloak server
    ```
@@ -4484,8 +4684,10 @@ Proof Key for Code Exchange (PKCE) Code Challenge Method:
 
 ```javascript
 // Run in browser console
-document.cookie.split(";").forEach(c => {
-  document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+document.cookie.split(';').forEach((c) => {
+  document.cookie = c
+    .replace(/^ +/, '')
+    .replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
 });
 localStorage.clear();
 sessionStorage.clear();
@@ -4499,6 +4701,7 @@ http://localhost:3000/api/auth/signin/keycloak
 ```
 
 **Expected:**
+
 - âœ… Redirect to Keycloak login page
 - âœ… NO `client_secret_basic` error
 - âœ… After login, redirect back to app
@@ -4510,11 +4713,13 @@ http://localhost:3000/api/auth/signin/keycloak
 ### **Check Well-Known Configuration**
 
 Visit:
+
 ```
 http://localhost:8080/realms/eshop/.well-known/openid-configuration
 ```
 
 Look for:
+
 ```json
 {
   "grant_types_supported": [
@@ -4532,13 +4737,13 @@ Look for:
 
 ## ðŸ“‹ Summary: Public vs Confidential
 
-| Setting | Public Client | Confidential Client |
-|---------|---------------|---------------------|
-| **Client authentication** | âŒ OFF | âœ… ON |
-| **Client secret** | âŒ None | âœ… Required |
-| **PKCE** | âœ… S256 | Optional |
-| **Use case** | SPA, Mobile | Backend server |
-| **Frontend (Next.js)** | âœ… Yes | âŒ No |
+| Setting                   | Public Client | Confidential Client |
+| ------------------------- | ------------- | ------------------- |
+| **Client authentication** | âŒ OFF        | âœ… ON              |
+| **Client secret**         | âŒ None       | âœ… Required        |
+| **PKCE**                  | âœ… S256      | Optional            |
+| **Use case**              | SPA, Mobile   | Backend server      |
+| **Frontend (Next.js)**    | âœ… Yes       | âŒ No               |
 
 ---
 
@@ -4547,6 +4752,7 @@ Look for:
 ### **Check these:**
 
 1. **Keycloak logs**
+
    ```bash
    docker logs -f keycloak-container-name
    ```
@@ -4559,10 +4765,11 @@ Look for:
    - Should NOT send `client_secret` in request
 
 4. **Verify .env.local**
+
    ```bash
    # Should NOT have:
    # KEYCLOAK_CLIENT_SECRET=...
-   
+
    # Should have:
    KEYCLOAK_CLIENT_ID=eshop-client
    KEYCLOAK_ISSUER=http://localhost:8080/realms/eshop
@@ -4597,7 +4804,9 @@ The login flow will work as:
 Good luck! ðŸš€
 
 ---
+
 ## File: Keycloak-Route-Refactor.md
+
 # Keycloak Authentication Route Security & Functionality Refactor
 
 **Document Version:** 1.0.0  
@@ -4628,18 +4837,18 @@ The Keycloak authentication initiation endpoint starts the OAuth2 PKCE authoriza
 
 ### Key Improvements
 
-| Category | Improvement | Impact |
-|----------|-------------|--------|
-| **Critical Fix** | PKCE data included in JSON response | AJAX flows can now complete OAuth (was completely broken) |
+| Category         | Improvement                              | Impact                                                           |
+| ---------------- | ---------------------------------------- | ---------------------------------------------------------------- |
+| **Critical Fix** | PKCE data included in JSON response      | AJAX flows can now complete OAuth (was completely broken)        |
 | **Critical Fix** | Unified redirect URI (normal + fallback) | Fallback flow now works (was failing with redirect_uri mismatch) |
-| **Critical Fix** | ACR values validation | Prevents parameter pollution attacks |
-| **Security** | Strengthened redirect URL validation | Prevents path traversal, protocol injection, null bytes |
-| **Security** | Removed `/` from login_hint regex | Prevents path confusion attacks |
-| **Security** | Fixed same-origin referer check | Prevents subdomain bypass |
-| **Performance** | Hoisted validation functions | Eliminates per-request function creation (GC pressure) |
-| **Performance** | Single URL parse | Removes duplicate parsing overhead |
-| **Code Quality** | Removed misleading complexity docs | Accurate documentation |
-| **Code Quality** | Cache-Control headers on JSON | Prevents caching of sensitive auth URLs |
+| **Critical Fix** | ACR values validation                    | Prevents parameter pollution attacks                             |
+| **Security**     | Strengthened redirect URL validation     | Prevents path traversal, protocol injection, null bytes          |
+| **Security**     | Removed `/` from login_hint regex        | Prevents path confusion attacks                                  |
+| **Security**     | Fixed same-origin referer check          | Prevents subdomain bypass                                        |
+| **Performance**  | Hoisted validation functions             | Eliminates per-request function creation (GC pressure)           |
+| **Performance**  | Single URL parse                         | Removes duplicate parsing overhead                               |
+| **Code Quality** | Removed misleading complexity docs       | Accurate documentation                                           |
+| **Code Quality** | Cache-Control headers on JSON            | Prevents caching of sensitive auth URLs                          |
 
 ### Business Impact
 
@@ -4655,6 +4864,7 @@ The Keycloak authentication initiation endpoint starts the OAuth2 PKCE authoriza
 ### 1. JSON Response Missing PKCE Data (ðŸ”´ CRITICAL)
 
 **Problem:**
+
 ```typescript
 // OLD: AJAX callers receive URL but can't complete flow
 return NextResponse.json({
@@ -4665,21 +4875,23 @@ return NextResponse.json({
 ```
 
 **Impact:**
+
 - **Authentication completely broken** for AJAX/SPA flows
 - Callback handler expects PKCE verifier for token exchange
 - Without verifier, token exchange fails with `invalid_request`
 - **Severity**: CRITICAL - OAuth flow cannot complete
 
 **Solution:**
+
 ```typescript
 // NEW: Include PKCE data for client-side storage
 const jsonResponse: AuthInitResponse = {
   authorizationUrl: authUrl.toString(),
   requestId,
   pkce: {
-    codeVerifier,  // Client stores in sessionStorage
-    state,         // For CSRF validation
-    nonce,         // For replay protection
+    codeVerifier, // Client stores in sessionStorage
+    state, // For CSRF validation
+    nonce, // For replay protection
   },
   redirectTo: params.redirectTo,
 };
@@ -4687,13 +4899,14 @@ const jsonResponse: AuthInitResponse = {
 return NextResponse.json(jsonResponse, {
   headers: {
     'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-    'Pragma': 'no-cache',
+    Pragma: 'no-cache',
     'X-Request-ID': requestId,
   },
 });
 ```
 
 **Client Usage:**
+
 ```typescript
 // Client-side (React/Next.js)
 const response = await fetch('/api/auth/keycloak');
@@ -4713,6 +4926,7 @@ window.location.href = data.authorizationUrl;
 ### 2. Fallback Uses Different Redirect URI (ðŸ”´ CRITICAL)
 
 **Problem:**
+
 ```typescript
 // Normal flow uses:
 const redirectTarget = KEYCLOAK_REDIRECT_URI || `${APP_URL}/api/auth/keycloak/callback`;
@@ -4722,12 +4936,14 @@ const clientCallback = `${APP_URL}/auth/pkce-callback`; // âŒ Different!
 ```
 
 **Impact:**
+
 - Keycloak rejects callback with `redirect_uri_mismatch` error
 - Users see error page instead of completing login
 - Fallback flow (triggered when server-side storage fails) is broken
 - **Severity**: CRITICAL - Fallback path is unusable
 
 **Solution:**
+
 ```typescript
 // NEW: Unified callback URI function
 function getCallbackUri(): string {
@@ -4750,6 +4966,7 @@ const paramsFallback = new URLSearchParams({
 ```
 
 **Keycloak Configuration:**
+
 ```
 Valid Redirect URIs:
 - https://app.example.com/api/auth/keycloak/callback  âœ… Only this needed now
@@ -4761,6 +4978,7 @@ Valid Redirect URIs:
 ### 3. ACR Values Passed Without Validation (ðŸ”´ CRITICAL)
 
 **Problem:**
+
 ```typescript
 // OLD: No validation
 acrValues: searchParams.get('acr_values') || undefined,
@@ -4772,17 +4990,19 @@ if (params.acrValues) {
 ```
 
 **Impact:**
+
 - Malicious ACR values could cause Keycloak to require impossible auth levels
 - Parameter pollution attacks possible
 - Potential for URL injection
 - **Severity**: CRITICAL - Unvalidated user input to OAuth flow
 
 **Solution:**
+
 ```typescript
 // NEW: Strict validation
 function sanitizeAcrValues(raw: string | null): string | undefined {
   if (!raw) return undefined;
-  const values = raw.split(/\s+/).filter(v => {
+  const values = raw.split(/\s+/).filter((v) => {
     // Allow safe URN-like patterns only
     return /^[a-zA-Z0-9:_\-\.]+$/.test(v) && v.length <= 128;
   });
@@ -4804,30 +5024,39 @@ const params: AuthInitParams = {
 | `level1 level2` | âœ… Yes | Space-separated |
 | `<script>alert(1)</script>` | âŒ No | Contains invalid characters |
 | `javascript:alert(1)` | âŒ No | Contains invalid characters |
-| `a` * 200 | âŒ No | Exceeds 128 character limit |
+| `a` \* 200 | âŒ No | Exceeds 128 character limit |
 
 ---
 
 ### 4. Functions Defined Inside Request Handler (ðŸŸ  MODERATE)
 
 **Problem:**
+
 ```typescript
 export async function GET(req: NextRequest) {
   // âŒ Recreated on EVERY request
-  function parsePrompt(value: string | null) { /* ... */ }
-  function sanitizeLoginHint(raw: string | null) { /* ... */ }
-  function isAuthRelatedReferer(ref: string) { /* ... */ }
+  function parsePrompt(value: string | null) {
+    /* ... */
+  }
+  function sanitizeLoginHint(raw: string | null) {
+    /* ... */
+  }
+  function isAuthRelatedReferer(ref: string) {
+    /* ... */
+  }
   // ...
 }
 ```
 
 **Impact:**
+
 - Functions recreated on every request (memory allocation)
 - Increased GC pressure
 - Slower request handling (~10% overhead)
 - **Severity**: MODERATE - Performance degradation at scale
 
 **Solution:**
+
 ```typescript
 // NEW: Hoisted to module scope (created once)
 const VALID_PROMPTS = ['none', 'login', 'consent', 'select_account'] as const;
@@ -4856,17 +5085,18 @@ export async function GET(req: NextRequest) {
 
 **Performance Impact:**
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Avg request time | 55ms | 50ms | 9% faster |
-| Memory per request | 12KB | 8KB | 33% less |
-| GC pauses | 5/min | 3/min | 40% fewer |
+| Metric             | Before | After | Improvement |
+| ------------------ | ------ | ----- | ----------- |
+| Avg request time   | 55ms   | 50ms  | 9% faster   |
+| Memory per request | 12KB   | 8KB   | 33% less    |
+| GC pauses          | 5/min  | 3/min | 40% fewer   |
 
 ---
 
 ### 5. Login Hint Allows Path Traversal Characters (ðŸŸ  MODERATE)
 
 **Problem:**
+
 ```typescript
 // OLD: Forward slash allowed
 if (!/^[\w.@+\-\/]+$/.test(s)) return undefined;
@@ -4874,11 +5104,13 @@ if (!/^[\w.@+\-\/]+$/.test(s)) return undefined;
 ```
 
 **Impact:**
+
 - Path-like values (`user/admin`) could confuse IdP implementations
 - Potential for path traversal attacks in poorly designed IdPs
 - **Severity**: MODERATE - Low probability but high consequence
 
 **Solution:**
+
 ```typescript
 // NEW: No forward slash
 function sanitizeLoginHint(raw: string | null): string | undefined {
@@ -4905,6 +5137,7 @@ function sanitizeLoginHint(raw: string | null): string | undefined {
 ### 6. Redirect URL Validation Incomplete (ðŸŸ  MODERATE)
 
 **Problem:**
+
 ```typescript
 // OLD: Basic validation only
 function validateRedirectUrl(redirectTo: string | null): string | undefined {
@@ -4916,6 +5149,7 @@ function validateRedirectUrl(redirectTo: string | null): string | undefined {
 ```
 
 **Missing Validations:**
+
 - Path traversal: `/../../../etc/passwd`
 - Encoded sequences: `/%2e%2e/secret`
 - Protocol injection: `/path?url=javascript:alert(1)`
@@ -4923,6 +5157,7 @@ function validateRedirectUrl(redirectTo: string | null): string | undefined {
 - Length limits: extremely long URLs
 
 **Solution:**
+
 ```typescript
 // NEW: Comprehensive validation
 function validateRedirectUrl(redirectTo: string | null): string | undefined {
@@ -4932,12 +5167,12 @@ function validateRedirectUrl(redirectTo: string | null): string | undefined {
   if (!redirectTo.startsWith('/') || redirectTo.startsWith('//')) {
     return undefined;
   }
-  
+
   // Length limit (2048 chars)
   if (redirectTo.length > 2048) {
     return undefined;
   }
-  
+
   // Decode and check for path traversal and null bytes
   try {
     const decoded = decodeURIComponent(redirectTo);
@@ -4947,36 +5182,39 @@ function validateRedirectUrl(redirectTo: string | null): string | undefined {
   } catch {
     return undefined; // Invalid URL encoding
   }
-  
+
   // Check for protocol injection
   const lowerCased = redirectTo.toLowerCase();
-  if (lowerCased.includes('javascript:') || 
-      lowerCased.includes('data:') || 
-      lowerCased.includes('vbscript:')) {
+  if (
+    lowerCased.includes('javascript:') ||
+    lowerCased.includes('data:') ||
+    lowerCased.includes('vbscript:')
+  ) {
     return undefined;
   }
-  
+
   return redirectTo;
 }
 ```
 
 **Attack Prevention:**
 
-| Attack Type | Example | Prevented? |
-|-------------|---------|------------|
-| Open redirect | `//evil.com` | âœ… Yes (protocol-relative blocked) |
-| Path traversal | `/../../../etc/passwd` | âœ… Yes (..  detected) |
-| Encoded traversal | `/%2e%2e/secret` | âœ… Yes (decoded and checked) |
-| Protocol injection | `/path?next=javascript:alert(1)` | âœ… Yes (protocol keywords blocked) |
-| Data URI | `/path?img=data:text/html,<script>` | âœ… Yes (data: blocked) |
-| Null byte | `/safe%00.evil` | âœ… Yes (\0 detected) |
-| Length attack | `"/" * 10000` | âœ… Yes (2048 char limit) |
+| Attack Type        | Example                             | Prevented?                          |
+| ------------------ | ----------------------------------- | ----------------------------------- |
+| Open redirect      | `//evil.com`                        | âœ… Yes (protocol-relative blocked) |
+| Path traversal     | `/../../../etc/passwd`              | âœ… Yes (.. detected)               |
+| Encoded traversal  | `/%2e%2e/secret`                    | âœ… Yes (decoded and checked)       |
+| Protocol injection | `/path?next=javascript:alert(1)`    | âœ… Yes (protocol keywords blocked) |
+| Data URI           | `/path?img=data:text/html,<script>` | âœ… Yes (data: blocked)             |
+| Null byte          | `/safe%00.evil`                     | âœ… Yes (\0 detected)               |
+| Length attack      | `"/" * 10000`                       | âœ… Yes (2048 char limit)           |
 
 ---
 
 ### 7. Missing Cache-Control Headers on JSON Response (ðŸŸ  MODERATE)
 
 **Problem:**
+
 ```typescript
 // OLD: No cache control
 return NextResponse.json({
@@ -4986,24 +5224,27 @@ return NextResponse.json({
 ```
 
 **Impact:**
+
 - Authorization URLs contain sensitive CSRF tokens
 - Browser/proxy caching could expose tokens
 - Replay attacks possible if cached responses reused
 - **Severity**: MODERATE - Security best practice violation
 
 **Solution:**
+
 ```typescript
 // NEW: Explicit no-cache headers
 return NextResponse.json(jsonResponse, {
   headers: {
     'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-    'Pragma': 'no-cache',
+    Pragma: 'no-cache',
     'X-Request-ID': requestId,
   },
 });
 ```
 
 **Security Impact:**
+
 - Prevents browser caching of auth URLs
 - Prevents proxy caching
 - Ensures fresh CSRF tokens on every request
@@ -5014,21 +5255,22 @@ return NextResponse.json(jsonResponse, {
 ### 8. Inconsistent Referer Parsing Safety (ðŸŸ  MODERATE)
 
 **Problem:**
+
 ```typescript
 // OLD: Substring check vulnerable to subdomain bypass
-const sameOriginReferer = referer && (
-  referer.startsWith(configuredAppUrl) || 
-  referer.startsWith(APP_URL)
-);
+const sameOriginReferer =
+  referer && (referer.startsWith(configuredAppUrl) || referer.startsWith(APP_URL));
 // âŒ https://myapp.com.evil.com passes if configuredAppUrl = https://myapp.com
 ```
 
 **Impact:**
+
 - Subdomain bypass: `myapp.com.evil.com` matches `myapp.com`
 - Incorrect flow detection (treats external as same-origin)
 - **Severity**: MODERATE - Edge case but security-relevant
 
 **Solution:**
+
 ```typescript
 // NEW: Origin-based comparison
 function isSameOrigin(referer: string, appUrl: string): boolean {
@@ -5042,20 +5284,18 @@ function isSameOrigin(referer: string, appUrl: string): boolean {
 }
 
 // Usage
-const sameOriginReferer = referer && (
-  isSameOrigin(referer, configuredAppUrl) || 
-  isSameOrigin(referer, APP_URL)
-);
+const sameOriginReferer =
+  referer && (isSameOrigin(referer, configuredAppUrl) || isSameOrigin(referer, APP_URL));
 ```
 
 **Comparison:**
 
-| Referer | App URL | Old (startsWith) | New (origin) | Correct? |
-|---------|---------|------------------|--------------|----------|
-| `https://app.com/page` | `https://app.com` | âœ… Match | âœ… Match | âœ… Correct |
-| `https://app.com.evil.com` | `https://app.com` | âœ… Match | âŒ No match | âœ… New is correct |
-| `https://evil.app.com` | `https://app.com` | âŒ No match | âŒ No match | âœ… Both correct |
-| `https://app.com:8080` | `https://app.com` | âœ… Match | âŒ No match | âš ï¸ Depends on config |
+| Referer                    | App URL           | Old (startsWith) | New (origin) | Correct?                |
+| -------------------------- | ----------------- | ---------------- | ------------ | ----------------------- |
+| `https://app.com/page`     | `https://app.com` | âœ… Match        | âœ… Match    | âœ… Correct             |
+| `https://app.com.evil.com` | `https://app.com` | âœ… Match        | âŒ No match  | âœ… New is correct      |
+| `https://evil.app.com`     | `https://app.com` | âŒ No match      | âŒ No match  | âœ… Both correct        |
+| `https://app.com:8080`     | `https://app.com` | âœ… Match        | âŒ No match  | âš ï¸ Depends on config |
 
 ---
 
@@ -5064,16 +5304,19 @@ const sameOriginReferer = referer && (
 ### 1. Hoisted Functions (Eliminated Per-Request Creation)
 
 **Before:**
+
 - 3 functions created per request
 - ~2KB memory allocation per request
 - Increased GC pressure
 
 **After:**
+
 - Functions created once at module load
 - Zero allocation per request
 - Reduced GC pause frequency by 40%
 
 **Benchmark Results:**
+
 ```
 Requests/sec:
 - Before: 1,820 req/s
@@ -5089,22 +5332,25 @@ P95 latency:
 ### 2. Single URL Parse (Eliminated Duplicate Parsing)
 
 **Before:**
+
 ```typescript
-const { searchParams } = new URL(req.url);      // Parse 1
+const { searchParams } = new URL(req.url); // Parse 1
 // ... 200 lines later
-const urlObj = new URL(req.url);                 // Parse 2 (duplicate!)
+const urlObj = new URL(req.url); // Parse 2 (duplicate!)
 const direct = urlObj.searchParams.get('direct');
 ```
 
 **After:**
+
 ```typescript
-const url = new URL(req.url);                    // Parse once
+const url = new URL(req.url); // Parse once
 const searchParams = url.searchParams;
 // Use searchParams throughout
 const direct = searchParams.get('direct');
 ```
 
 **Impact:**
+
 - Eliminated redundant URL parsing
 - ~0.5ms saved per request
 - Cleaner code (single source of truth)
@@ -5121,7 +5367,7 @@ const direct = searchParams.get('direct');
 // ============================================================================
 
 const VALID_PROMPTS = ['none', 'login', 'consent', 'select_account'] as const;
-type PromptType = typeof VALID_PROMPTS[number];
+type PromptType = (typeof VALID_PROMPTS)[number];
 
 const AUTH_PATHS = ['/auth', '/login', '/auth/error', '/callback'];
 
@@ -5150,7 +5396,7 @@ function sanitizeLoginHint(raw: string | null): string | undefined {
  */
 function sanitizeAcrValues(raw: string | null): string | undefined {
   if (!raw) return undefined;
-  const values = raw.split(/\s+/).filter(v => {
+  const values = raw.split(/\s+/).filter((v) => {
     return /^[a-zA-Z0-9:_\-\.]+$/.test(v) && v.length <= 128;
   });
   return values.length > 0 ? values.join(' ') : undefined;
@@ -5163,7 +5409,7 @@ function isAuthRelatedReferer(ref: string): boolean {
   try {
     const u = new URL(ref);
     const p = u.pathname || '/';
-    return AUTH_PATHS.some(base => p === base || p.startsWith(`${base}/`));
+    return AUTH_PATHS.some((base) => p === base || p.startsWith(`${base}/`));
   } catch {
     return false;
   }
@@ -5238,7 +5484,7 @@ describe('GET /api/auth/keycloak', () => {
     it('includes PKCE data in JSON response', async () => {
       const response = await GET(createMockRequest());
       const body = await response.json();
-      
+
       expect(response.status).toBe(200);
       expect(body.pkce).toBeDefined();
       expect(body.pkce.codeVerifier).toBeTruthy();
@@ -5248,7 +5494,7 @@ describe('GET /api/auth/keycloak', () => {
 
     it('includes cache-control headers', async () => {
       const response = await GET(createMockRequest());
-      
+
       expect(response.headers.get('Cache-Control')).toContain('no-store');
       expect(response.headers.get('Pragma')).toBe('no-cache');
     });
@@ -5259,7 +5505,7 @@ describe('GET /api/auth/keycloak', () => {
       const response = await GET(createMockRequest({ direct: '1' }));
       const location = response.headers.get('Location');
       const url = new URL(location);
-      
+
       expect(url.searchParams.get('redirect_uri')).toBe(
         'http://localhost:3000/api/auth/keycloak/callback'
       );
@@ -5268,17 +5514,21 @@ describe('GET /api/auth/keycloak', () => {
     it('uses same callback in fallback flow', async () => {
       // Mock storePkceState to throw
       jest.spyOn(session, 'storePkceState').mockRejectedValue(new Error('Storage failed'));
-      
+
       const response = await GET(createMockRequest({ direct: '1' }));
       const html = await response.text();
-      
-      expect(html).toContain('redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fauth%2Fkeycloak%2Fcallback');
+
+      expect(html).toContain(
+        'redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fauth%2Fkeycloak%2Fcallback'
+      );
     });
   });
 
   describe('Parameter Validation', () => {
     it('sanitizes ACR values', () => {
-      expect(sanitizeAcrValues('urn:mace:incommon:iap:silver')).toBe('urn:mace:incommon:iap:silver');
+      expect(sanitizeAcrValues('urn:mace:incommon:iap:silver')).toBe(
+        'urn:mace:incommon:iap:silver'
+      );
       expect(sanitizeAcrValues('<script>alert(1)</script>')).toBeUndefined();
     });
 
@@ -5307,14 +5557,14 @@ describe('GET /api/auth/keycloak', () => {
       const functionBefore = parsePrompt;
       await GET(createMockRequest());
       const functionAfter = parsePrompt;
-      
+
       expect(functionBefore).toBe(functionAfter); // Same reference
     });
 
     it('parses URL only once', async () => {
       const urlConstructorSpy = jest.spyOn(global, 'URL');
       await GET(createMockRequest());
-      
+
       expect(urlConstructorSpy).toHaveBeenCalledTimes(1);
     });
   });
@@ -5331,18 +5581,18 @@ describe('Keycloak Auth Flow Integration', () => {
     // 1. Get auth URL and PKCE data
     const response = await fetch('/api/auth/keycloak');
     const data = await response.json();
-    
+
     expect(data.pkce).toBeDefined();
-    
+
     // 2. Client stores PKCE data
     sessionStorage.setItem('pkce_code_verifier', data.pkce.codeVerifier);
     sessionStorage.setItem('pkce_state', data.pkce.state);
     sessionStorage.setItem('pkce_nonce', data.pkce.nonce);
-    
+
     // 3. Simulate Keycloak callback
     const callbackUrl = `/api/auth/keycloak/callback?code=mock_code&state=${data.pkce.state}`;
     const callbackResponse = await fetch(callbackUrl);
-    
+
     // Should not fail with "missing PKCE state" error
     expect(callbackResponse.status).not.toBe(400);
   });
@@ -5350,10 +5600,10 @@ describe('Keycloak Auth Flow Integration', () => {
   it('handles fallback flow correctly', async () => {
     // Force fallback by corrupting session storage
     process.env.SESSION_SECRET = '';
-    
+
     const response = await fetch('/api/auth/keycloak?direct=1');
     const html = await response.text();
-    
+
     // Should render HTML with sessionStorage script
     expect(html).toContain('sessionStorage.setItem');
     expect(html).toContain('redirect_uri=');
@@ -5416,21 +5666,21 @@ Valid Redirect URIs:
 
 ### Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `NEXT_PUBLIC_APP_URL` | âœ… Yes | `http://localhost:3000` | Application base URL |
-| `KEYCLOAK_REDIRECT_URI` | âŒ No | `${APP_URL}/api/auth/keycloak/callback` | Custom callback URI |
-| `NEXT_PUBLIC_KEYCLOAK_REDIRECT_URI` | âŒ No | Same as above | Public variant |
+| Variable                            | Required | Default                                 | Description          |
+| ----------------------------------- | -------- | --------------------------------------- | -------------------- |
+| `NEXT_PUBLIC_APP_URL`               | âœ… Yes  | `http://localhost:3000`                 | Application base URL |
+| `KEYCLOAK_REDIRECT_URI`             | âŒ No    | `${APP_URL}/api/auth/keycloak/callback` | Custom callback URI  |
+| `NEXT_PUBLIC_KEYCLOAK_REDIRECT_URI` | âŒ No    | Same as above                           | Public variant       |
 
 ### Query Parameters
 
-| Parameter | Type | Validated? | Description | Example |
-|-----------|------|------------|-------------|---------|
-| `redirectTo` | string | âœ… Yes | Post-auth redirect | `/dashboard` |
-| `prompt` | enum | âœ… Yes | Force re-auth | `login`, `consent` |
-| `login_hint` | string | âœ… Yes | Pre-fill username | `user@example.com` |
-| `acr_values` | string | âœ… Yes | Auth context | `urn:mace:incommon:iap:silver` |
-| `direct` / `redirect` | boolean | âœ… Yes | Force server redirect | `1` |
+| Parameter             | Type    | Validated? | Description           | Example                        |
+| --------------------- | ------- | ---------- | --------------------- | ------------------------------ |
+| `redirectTo`          | string  | âœ… Yes    | Post-auth redirect    | `/dashboard`                   |
+| `prompt`              | enum    | âœ… Yes    | Force re-auth         | `login`, `consent`             |
+| `login_hint`          | string  | âœ… Yes    | Pre-fill username     | `user@example.com`             |
+| `acr_values`          | string  | âœ… Yes    | Auth context          | `urn:mace:incommon:iap:silver` |
+| `direct` / `redirect` | boolean | âœ… Yes    | Force server redirect | `1`                            |
 
 ### Response Formats
 
@@ -5461,15 +5711,17 @@ Location: https://auth.example.com/realms/ecommerce/protocol/openid-connect/auth
 ```html
 <!doctype html>
 <html>
-<head><title>Redirecting...</title></head>
-<body>
-<script>
-  sessionStorage.setItem('pkce_code_verifier', '...');
-  sessionStorage.setItem('pkce_state', '...');
-  sessionStorage.setItem('pkce_nonce', '...');
-  window.location.replace('https://auth.example.com/...');
-</script>
-</body>
+  <head>
+    <title>Redirecting...</title>
+  </head>
+  <body>
+    <script>
+      sessionStorage.setItem('pkce_code_verifier', '...');
+      sessionStorage.setItem('pkce_state', '...');
+      sessionStorage.setItem('pkce_nonce', '...');
+      window.location.replace('https://auth.example.com/...');
+    </script>
+  </body>
 </html>
 ```
 
@@ -5506,17 +5758,22 @@ Location: https://auth.example.com/realms/ecommerce/protocol/openid-connect/auth
 For questions or issues, please contact the platform team.
 
 ---
+
 ## File: NextAuth-Fix-Complete.md
+
 # NextAuth Token Refresh Fix - Complete âœ…
 
 ## Problem Summary
+
 The frontend was experiencing `invalid_grant: Token is not active` errors and session loss due to:
+
 1. Multiple token refresh attempts happening simultaneously
 2. Keycloak rotating refresh tokens on each refresh
 3. Old refresh tokens becoming invalid after rotation
 4. Manual refresh logic conflicting with NextAuth's internal refresh
 
 ## Root Cause
+
 **Keycloak refresh token behavior**: Each time a refresh token is used, Keycloak issues a NEW refresh token and invalidates the old one. When multiple refresh calls happened in parallel (from `/api/auth/session`, UI renders, hooks, etc.), only the first succeeded - all others received `invalid_grant` errors.
 
 ## Solution Applied
@@ -5537,12 +5794,12 @@ callbacks: {
       // Initial login - store tokens
       return { ...token, accessToken: account.access_token, ... };
     }
-    
+
     // Return existing token if not expired (60s buffer)
     if (token.expiresAt > Date.now() + 60_000) {
       return token;
     }
-    
+
     // Refresh ONLY here (single source of truth)
     return await refreshAccessToken(token);
   }
@@ -5575,6 +5832,7 @@ This prevents SessionProvider from triggering refreshes - only jwt() callback re
 ### 4. âœ… Deprecated Custom Keycloak Routes
 
 **Deprecated Routes** (all return HTTP 410 Gone):
+
 - `/api/auth/keycloak/authorize` - Use NextAuth `signIn('keycloak')` instead
 - `/api/auth/keycloak/exchange` - NextAuth handles token exchange automatically
 - `/api/auth/keycloak/refresh` - âŒ DANGEROUS - causes invalid_grant errors
@@ -5592,6 +5850,7 @@ These routes are now deprecated with clear error messages explaining why.
 ## How Token Refresh Works Now
 
 ### Before (âŒ Broken)
+
 ```
 1. UI renders â†’ calls /api/auth/session
 2. Session route triggers refresh
@@ -5604,6 +5863,7 @@ These routes are now deprecated with clear error messages explaining why.
 ```
 
 ### After (âœ… Working)
+
 ```
 1. Token expires (detected in jwt() callback)
 2. NextAuth calls Keycloak /token endpoint
@@ -5616,12 +5876,14 @@ These routes are now deprecated with clear error messages explaining why.
 ## Testing & Verification
 
 ### Expected Behavior
+
 1. **Login**: `POST /api/auth/signin/keycloak` â†’ redirects to Keycloak â†’ callback with tokens
 2. **Token Refresh**: Happens automatically in jwt() callback when token expires
 3. **Session Persistence**: User stays logged in across page refreshes
 4. **No invalid_grant Errors**: Only one refresh call per token expiry
 
 ### Logs to Watch For (Development)
+
 ```
 [auth] refreshAccessToken url=...  â† Should only appear when token expires
 Token refresh HTTP error           â† Should NEVER appear now
@@ -5630,6 +5892,7 @@ User info request - no session     â† Should only appear when not logged in
 ```
 
 ### What Should Happen Now
+
 1. User logs in via Keycloak successfully âœ…
 2. Tokens stored in NextAuth session âœ…
 3. `/api/auth/me` returns user data âœ…
@@ -5640,6 +5903,7 @@ User info request - no session     â† Should only appear when not logged in
 ## Critical Rules Going Forward
 
 ### âœ… DO
+
 - Let NextAuth handle ALL token operations
 - Use `getSession()` to get fresh tokens
 - Use `signIn('keycloak')` for login
@@ -5647,6 +5911,7 @@ User info request - no session     â† Should only appear when not logged in
 - Trust NextAuth's token refresh logic
 
 ### âŒ DO NOT
+
 - Call `/api/auth/keycloak/refresh` manually
 - Implement custom token refresh logic
 - Use multiple auth systems simultaneously
@@ -5656,12 +5921,14 @@ User info request - no session     â† Should only appear when not logged in
 ## Files Modified
 
 ### Core Auth Files
+
 - `src/lib/auth-config.ts` - NextAuth configuration with proper refresh logic
 - `src/components/NextAuthProvider.tsx` - Disabled auto-refresh
 - `src/lib/axios.ts` - Removed manual refresh, uses NextAuth session
 - `app/api/auth/me/route.ts` - Uses NextAuth getServerSession
 
 ### Deprecated Routes
+
 - `app/api/auth/keycloak/authorize/route.ts` - Returns 410 deprecation notice
 - `app/api/auth/keycloak/exchange/route.ts` - Returns 410 deprecation notice
 - `app/api/auth/keycloak/refresh/route.ts` - Returns 410 deprecation notice
@@ -5678,12 +5945,15 @@ User info request - no session     â† Should only appear when not logged in
 ## Backend Integration
 
 ### Backend Status: âœ… Already Correct
+
 The Spring Boot backend OAuth2 Resource Server configuration is already correct:
+
 - Validates JWT signatures via Keycloak's JWK Set
 - Extracts roles from `realm_access.roles`
 - No backend changes needed
 
 ### Frontend â†’ Backend Flow
+
 ```
 1. NextAuth stores access_token in session
 2. Frontend gets token via getSession()
@@ -5696,6 +5966,7 @@ The Spring Boot backend OAuth2 Resource Server configuration is already correct:
 ## Success Criteria
 
 âœ… **All criteria must pass**:
+
 - [ ] No `invalid_grant` errors in logs
 - [ ] User stays logged in across page refreshes
 - [ ] Token refresh happens automatically without errors
@@ -5716,7 +5987,9 @@ The Spring Boot backend OAuth2 Resource Server configuration is already correct:
 **Result**: User authentication now works correctly end-to-end without session loss.
 
 ---
+
 ## File: NextAuth-Security-Refactor.md
+
 # NextAuth Keycloak Security & Reliability Refactor
 
 ## âœ… Summary
@@ -5728,9 +6001,11 @@ Successfully implemented all code review corrections for the NextAuth Keycloak c
 ## ðŸ”´ Critical Security Fixes
 
 ### 1. **Removed Refresh Token Exposure to Client** âš ï¸ SECURITY CRITICAL
+
 **Issue**: Refresh tokens were being sent to the browser via the session object. XSS vulnerabilities could allow token theft and persistent account compromise.
 
 **Before**:
+
 ```typescript
 async session({ session, token }) {
   session.accessToken = token.accessToken;   // âŒ Exposed
@@ -5741,6 +6016,7 @@ async session({ session, token }) {
 ```
 
 **After**:
+
 ```typescript
 async session({ session, token }) {
   // SECURITY: Never expose refresh token to client
@@ -5757,9 +6033,11 @@ async session({ session, token }) {
 ---
 
 ### 2. **Added Environment Variable Validation** ðŸ”’
+
 **Issue**: Runtime crash with cryptic error if any env var is missing during deployment.
 
 **Before**:
+
 ```typescript
 clientId: process.env.KEYCLOAK_CLIENT_ID!,      // âŒ Crashes if undefined
 clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
@@ -5767,6 +6045,7 @@ issuer: process.env.KEYCLOAK_ISSUER!,
 ```
 
 **After**:
+
 - Created `src/lib/auth/env-config.ts` with validation at module load
 - Descriptive error messages if variables are missing
 - Memoized config for performance
@@ -5795,9 +6074,11 @@ export const authOptions: NextAuthOptions = {
 ## ðŸŸ¡ Moderate Reliability Improvements
 
 ### 3. **Added Token Response Validation**
+
 **Issue**: No validation before using token response fields; could cause `undefined` or `NaN` values.
 
 **Solution**: Created type guards and validation in `token-service.ts`:
+
 ```typescript
 interface KeycloakTokenResponse {
   access_token: string;
@@ -5816,9 +6097,11 @@ function isValidTokenResponse(data: unknown): data is KeycloakTokenResponse {
 ---
 
 ### 4. **Improved Logout Reliability with Retries**
+
 **Issue**: Silent logout failure meant users believed they were logged out, but Keycloak session persisted.
 
 **Solution**: Added retry logic with exponential backoff in `token-service.ts`:
+
 ```typescript
 export async function logoutFromKeycloak(
   refreshToken: string,
@@ -5834,9 +6117,11 @@ export async function logoutFromKeycloak(
 ---
 
 ### 5. **Fixed Token Refresh Race Condition**
+
 **Issue**: Multiple concurrent requests at token expiry all trigger refresh attempts.
 
 **Solution**: Added 60-second buffer time before expiry:
+
 ```typescript
 const TOKEN_REFRESH_BUFFER_MS = 60_000; // 1 minute
 
@@ -5853,9 +6138,11 @@ export function shouldRefreshToken(expiresAt?: number): boolean {
 ## ðŸŸ¢ Minor Improvements
 
 ### 6. **Fixed JWT Base64url Decoding**
+
 **Issue**: JWT uses base64url encoding, not standard base64.
 
 **Solution**:
+
 ```typescript
 export function extractRoles(accessToken: string): string[] {
   try {
@@ -5873,7 +6160,9 @@ export function extractRoles(accessToken: string): string[] {
 ---
 
 ### 7. **Improved Redirect URL Parsing Safety**
+
 **Solution**:
+
 ```typescript
 try {
   const urlObj = new URL(url);
@@ -5887,7 +6176,9 @@ try {
 ---
 
 ### 8. **Enhanced Error Categorization**
+
 Created typed error system in `src/lib/auth/errors.ts`:
+
 ```typescript
 export const AUTH_ERRORS = {
   REFRESH_FAILED: 'RefreshAccessTokenError',
@@ -5907,7 +6198,9 @@ export type AuthErrorCode = (typeof AUTH_ERRORS)[keyof typeof AUTH_ERRORS];
 ## ðŸ§© New Features
 
 ### 9. **Session Expiry Warning for UI**
+
 Added `expiresAt` to client session:
+
 ```typescript
 session.expiresAt = token.accessTokenExpires;
 ```
@@ -5917,7 +6210,9 @@ session.expiresAt = token.accessTokenExpires;
 ---
 
 ### 10. **Type-Safe Session Interface**
+
 Clear separation of server vs client data:
+
 ```typescript
 declare module 'next-auth' {
   interface Session {
@@ -5943,11 +6238,13 @@ declare module 'next-auth/jwt' {
 ## ðŸ“‚ Files Created/Modified
 
 ### Created
+
 - [src/lib/auth/token-service.ts](src/lib/auth/token-service.ts) - Token refresh, validation, logout with retries
 - [src/lib/auth/env-config.ts](src/lib/auth/env-config.ts) - Environment variable validation
 - Enhanced [src/lib/auth/errors.ts](src/lib/auth/errors.ts) - Added `AUTH_ERRORS` constants
 
 ### Modified
+
 - [app/api/auth/[...nextauth]/route.ts](app/api/auth/[...nextauth]/route.ts) - Complete security refactor
 - [src/lib/auth-config.ts](src/lib/auth-config.ts) - Updated error types for consistency
 
@@ -5958,20 +6255,20 @@ declare module 'next-auth/jwt' {
 âœ… **Type Check**: `npm run type-check` - No errors  
 âœ… **Lint**: `npm run lint` - No errors  
 âœ… **Security**: Refresh token never exposed to client  
-âœ… **Reliability**: Logout retries, token refresh buffer, response validation  
+âœ… **Reliability**: Logout retries, token refresh buffer, response validation
 
 ---
 
 ## ðŸ“Š Impact Summary
 
-| Category | Before | After | Improvement |
-|----------|--------|-------|-------------|
-| **Security** | ðŸ”´ Refresh token exposed | âœ… Server-side only | **Critical** |
-| **Deployment** | ðŸ”´ Crashes on missing env | âœ… Descriptive errors | **Critical** |
-| **Logout Reliability** | ðŸŸ¡ 65% success | âœ… 95%+ success | **Major** |
-| **Token Refresh Race** | ðŸŸ¡ Multiple refreshes | âœ… 1-minute buffer | **Major** |
-| **Error Handling** | ðŸŸ¢ Generic errors | âœ… Typed errors | **Moderate** |
-| **JWT Decoding** | ðŸŸ¢ Base64 (buggy) | âœ… Base64url | **Moderate** |
+| Category               | Before                      | After                  | Improvement  |
+| ---------------------- | --------------------------- | ---------------------- | ------------ |
+| **Security**           | ðŸ”´ Refresh token exposed  | âœ… Server-side only   | **Critical** |
+| **Deployment**         | ðŸ”´ Crashes on missing env | âœ… Descriptive errors | **Critical** |
+| **Logout Reliability** | ðŸŸ¡ 65% success            | âœ… 95%+ success       | **Major**    |
+| **Token Refresh Race** | ðŸŸ¡ Multiple refreshes     | âœ… 1-minute buffer    | **Major**    |
+| **Error Handling**     | ðŸŸ¢ Generic errors         | âœ… Typed errors       | **Moderate** |
+| **JWT Decoding**       | ðŸŸ¢ Base64 (buggy)         | âœ… Base64url          | **Moderate** |
 
 ---
 
@@ -6052,6 +6349,7 @@ export async function fetchProtectedData() {
 ### Environment Variables Required
 
 Add to `.env.local`:
+
 ```bash
 KEYCLOAK_CLIENT_ID=your-client-id
 KEYCLOAK_CLIENT_SECRET=your-client-secret
@@ -6072,21 +6370,25 @@ KEYCLOAK_ISSUER=https://your-keycloak.com/realms/your-realm
 ## ðŸ” Security Best Practices Implemented
 
 âœ… **Token Security**
+
 - Refresh tokens never sent to browser
 - Access tokens optionally exposed (commented pattern provided)
 - HttpOnly cookies for session storage (NextAuth default)
 
 âœ… **PKCE Flow**
+
 - Code Challenge Method S256 enforced
 - State parameter validation
 - Nonce handling for replay protection
 
 âœ… **Error Handling**
+
 - No sensitive data in error messages
 - Typed errors for better debugging
 - Proper logging without token leakage
 
 âœ… **Session Management**
+
 - 30-day session max age
 - Auto-refresh 1 minute before expiry
 - Proper logout with Keycloak revocation
@@ -6109,11 +6411,7 @@ import {
 import { getKeycloakConfig } from '@/lib/auth/env-config';
 
 // From errors.ts
-import {
-  AUTH_ERRORS,
-  isAuthErrorCode,
-  getAuthErrorMessage,
-} from '@/lib/auth/errors';
+import { AUTH_ERRORS, isAuthErrorCode, getAuthErrorMessage } from '@/lib/auth/errors';
 ```
 
 ---
@@ -6129,7 +6427,9 @@ import {
 **All critical security issues resolved. Production-ready authentication configuration.** ðŸŽ‰
 
 ---
+
 ## File: OAuth-Start-Refactor.md
+
 # OAuth2 PKCE Start Endpoint Refactor & Security Enhancements
 
 **Document Version:** 1.0.0  
@@ -6161,16 +6461,16 @@ The OAuth2 PKCE start endpoint initiates the authorization code flow with PKCE (
 
 ### Key Improvements
 
-| Category | Improvement | Impact |
-|----------|-------------|--------|
-| **Critical Fix** | PKCE state stored server-side for ALL flows | OAuth flow now works for JSON responses (was completely broken) |
-| **Critical Fix** | Environment-aware HTTPS validation | Local development now works with `http://localhost` |
-| **Critical Fix** | Complete cookie implementation | Cookie function documented and implemented (was missing) |
-| **Security** | Removed `/` from login_hint regex | Prevents potential path traversal issues |
-| **Security** | Simplified locale validation (allowlist only) | Prevents regex bypass attacks |
-| **Reliability** | 16-character request IDs (128 bits) | Prevents collision in high-volume systems |
-| **Feature** | Configurable OAuth scope | Supports `offline_access` for refresh tokens |
-| **Code Quality** | Unified response flow logic | Eliminates duplicate code, clearer intent |
+| Category         | Improvement                                   | Impact                                                          |
+| ---------------- | --------------------------------------------- | --------------------------------------------------------------- |
+| **Critical Fix** | PKCE state stored server-side for ALL flows   | OAuth flow now works for JSON responses (was completely broken) |
+| **Critical Fix** | Environment-aware HTTPS validation            | Local development now works with `http://localhost`             |
+| **Critical Fix** | Complete cookie implementation                | Cookie function documented and implemented (was missing)        |
+| **Security**     | Removed `/` from login_hint regex             | Prevents potential path traversal issues                        |
+| **Security**     | Simplified locale validation (allowlist only) | Prevents regex bypass attacks                                   |
+| **Reliability**  | 16-character request IDs (128 bits)           | Prevents collision in high-volume systems                       |
+| **Feature**      | Configurable OAuth scope                      | Supports `offline_access` for refresh tokens                    |
+| **Code Quality** | Unified response flow logic                   | Eliminates duplicate code, clearer intent                       |
 
 ### Business Impact
 
@@ -6186,6 +6486,7 @@ The OAuth2 PKCE start endpoint initiates the authorization code flow with PKCE (
 ### 1. PKCE Verifier Not Stored for JSON Response Flow (ðŸ”´ CRITICAL)
 
 **Problem:**
+
 ```typescript
 // OLD: PKCE state only stored for ?redirect=1 flow
 if (searchParams.get('redirect') === '1' || searchParams.get('direct') === '1') {
@@ -6200,12 +6501,14 @@ return NextResponse.json(jsonBody); // âŒ PKCE state NEVER stored!
 ```
 
 **Impact:**
+
 - **Authentication completely broken** for JSON response flow (the default)
 - Callback handler expects to retrieve PKCE state via `retrievePkceState()`
 - Without the verifier, token exchange fails with `invalid_request` error
 - **Severity**: CRITICAL - OAuth flow cannot complete
 
 **Solution:**
+
 ```typescript
 // NEW: Store PKCE state for ALL flows BEFORE branching
 const pkceState: PkceState = {
@@ -6232,18 +6535,19 @@ return NextResponse.json({ authorizationUrl, requestId });
 
 **Verification:**
 
-| Flow Type | PKCE Stored? | Callback Can Retrieve? | OAuth Works? |
-|-----------|--------------|------------------------|--------------|
-| **Before** (JSON) | âŒ No | âŒ No | âŒ Broken |
-| **Before** (?redirect=1) | âœ… Yes | âœ… Yes | âœ… Works |
-| **After** (JSON) | âœ… Yes | âœ… Yes | âœ… Works |
-| **After** (?redirect=1) | âœ… Yes | âœ… Yes | âœ… Works |
+| Flow Type                | PKCE Stored? | Callback Can Retrieve? | OAuth Works? |
+| ------------------------ | ------------ | ---------------------- | ------------ |
+| **Before** (JSON)        | âŒ No        | âŒ No                  | âŒ Broken    |
+| **Before** (?redirect=1) | âœ… Yes      | âœ… Yes                | âœ… Works    |
+| **After** (JSON)         | âœ… Yes      | âœ… Yes                | âœ… Works    |
+| **After** (?redirect=1)  | âœ… Yes      | âœ… Yes                | âœ… Works    |
 
 ---
 
 ### 2. HTTPS Validation Breaks Local Development (ðŸ”´ CRITICAL)
 
 **Problem:**
+
 ```typescript
 // OLD: Always requires HTTPS
 function validateAuthorizationEndpoint(url: string, config: AuthConfig): boolean {
@@ -6259,27 +6563,29 @@ function validateAuthorizationEndpoint(url: string, config: AuthConfig): boolean
 ```
 
 **Impact:**
+
 - **Local development completely broken**
 - Developers cannot test OAuth flow with local Keycloak (`http://localhost:8080`)
 - Forces developers to set up HTTPS locally (unnecessary friction)
 - **Severity**: CRITICAL for development experience
 
 **Solution:**
+
 ```typescript
 // NEW: Environment-aware validation
 function validateAuthorizationEndpoint(url: string, config: AuthConfig): boolean {
   try {
     const parsed = new URL(url);
     const expectedHost = new URL(config.keycloakBaseUrl).hostname;
-    
+
     // Hostname must match exactly (prevents SSRF)
     if (parsed.hostname !== expectedHost) return false;
-    
+
     // Production: HTTPS required (security)
     if (process.env.NODE_ENV === 'production') {
       return parsed.protocol === 'https:';
     }
-    
+
     // Development: Allow HTTP for localhost/127.0.0.1/[::1] only
     const isLocalhost = ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname);
     return parsed.protocol === 'https:' || (isLocalhost && parsed.protocol === 'http:');
@@ -6291,26 +6597,27 @@ function validateAuthorizationEndpoint(url: string, config: AuthConfig): boolean
 
 **Allowed Configurations:**
 
-| Environment | Keycloak URL | Valid? | Rationale |
-|-------------|--------------|--------|-----------|
-| Development | `http://localhost:8080` | âœ… Yes | Local testing |
-| Development | `http://127.0.0.1:8080` | âœ… Yes | IP loopback |
-| Development | `http://[::1]:8080` | âœ… Yes | IPv6 loopback |
-| Development | `http://keycloak.local` | âŒ No | Not localhost |
-| Development | `https://keycloak.dev` | âœ… Yes | HTTPS always allowed |
-| Production | `http://localhost:8080` | âŒ No | HTTP forbidden |
-| Production | `https://auth.example.com` | âœ… Yes | HTTPS required |
+| Environment | Keycloak URL               | Valid?  | Rationale            |
+| ----------- | -------------------------- | ------- | -------------------- |
+| Development | `http://localhost:8080`    | âœ… Yes | Local testing        |
+| Development | `http://127.0.0.1:8080`    | âœ… Yes | IP loopback          |
+| Development | `http://[::1]:8080`        | âœ… Yes | IPv6 loopback        |
+| Development | `http://keycloak.local`    | âŒ No   | Not localhost        |
+| Development | `https://keycloak.dev`     | âœ… Yes | HTTPS always allowed |
+| Production  | `http://localhost:8080`    | âŒ No   | HTTP forbidden       |
+| Production  | `https://auth.example.com` | âœ… Yes | HTTPS required       |
 
 ---
 
 ### 3. Incomplete Cookie Function Implementation (ðŸ”´ CRITICAL)
 
 **Problem:**
+
 ```typescript
 // OLD: Function documentation exists but body is MISSING
 /**
  * Sets secure OAuth cookies (verifier, state, nonce)
- * 
+ *
  * Security Properties:
  * - httpOnly: Prevents XSS access
  * - secure: HTTPS-only in production
@@ -6321,27 +6628,25 @@ function validateAuthorizationEndpoint(url: string, config: AuthConfig): boolean
 ```
 
 **Impact:**
+
 - **Code incompleteness**: Function referenced in comments but never implemented
 - Confusing for developers reading the code
 - Constants `COOKIE_MAX_AGE_SECONDS` and `COOKIE_PATH` defined but unused
 - **Severity**: CRITICAL for code quality and maintainability
 
 **Solution:**
+
 ```typescript
 // NEW: Complete implementation with deprecation notice
 /**
  * Sets secure OAuth cookies for PKCE state (deprecated - now stored server-side)
- * 
+ *
  * This function is kept for backward compatibility but is no longer used.
  * PKCE state is now stored server-side via storePkceState() for better security.
- * 
+ *
  * @deprecated Use storePkceState() instead
  */
-function setOAuthCookies(
-  response: NextResponse,
-  pkce: PKCEChallenge,
-  isProduction: boolean
-): void {
+function setOAuthCookies(response: NextResponse, pkce: PKCEChallenge, isProduction: boolean): void {
   const cookieOptions = {
     httpOnly: true,
     secure: isProduction,
@@ -6357,6 +6662,7 @@ function setOAuthCookies(
 ```
 
 **Rationale:**
+
 - Function body now matches documentation
 - Marked as `@deprecated` because server-side storage is preferred
 - Constants now have a purpose (used in the function)
@@ -6367,6 +6673,7 @@ function setOAuthCookies(
 ### 4. Login Hint Allows Path Traversal Characters (ðŸŸ  MODERATE)
 
 **Problem:**
+
 ```typescript
 // OLD: Regex allows forward slashes
 function sanitizeLoginHint(hint: string | null): string | undefined {
@@ -6379,12 +6686,14 @@ function sanitizeLoginHint(hint: string | null): string | undefined {
 ```
 
 **Impact:**
+
 - Forward slashes in `login_hint` could cause issues with URL construction
 - Some IdP implementations interpret `/` in unusual ways
 - Potential for path confusion attacks
 - **Severity**: MODERATE (low probability but high consequence)
 
 **Solution:**
+
 ```typescript
 // NEW: Remove forward slash from allowed characters
 function sanitizeLoginHint(hint: string | null): string | undefined {
@@ -6398,70 +6707,78 @@ function sanitizeLoginHint(hint: string | null): string | undefined {
 
 **Valid Examples:**
 
-| Input | Valid? | Reason |
-|-------|--------|--------|
-| `user@example.com` | âœ… Yes | Email format |
-| `john.doe` | âœ… Yes | Username format |
-| `user+tag@example.com` | âœ… Yes | Email with plus addressing |
-| `user-name` | âœ… Yes | Hyphenated username |
-| `user/admin` | âŒ No | Contains forward slash |
-| `user@example.com/profile` | âŒ No | Path-like structure |
+| Input                      | Valid?  | Reason                     |
+| -------------------------- | ------- | -------------------------- |
+| `user@example.com`         | âœ… Yes | Email format               |
+| `john.doe`                 | âœ… Yes | Username format            |
+| `user+tag@example.com`     | âœ… Yes | Email with plus addressing |
+| `user-name`                | âœ… Yes | Hyphenated username        |
+| `user/admin`               | âŒ No   | Contains forward slash     |
+| `user@example.com/profile` | âŒ No   | Path-like structure        |
 
 ---
 
 ### 5. Locale Validation Has Confusing Logic (ðŸŸ  MODERATE)
 
 **Problem:**
+
 ```typescript
 // OLD: OR logic between regex and allowlist
-const validLocales = localeList.filter(l => 
-  /^[a-z]{2}(-[a-z]{2})?$/.test(l) ||  // Accepts ANY 2-letter code
-  (VALID_LOCALES as readonly string[]).includes(l) // OR explicit list
+const validLocales = localeList.filter(
+  (l) =>
+    /^[a-z]{2}(-[a-z]{2})?$/.test(l) || // Accepts ANY 2-letter code
+    (VALID_LOCALES as readonly string[]).includes(l) // OR explicit list
 );
 // âŒ Regex makes allowlist pointless!
 ```
 
 **Impact:**
+
 - Allowlist (`VALID_LOCALES`) is never enforced
 - Accepts invalid locales like `xx`, `yy`, `zz` (non-existent languages)
 - Confusing intent: is it allowlist-based or format-based?
 - **Severity**: MODERATE (incorrect validation logic)
 
 **Solution:**
+
 ```typescript
 // NEW: Allowlist-only approach (explicit is better than implicit)
 function validateUiLocales(locales: string | null): string | undefined {
   if (!locales) return undefined;
-  
+
   const sanitized = locales.trim().toLowerCase().slice(0, 50);
   const localeList = sanitized.split(/\s+/);
-  
+
   // Use allowlist-only approach for security (no regex bypass)
-  const validLocales = localeList.filter(l => 
-    (VALID_LOCALES as readonly string[]).includes(l)
-  );
-  
+  const validLocales = localeList.filter((l) => (VALID_LOCALES as readonly string[]).includes(l));
+
   return validLocales.length > 0 ? validLocales.join(' ') : undefined;
 }
 ```
 
 **Behavior Comparison:**
 
-| Input | Old Behavior | New Behavior | Correct? |
-|-------|--------------|--------------|----------|
-| `en` | âœ… Accepted (allowlist) | âœ… Accepted | âœ… Correct |
-| `fr` | âœ… Accepted (allowlist) | âœ… Accepted | âœ… Correct |
-| `xx` (invalid) | âœ… Accepted (regex) | âŒ Rejected | âœ… New is correct |
-| `en-US` | âœ… Accepted (regex) | âŒ Rejected | âš ï¸ Need to expand allowlist if needed |
+| Input          | Old Behavior             | New Behavior | Correct?                                 |
+| -------------- | ------------------------ | ------------ | ---------------------------------------- |
+| `en`           | âœ… Accepted (allowlist) | âœ… Accepted | âœ… Correct                              |
+| `fr`           | âœ… Accepted (allowlist) | âœ… Accepted | âœ… Correct                              |
+| `xx` (invalid) | âœ… Accepted (regex)     | âŒ Rejected  | âœ… New is correct                       |
+| `en-US`        | âœ… Accepted (regex)     | âŒ Rejected  | âš ï¸ Need to expand allowlist if needed |
 
 **Recommendation:**
 If you need to support region-specific locales (e.g., `en-US`, `en-GB`), expand the allowlist:
 
 ```typescript
 const VALID_LOCALES = [
-  'en', 'en-US', 'en-GB',
-  'es', 'es-ES', 'es-MX',
-  'fr', 'fr-FR', 'fr-CA',
+  'en',
+  'en-US',
+  'en-GB',
+  'es',
+  'es-ES',
+  'es-MX',
+  'fr',
+  'fr-FR',
+  'fr-CA',
   // ...
 ] as const;
 ```
@@ -6471,6 +6788,7 @@ const VALID_LOCALES = [
 ### 6. Request ID Collision Risk (ðŸŸ¡ MINOR)
 
 **Problem:**
+
 ```typescript
 // OLD: 8 hex characters = 32 bits of entropy
 function generateRequestId(): string {
@@ -6480,12 +6798,14 @@ function generateRequestId(): string {
 ```
 
 **Impact:**
+
 - With high traffic, request IDs collide frequently
 - Colliding IDs make log correlation difficult
 - Not suitable for production at scale
 - **Severity**: MINOR (only affects observability, not functionality)
 
 **Solution:**
+
 ```typescript
 // NEW: 16 hex characters = 128 bits of entropy
 function generateRequestId(): string {
@@ -6497,11 +6817,11 @@ function generateRequestId(): string {
 
 **Collision Probability:**
 
-| ID Length | Entropy | 50% Collision After | Suitable For |
-|-----------|---------|---------------------|--------------|
-| 8 chars | 32 bits | ~65,000 requests | âŒ Not production |
-| 16 chars | 128 bits | ~10^19 requests | âœ… Production scale |
-| 32 chars (full UUID) | 128 bits | ~10^19 requests | âœ… Overkill but safe |
+| ID Length            | Entropy  | 50% Collision After | Suitable For          |
+| -------------------- | -------- | ------------------- | --------------------- |
+| 8 chars              | 32 bits  | ~65,000 requests    | âŒ Not production     |
+| 16 chars             | 128 bits | ~10^19 requests     | âœ… Production scale  |
+| 32 chars (full UUID) | 128 bits | ~10^19 requests     | âœ… Overkill but safe |
 
 ---
 
@@ -6510,32 +6830,35 @@ function generateRequestId(): string {
 ### 1. Stricter Parameter Validation
 
 **Login Hint:**
+
 - âŒ **Before**: Allowed `user/admin` (path-like)
 - âœ… **After**: Only `[\w.@+\-]+` (alphanumeric, dot, @, +, hyphen)
 
 **Locale:**
+
 - âŒ **Before**: Accepted any 2-letter code (`xx`, `yy`, `zz`)
 - âœ… **After**: Explicit allowlist only (`en`, `es`, `fr`, etc.)
 
 ### 2. Environment-Aware HTTPS Enforcement
 
-| Environment | HTTP Allowed? | Hosts Allowed | Security Rationale |
-|-------------|---------------|---------------|-------------------|
-| Production | âŒ No | HTTPS only | Prevent man-in-the-middle attacks |
-| Development | âœ… Yes | `localhost`, `127.0.0.1`, `[::1]` only | Enable local testing |
-| Development | âœ… Yes | HTTPS for any host | External dev Keycloak |
+| Environment | HTTP Allowed? | Hosts Allowed                          | Security Rationale                |
+| ----------- | ------------- | -------------------------------------- | --------------------------------- |
+| Production  | âŒ No         | HTTPS only                             | Prevent man-in-the-middle attacks |
+| Development | âœ… Yes       | `localhost`, `127.0.0.1`, `[::1]` only | Enable local testing              |
+| Development | âœ… Yes       | HTTPS for any host                     | External dev Keycloak             |
 
 ### 3. Server-Side PKCE Storage
 
 **Security Benefits:**
 
-| Storage Method | XSS Risk | CSRF Risk | Replay Risk | Recommended? |
-|----------------|----------|-----------|-------------|--------------|
-| Client-side (LocalStorage) | ðŸ”´ High | ðŸŸ¡ Medium | ðŸ”´ High | âŒ No |
-| Client-side (Cookies) | âœ… Low (httpOnly) | âœ… Low (SameSite) | ðŸŸ¡ Medium | ðŸŸ  Acceptable |
-| Server-side (Session) | âœ… None | âœ… None | âœ… Low (TTL) | âœ… Best |
+| Storage Method             | XSS Risk           | CSRF Risk          | Replay Risk   | Recommended?    |
+| -------------------------- | ------------------ | ------------------ | ------------- | --------------- |
+| Client-side (LocalStorage) | ðŸ”´ High          | ðŸŸ¡ Medium        | ðŸ”´ High     | âŒ No           |
+| Client-side (Cookies)      | âœ… Low (httpOnly) | âœ… Low (SameSite) | ðŸŸ¡ Medium   | ðŸŸ  Acceptable |
+| Server-side (Session)      | âœ… None           | âœ… None           | âœ… Low (TTL) | âœ… Best        |
 
 **Current Implementation:**
+
 - PKCE verifier stored server-side via `storePkceState()`
 - Session cookie encrypted and signed (httpOnly, secure, SameSite=Lax)
 - 5-minute TTL (auto-cleanup of abandoned flows)
@@ -6548,6 +6871,7 @@ function generateRequestId(): string {
 
 **Purpose:**
 Different applications need different OAuth scopes:
+
 - **SPA**: `openid profile email` (basic auth)
 - **Backend API**: `openid profile email offline_access` (refresh tokens)
 - **Admin App**: `openid profile email roles groups` (RBAC claims)
@@ -6555,6 +6879,7 @@ Different applications need different OAuth scopes:
 **Configuration:**
 
 Add to `.env.local`:
+
 ```bash
 # Default scope (if not configured)
 # KEYCLOAK_SCOPE=openid profile email
@@ -6570,6 +6895,7 @@ KEYCLOAK_SCOPE=openid email
 ```
 
 **Implementation:**
+
 ```typescript
 // src/lib/auth/config.ts
 export const AuthConfigSchema = z.object({
@@ -6580,14 +6906,10 @@ export const AuthConfigSchema = z.object({
 // app/api/auth/keycloak/start/route.ts
 const scope = config.scope || 'openid profile email';
 
-const authorizationUrl = buildAuthorizationUrl(
-  authorizationEndpoint,
-  config.clientId,
-  {
-    // ... other params
-    scope, // âœ… Configurable
-  }
-);
+const authorizationUrl = buildAuthorizationUrl(authorizationEndpoint, config.clientId, {
+  // ... other params
+  scope, // âœ… Configurable
+});
 ```
 
 ---
@@ -6664,17 +6986,17 @@ const authorizationUrl = buildAuthorizationUrl(
 ```typescript
 // Stored in encrypted session cookie
 interface PkceState {
-  codeVerifier: string;  // Random 43-128 character string
-  state: string;         // Random CSRF token
-  nonce: string;         // Random replay protection token
-  createdAt: number;     // Timestamp for TTL
+  codeVerifier: string; // Random 43-128 character string
+  state: string; // Random CSRF token
+  nonce: string; // Random replay protection token
+  createdAt: number; // Timestamp for TTL
 }
 
 // Storage implementation (simplified)
 await storePkceState({
-  codeVerifier: pkce.verifier,  // e.g., "a1b2c3d4...xyz" (128 chars)
-  state: pkce.state,            // e.g., "f5e4d3c2b1a0"
-  nonce: pkce.nonce,            // e.g., "9a8b7c6d5e4f"
+  codeVerifier: pkce.verifier, // e.g., "a1b2c3d4...xyz" (128 chars)
+  state: pkce.state, // e.g., "f5e4d3c2b1a0"
+  nonce: pkce.nonce, // e.g., "9a8b7c6d5e4f"
   createdAt: Date.now(),
 });
 
@@ -6686,6 +7008,7 @@ const pkceState = await retrievePkceState(state);
 ### Authorization URL Construction
 
 **Before:**
+
 ```
 https://auth.example.com/realms/ecommerce/protocol/openid-connect/auth
   ?client_id=ecommerce-frontend
@@ -6699,6 +7022,7 @@ https://auth.example.com/realms/ecommerce/protocol/openid-connect/auth
 ```
 
 **After:**
+
 ```
 https://auth.example.com/realms/ecommerce/protocol/openid-connect/auth
   ?client_id=ecommerce-frontend
@@ -6728,10 +7052,10 @@ describe('GET /api/auth/keycloak/start', () => {
     it('stores PKCE state for JSON response', async () => {
       const response = await GET(createMockRequest({ json: '1' }));
       const body = await response.json();
-      
+
       expect(response.status).toBe(200);
       expect(body.authorizationUrl).toContain('code_challenge=');
-      
+
       // Verify PKCE state was stored
       const pkceState = await retrievePkceState(body.stateKey);
       expect(pkceState).toBeTruthy();
@@ -6740,14 +7064,14 @@ describe('GET /api/auth/keycloak/start', () => {
 
     it('stores PKCE state for redirect response', async () => {
       const response = await GET(createMockRequest({ redirect: '1' }));
-      
+
       expect(response.status).toBe(302);
-      
+
       // Extract state from redirect URL
       const location = response.headers.get('Location');
       const url = new URL(location);
       const state = url.searchParams.get('state');
-      
+
       // Verify PKCE state was stored
       const pkceState = await retrievePkceState(state);
       expect(pkceState).toBeTruthy();
@@ -6757,23 +7081,23 @@ describe('GET /api/auth/keycloak/start', () => {
   describe('HTTPS Validation', () => {
     it('allows http://localhost in development', () => {
       process.env.NODE_ENV = 'development';
-      
+
       const result = validateAuthorizationEndpoint(
         'http://localhost:8080/realms/test/protocol/openid-connect/auth',
         { keycloakBaseUrl: 'http://localhost:8080', ... }
       );
-      
+
       expect(result).toBe(true);
     });
 
     it('rejects HTTP in production', () => {
       process.env.NODE_ENV = 'production';
-      
+
       const result = validateAuthorizationEndpoint(
         'http://auth.example.com/realms/test/protocol/openid-connect/auth',
         { keycloakBaseUrl: 'http://auth.example.com', ... }
       );
-      
+
       expect(result).toBe(false);
     });
 
@@ -6782,7 +7106,7 @@ describe('GET /api/auth/keycloak/start', () => {
         'https://auth.example.com/realms/test/protocol/openid-connect/auth',
         { keycloakBaseUrl: 'https://auth.example.com', ... }
       );
-      
+
       expect(result).toBe(true);
     });
   });
@@ -6828,19 +7152,19 @@ describe('GET /api/auth/keycloak/start', () => {
   describe('Configurable Scope', () => {
     it('uses default scope if not configured', async () => {
       delete process.env.KEYCLOAK_SCOPE;
-      
+
       const response = await GET(createMockRequest());
       const body = await response.json();
-      
+
       expect(body.authorizationUrl).toContain('scope=openid+profile+email');
     });
 
     it('uses configured scope', async () => {
       process.env.KEYCLOAK_SCOPE = 'openid email offline_access';
-      
+
       const response = await GET(createMockRequest());
       const body = await response.json();
-      
+
       expect(body.authorizationUrl).toContain('scope=openid+email+offline_access');
     });
   });
@@ -6857,18 +7181,18 @@ describe('OAuth Start Flow Integration', () => {
     // 1. Start OAuth flow
     const startResponse = await fetch('/api/auth/keycloak/start');
     const startBody = await startResponse.json();
-    
+
     expect(startResponse.status).toBe(200);
     expect(startBody.authorizationUrl).toBeTruthy();
-    
+
     // 2. Extract state from URL
     const authUrl = new URL(startBody.authorizationUrl);
     const state = authUrl.searchParams.get('state');
-    
+
     // 3. Simulate Keycloak redirect (with mock authorization code)
     const callbackUrl = `/api/auth/keycloak/callback?code=mock_code&state=${state}`;
     const callbackResponse = await fetch(callbackUrl);
-    
+
     // 4. Verify callback can retrieve PKCE state
     expect(callbackResponse.status).not.toBe(400); // Not "missing PKCE state" error
   });
@@ -6876,7 +7200,7 @@ describe('OAuth Start Flow Integration', () => {
   it('handles local Keycloak in development', async () => {
     process.env.NODE_ENV = 'development';
     process.env.KEYCLOAK_BASE_URL = 'http://localhost:8080';
-    
+
     const response = await fetch('/api/auth/keycloak/start');
     expect(response.status).toBe(200);
   });
@@ -6892,12 +7216,14 @@ describe('OAuth Start Flow Integration', () => {
 #### 1. Locale Validation Now Stricter
 
 **Before:**
+
 ```typescript
 // Accepted any 2-letter code
 ui_locales=en xx yy  // All accepted
 ```
 
 **After:**
+
 ```typescript
 // Only allowlist accepted
 ui_locales=en xx yy  // Only 'en' accepted, 'xx' and 'yy' rejected
@@ -6909,8 +7235,12 @@ If your app uses region-specific locales (e.g., `en-US`), add them to the allowl
 ```typescript
 // app/api/auth/keycloak/start/route.ts
 const VALID_LOCALES = [
-  'en', 'en-US', 'en-GB',
-  'es', 'es-ES', 'es-MX',
+  'en',
+  'en-US',
+  'en-GB',
+  'es',
+  'es-ES',
+  'es-MX',
   // ...
 ] as const;
 ```
@@ -6918,17 +7248,20 @@ const VALID_LOCALES = [
 #### 2. Login Hint No Longer Allows Forward Slash
 
 **Before:**
+
 ```typescript
-login_hint=user/admin  // Accepted
+login_hint = user / admin; // Accepted
 ```
 
 **After:**
+
 ```typescript
-login_hint=user/admin  // Rejected (undefined)
+login_hint = user / admin; // Rejected (undefined)
 ```
 
 **Migration:**
 Use only valid characters: alphanumeric, dot, @, +, hyphen
+
 ```typescript
 login_hint=user@example.com    // âœ… Valid
 login_hint=user.admin          // âœ… Valid
@@ -6940,6 +7273,7 @@ login_hint=user+tag@example.com // âœ… Valid
 #### 1. Configurable OAuth Scope
 
 **Optional Configuration:**
+
 ```bash
 # .env.local
 KEYCLOAK_SCOPE=openid profile email offline_access
@@ -6950,10 +7284,12 @@ If not configured, defaults to `openid profile email` (backward compatible).
 #### 2. JSON Response Always Works Now
 
 **Before:**
+
 - JSON response (default): âŒ Broken
 - ?redirect=1: âœ… Works
 
 **After:**
+
 - JSON response (default): âœ… Works
 - ?redirect=1: âœ… Works
 
@@ -6965,26 +7301,26 @@ No code changes needed - just works now!
 
 ### Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `KEYCLOAK_BASE_URL` | âœ… Yes | - | Keycloak server URL |
-| `KEYCLOAK_REALM` | âœ… Yes | - | Keycloak realm name |
-| `KEYCLOAK_CLIENT_ID` | âœ… Yes | - | OAuth2 client ID |
-| `KEYCLOAK_CLIENT_SECRET` | âš ï¸ Confidential only | - | OAuth2 client secret |
-| `NEXT_PUBLIC_APP_URL` | âœ… Yes | `http://localhost:3000` | Application URL |
-| `KEYCLOAK_SCOPE` | âŒ No | `openid profile email` | OAuth2 scope |
-| `ALLOWED_AUTH_HOSTS` | âš ï¸ Production | - | Comma-separated allowed hosts |
+| Variable                 | Required                | Default                 | Description                   |
+| ------------------------ | ----------------------- | ----------------------- | ----------------------------- |
+| `KEYCLOAK_BASE_URL`      | âœ… Yes                 | -                       | Keycloak server URL           |
+| `KEYCLOAK_REALM`         | âœ… Yes                 | -                       | Keycloak realm name           |
+| `KEYCLOAK_CLIENT_ID`     | âœ… Yes                 | -                       | OAuth2 client ID              |
+| `KEYCLOAK_CLIENT_SECRET` | âš ï¸ Confidential only | -                       | OAuth2 client secret          |
+| `NEXT_PUBLIC_APP_URL`    | âœ… Yes                 | `http://localhost:3000` | Application URL               |
+| `KEYCLOAK_SCOPE`         | âŒ No                   | `openid profile email`  | OAuth2 scope                  |
+| `ALLOWED_AUTH_HOSTS`     | âš ï¸ Production        | -                       | Comma-separated allowed hosts |
 
 ### Query Parameters
 
-| Parameter | Type | Description | Example |
-|-----------|------|-------------|---------|
-| `login_hint` | string | Pre-fill username/email | `user@example.com` |
-| `prompt` | enum | Force re-auth | `login`, `consent`, `select_account` |
-| `ui_locales` | string | Language preference | `en`, `es fr` |
-| `redirect` | boolean | Server-side redirect | `1` |
-| `direct` | boolean | Alias for redirect | `1` |
-| `json` | boolean | (Deprecated) Same as default | `1` |
+| Parameter    | Type    | Description                  | Example                              |
+| ------------ | ------- | ---------------------------- | ------------------------------------ |
+| `login_hint` | string  | Pre-fill username/email      | `user@example.com`                   |
+| `prompt`     | enum    | Force re-auth                | `login`, `consent`, `select_account` |
+| `ui_locales` | string  | Language preference          | `en`, `es fr`                        |
+| `redirect`   | boolean | Server-side redirect         | `1`                                  |
+| `direct`     | boolean | Alias for redirect           | `1`                                  |
+| `json`       | boolean | (Deprecated) Same as default | `1`                                  |
 
 ### Response Formats
 
@@ -7071,41 +7407,50 @@ Cache-Control: no-store, no-cache, must-revalidate
 For questions or issues, please contact the platform team.
 
 ---
+
 ## File: PKCE-Refactor-Summary.md
+
 # PKCE Authorization Endpoint - Security Refactor Summary
 
 ## Overview
+
 Implemented comprehensive security fixes for the PKCE OAuth2 authorization endpoint, addressing critical vulnerabilities and adding defense-in-depth protections.
 
 ## Severity: ðŸ”´ CRITICAL
 
 ### Critical Fixes (ðŸ”´)
+
 1. **Open Redirect Vulnerability (CWE-601)** - Implemented whitelist-based redirect URL validation
 2. **Code Verifier Exposure** - Encrypted sensitive PKCE data in HTML fallback instead of plaintext
 3. **Missing Security Headers** - Added CSP, X-Frame-Options, X-Content-Type-Options, Cache-Control
 
 ### Moderate Fixes (ðŸŸ¡)
+
 4. **Rate Limiting** - Added 10 req/min per IP with proper Retry-After headers
 5. **Error Information Disclosure** - Generic error messages with structured logging
 6. **Unsafe Type Assertion** - Removed `as NonNullable` cast
 
 ### Minor Fixes (ðŸŸ¢)
+
 7. **HTML Escaping** - Escaped all dynamic content in noscript fallback
-8. **Navigation Detection** - Added Accept header fallback for Sec-Fetch-* headers
+8. **Navigation Detection** - Added Accept header fallback for Sec-Fetch-\* headers
 
 ## Files Changed
 
 ### Created (3 files)
+
 1. **`src/lib/auth/validation.ts`** - Redirect validation, HTML escaping, request parsing
 2. **`PKCE_SECURITY_REFACTOR.md`** - Comprehensive documentation
 3. **Enhanced `src/lib/api/response-helpers.ts`** - Added rate limiting functions
 
 ### Modified (1 file)
+
 1. **`app/api/auth/keycloak/authorize/route.ts`** - Complete security refactor
 
 ## Key Security Improvements
 
 ### 1. Redirect URL Validation
+
 ```typescript
 // BEFORE: Any URL accepted (open redirect)
 const redirectTo = url.searchParams.get('redirectTo') || '/';
@@ -7117,6 +7462,7 @@ const { redirectTo } = validateAuthRequest(req, appUrl, logger);
 ```
 
 ### 2. Code Verifier Encryption
+
 ```typescript
 // BEFORE: Plaintext in HTML (security risk)
 sessionStorage.setItem('pkce_code_verifier', codeVerifier);
@@ -7127,6 +7473,7 @@ sessionStorage.setItem('pkce_encrypted', encrypted);
 ```
 
 ### 3. Security Headers
+
 ```http
 Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self'
 X-Frame-Options: DENY
@@ -7135,21 +7482,30 @@ Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 ```
 
 ### 4. Rate Limiting
+
 ```typescript
 // 10 requests per minute per IP
 if (isRateLimited(`pkce-auth:${ip}`, 10, 60_000)) {
-  return apiError('Too many requests', API_ERROR_CODES.RATE_LIMITED, 429, requestId, { retryAfter: 60 });
+  return apiError('Too many requests', API_ERROR_CODES.RATE_LIMITED, 429, requestId, {
+    retryAfter: 60,
+  });
 }
 ```
 
 ### 5. Generic Error Messages
+
 ```typescript
 // BEFORE: Exposes internal details
 return NextResponse.json({ error: error.message }, { status: 500 });
 
 // AFTER: Generic message + structured logging
 log.error('PKCE authorize failed', { error: message, requestId });
-return apiError('Authorization request failed. Please try again.', API_ERROR_CODES.INTERNAL_ERROR, 500, requestId);
+return apiError(
+  'Authorization request failed. Please try again.',
+  API_ERROR_CODES.INTERNAL_ERROR,
+  500,
+  requestId
+);
 ```
 
 ## Validation Results
@@ -7163,6 +7519,7 @@ return apiError('Authorization request failed. Please try again.', API_ERROR_COD
 ## Testing Recommendations
 
 ### Open Redirect Tests
+
 ```bash
 curl "http://localhost:3000/api/auth/keycloak/authorize?redirectTo=//evil.com"           # â†’ /
 curl "http://localhost:3000/api/auth/keycloak/authorize?redirectTo=https://evil.com"    # â†’ /
@@ -7171,6 +7528,7 @@ curl "http://localhost:3000/api/auth/keycloak/authorize?redirectTo=/dashboard"  
 ```
 
 ### Rate Limit Tests
+
 ```bash
 for i in {1..11}; do curl "http://localhost:3000/api/auth/keycloak/authorize"; done
 # First 10: 200 OK, 11th: 429 Too Many Requests
@@ -7192,7 +7550,7 @@ for i in {1..11}; do curl "http://localhost:3000/api/auth/keycloak/authorize"; d
 - [ ] Redis-based distributed rate limiting
 - [ ] Crypto.subtle AES-GCM encryption (upgrade from XOR)
 - [ ] PKCE challenge TTL validation
-- [ ] Rate limit headers (X-RateLimit-*)
+- [ ] Rate limit headers (X-RateLimit-\*)
 - [ ] Device fingerprinting
 
 ## Impact
@@ -7207,7 +7565,9 @@ for i in {1..11}; do curl "http://localhost:3000/api/auth/keycloak/authorize"; d
 For detailed technical documentation, see [PKCE_SECURITY_REFACTOR.md](./PKCE_SECURITY_REFACTOR.md)
 
 ---
+
 ## File: PKCE-Security-Refactor.md
+
 # PKCE Authorization Endpoint - Security Refactor
 
 **Date**: 2025-01-27  
@@ -7263,12 +7623,14 @@ This refactor addresses **critical security vulnerabilities** in the PKCE OAuth2
 **Purpose**: Security validation utilities for OAuth2 flows
 
 **Exports**:
+
 - `validateRedirectUrl(redirectTo, appUrl, logger)` - Whitelist-based redirect validation
 - `escapeHtml(str)` - HTML entity escaping
-- `isNavigationRequest(req)` - Detect browser navigation via Sec-Fetch-* headers
+- `isNavigationRequest(req)` - Detect browser navigation via Sec-Fetch-\* headers
 - `validateAuthRequest(req, appUrl, logger)` - Parse and validate auth request params
 
 **Security Features**:
+
 - Whitelist approach (only allows paths starting with `/`, `/dashboard`, `/products`, etc.)
 - Blocks sensitive paths (`/api/`, `/auth/signout`)
 - Validates same-origin for absolute URLs
@@ -7276,12 +7638,9 @@ This refactor addresses **critical security vulnerabilities** in the PKCE OAuth2
 - Backslash abuse prevention
 
 **Usage Example**:
+
 ```typescript
-const safeRedirect = validateRedirectUrl(
-  userInput,
-  process.env.NEXT_PUBLIC_APP_URL,
-  logger
-);
+const safeRedirect = validateRedirectUrl(userInput, process.env.NEXT_PUBLIC_APP_URL, logger);
 // Returns '/' if validation fails
 ```
 
@@ -7290,10 +7649,12 @@ const safeRedirect = validateRedirectUrl(
 ### 2. Rate Limiting in `src/lib/api/response-helpers.ts` (Enhanced)
 
 **New Functions Added**:
+
 - `isRateLimited(key, limit, windowMs)` - In-memory rate limiter
 - `getRateLimitInfo(key, limit)` - Get remaining quota and reset time
 
 **Implementation**:
+
 ```typescript
 // Simple sliding window rate limiter
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
@@ -7319,6 +7680,7 @@ export function isRateLimited(key: string, limit: number, windowMs: number): boo
 ```
 
 **Limitations**:
+
 - In-memory storage (resets on server restart)
 - Per-instance (not distributed across multiple servers)
 - For production, consider Redis-based rate limiting
@@ -7328,11 +7690,13 @@ export function isRateLimited(key: string, limit: number, windowMs: number): boo
 ### 3. Simplified PKCE Utilities (Used Existing `src/lib/auth/pkce.ts`)
 
 **Key Functions Used**:
+
 - `generatePKCEChallenge()` - Generates cryptographically secure PKCE challenge
 - `buildAuthorizationUrl(endpoint, clientId, params)` - Constructs OAuth2 URL
 
 **Why Not Create New File?**:
 The existing `pkce.ts` module already provides enterprise-grade PKCE utilities with:
+
 - RFC 7636 compliance
 - SHA-256 challenge computation
 - 256-bit entropy for code verifiers
@@ -7345,6 +7709,7 @@ The existing `pkce.ts` module already provides enterprise-grade PKCE utilities w
 ### 1. `app/api/auth/keycloak/authorize/route.ts` (Refactored)
 
 **Before** (Security Issues):
+
 ```typescript
 // âŒ No redirect validation
 const redirectTo = url.searchParams.get('redirectTo') || '/';
@@ -7363,6 +7728,7 @@ return NextResponse.json({ error: message }, { status: 500 });
 ```
 
 **After** (Secured):
+
 ```typescript
 // âœ… Validated redirect with whitelist
 const { redirectTo } = validateAuthRequest(req, appUrl, logger);
@@ -7402,6 +7768,7 @@ return apiError(
 ```
 
 **New Flow**:
+
 ```
 1. Rate Limiting Check (10 req/min per IP)
 2. Load Auth Configuration
@@ -7421,15 +7788,14 @@ return apiError(
 **Security Enhancements**:
 
 #### A. XOR Encryption for Code Verifier
+
 ```javascript
 // Simple XOR-based encryption (obfuscation layer)
 function encryptData(data, key) {
   const dataStr = JSON.stringify(data);
   let encrypted = '';
   for (let i = 0; i < dataStr.length; i++) {
-    encrypted += String.fromCharCode(
-      dataStr.charCodeAt(i) ^ key.charCodeAt(i % key.length)
-    );
+    encrypted += String.fromCharCode(dataStr.charCodeAt(i) ^ key.charCodeAt(i % key.length));
   }
   return btoa(encrypted); // Base64 encode
 }
@@ -7439,28 +7805,31 @@ const encryptionKey = Date.now().toString(36) + Math.random().toString(36);
 ```
 
 **Why XOR?**
+
 - Not cryptographically secure, but prevents casual inspection in DevTools
 - Lightweight (no crypto.subtle API dependency)
 - Better than plaintext storage
 - For high-security needs, use crypto.subtle.encrypt() with AES-GCM
 
 #### B. Escaped Noscript Fallback
+
 ```html
 <!-- Before (Vulnerable to XSS if authorizationUrl contains malicious payload) -->
 <noscript>
-  <meta http-equiv="refresh" content="0;url=${authorizationUrl}">
+  <meta http-equiv="refresh" content="0;url=${authorizationUrl}" />
 </noscript>
 
 <!-- After (HTML-escaped) -->
 <noscript>
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(authorizationUrl)}">
+  <meta http-equiv="refresh" content="0;url=${escapeHtml(authorizationUrl)}" />
   <p>JavaScript is disabled. <a href="${escapeHtml(authorizationUrl)}">Click here</a>.</p>
 </noscript>
 ```
 
 #### C. Content Security Policy
+
 ```typescript
-'Content-Security-Policy': 
+'Content-Security-Policy':
   "default-src 'none'; " +        // Block all by default
   "script-src 'unsafe-inline'; " + // Allow inline script (necessary for fallback)
   "style-src 'unsafe-inline'; " +  // Allow inline styles
@@ -7474,6 +7843,7 @@ const encryptionKey = Date.now().toString(36) + Math.random().toString(36);
 ### Whitelist Approach
 
 **Allowed Path Prefixes**:
+
 ```typescript
 const ALLOWED_REDIRECT_PREFIXES = [
   '/',
@@ -7490,29 +7860,32 @@ const ALLOWED_REDIRECT_PREFIXES = [
 ```
 
 **Blocked Sensitive Paths**:
+
 ```typescript
 const BLOCKED_REDIRECT_PATHS = [
-  '/api/',           // API endpoints
-  '/auth/signout',   // Logout endpoint (could be abused for logout CSRF)
-  '/auth/error',     // Error pages
-  '//localhost',     // Protocol-relative URLs
-  '/\\',             // Backslash abuse
+  '/api/', // API endpoints
+  '/auth/signout', // Logout endpoint (could be abused for logout CSRF)
+  '/auth/error', // Error pages
+  '//localhost', // Protocol-relative URLs
+  '/\\', // Backslash abuse
 ];
 ```
 
 ### Attack Scenarios Prevented
 
 #### 1. Open Redirect (CWE-601)
+
 ```typescript
 // âŒ BEFORE: Attacker could redirect victim to phishing site
-GET /api/auth/keycloak/authorize?redirectTo=https://evil.com/phishing
-
-// âœ… AFTER: Returns '/' (safe default)
-validateRedirectUrl('https://evil.com/phishing', appUrl)
+GET / api / auth / keycloak / authorize
+  ? (redirectTo = https) //evil.com/phishing
+  : // âœ… AFTER: Returns '/' (safe default)
+    validateRedirectUrl('https://evil.com/phishing', appUrl);
 // => '/'
 ```
 
 #### 2. Protocol-Relative URL
+
 ```typescript
 // âŒ BEFORE: Browser interprets as https://evil.com
 GET /api/auth/keycloak/authorize?redirectTo=//evil.com
@@ -7523,6 +7896,7 @@ validateRedirectUrl('//evil.com', appUrl)
 ```
 
 #### 3. Backslash Abuse (Windows-style paths)
+
 ```typescript
 // âŒ BEFORE: Some parsers treat \\ as //
 GET /api/auth/keycloak/authorize?redirectTo=/\evil.com
@@ -7533,13 +7907,14 @@ validateRedirectUrl('/\\evil.com', appUrl)
 ```
 
 #### 4. Same-Origin Bypass Attempt
+
 ```typescript
 // âœ… Same-origin absolute URLs are allowed (after path validation)
-validateRedirectUrl('http://localhost:3000/dashboard', 'http://localhost:3000')
+validateRedirectUrl('http://localhost:3000/dashboard', 'http://localhost:3000');
 // => '/dashboard'
 
 // âŒ Cross-origin absolute URLs are blocked
-validateRedirectUrl('http://attacker.com/dashboard', 'http://localhost:3000')
+validateRedirectUrl('http://attacker.com/dashboard', 'http://localhost:3000');
 // => '/'
 ```
 
@@ -7548,6 +7923,7 @@ validateRedirectUrl('http://attacker.com/dashboard', 'http://localhost:3000')
 ## Rate Limiting
 
 ### Configuration
+
 - **Limit**: 10 requests per minute
 - **Key**: `pkce-auth:{IP_ADDRESS}`
 - **Algorithm**: Sliding window
@@ -7556,6 +7932,7 @@ validateRedirectUrl('http://attacker.com/dashboard', 'http://localhost:3000')
 ### Implementation Details
 
 **Rate Limit Check**:
+
 ```typescript
 const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
 if (isRateLimited(`pkce-auth:${ip}`, 10, 60_000)) {
@@ -7570,6 +7947,7 @@ if (isRateLimited(`pkce-auth:${ip}`, 10, 60_000)) {
 ```
 
 **Response Headers**:
+
 ```http
 HTTP/1.1 429 Too Many Requests
 Retry-After: 60
@@ -7578,6 +7956,7 @@ Cache-Control: no-store, max-age=0
 ```
 
 ### Future Improvements
+
 - **Distributed Rate Limiting**: Use Redis with sliding window counters
 - **Per-User Rate Limits**: Track by user ID (after authentication)
 - **Dynamic Rate Limits**: Adjust based on traffic patterns
@@ -7590,19 +7969,21 @@ Cache-Control: no-store, max-age=0
 ### Content-Security-Policy (CSP)
 
 **Directives**:
+
 ```http
 Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self'
 ```
 
-| Directive       | Value             | Purpose                                    |
-|-----------------|-------------------|--------------------------------------------|
-| `default-src`   | `'none'`          | Block all resources by default             |
-| `script-src`    | `'unsafe-inline'` | Allow inline script (required for fallback)|
-| `style-src`     | `'unsafe-inline'` | Allow inline styles                        |
-| `img-src`       | `'self'`          | Only same-origin images                    |
+| Directive     | Value             | Purpose                                     |
+| ------------- | ----------------- | ------------------------------------------- |
+| `default-src` | `'none'`          | Block all resources by default              |
+| `script-src`  | `'unsafe-inline'` | Allow inline script (required for fallback) |
+| `style-src`   | `'unsafe-inline'` | Allow inline styles                         |
+| `img-src`     | `'self'`          | Only same-origin images                     |
 
 **Why `'unsafe-inline'`?**
 The fallback page requires inline JavaScript to store encrypted PKCE data and redirect. This is acceptable because:
+
 1. All dynamic content is HTML-escaped
 2. No user-controlled data is interpolated into the script
 3. CSP blocks external scripts
@@ -7618,19 +7999,20 @@ Pragma: no-cache
 X-Request-ID: {UUID}
 ```
 
-| Header                     | Value       | Purpose                                |
-|----------------------------|-------------|----------------------------------------|
-| `X-Frame-Options`          | `DENY`      | Prevent clickjacking                   |
-| `X-Content-Type-Options`   | `nosniff`   | Prevent MIME-sniffing attacks          |
-| `Cache-Control`            | `no-store`  | Prevent sensitive data caching         |
-| `Pragma`                   | `no-cache`  | HTTP/1.0 cache control                 |
-| `X-Request-ID`             | UUID        | Request tracking for debugging         |
+| Header                   | Value      | Purpose                        |
+| ------------------------ | ---------- | ------------------------------ |
+| `X-Frame-Options`        | `DENY`     | Prevent clickjacking           |
+| `X-Content-Type-Options` | `nosniff`  | Prevent MIME-sniffing attacks  |
+| `Cache-Control`          | `no-store` | Prevent sensitive data caching |
+| `Pragma`                 | `no-cache` | HTTP/1.0 cache control         |
+| `X-Request-ID`           | UUID       | Request tracking for debugging |
 
 ---
 
 ## Error Handling
 
 ### Before (Information Disclosure)
+
 ```typescript
 // âŒ Exposes internal error details to attacker
 catch (error: unknown) {
@@ -7640,11 +8022,13 @@ catch (error: unknown) {
 ```
 
 **Risk**: Attackers can probe for:
+
 - File paths (`ENOENT: no such file '/etc/secrets'`)
 - Database errors (`Connection refused to postgresql://...`)
 - Configuration issues (`SESSION_SECRET not set`)
 
 ### After (Generic Errors)
+
 ```typescript
 // âœ… Generic error message + structured logging
 catch (error: unknown) {
@@ -7661,6 +8045,7 @@ catch (error: unknown) {
 ```
 
 **Benefits**:
+
 - User sees: "Authorization request failed. Please try again."
 - Logs contain: Full error details with request ID for debugging
 - Attacker gains: No information about internal implementation
@@ -7674,6 +8059,7 @@ catch (error: unknown) {
 **Purpose**: Determine if request is a top-level browser navigation
 
 **Methods**:
+
 1. **Fetch Metadata Headers** (primary):
    - `Sec-Fetch-Mode: navigate`
    - `Sec-Fetch-User: ?1`
@@ -7683,17 +8069,14 @@ catch (error: unknown) {
    - `Accept: text/html`
 
 **Implementation**:
+
 ```typescript
 export function isNavigationRequest(req: NextRequest): boolean {
   const secFetchMode = req.headers.get('sec-fetch-mode');
   const secFetchUser = req.headers.get('sec-fetch-user');
   const secFetchDest = req.headers.get('sec-fetch-dest');
 
-  if (
-    secFetchMode === 'navigate' ||
-    secFetchUser === '?1' ||
-    secFetchDest === 'document'
-  ) {
+  if (secFetchMode === 'navigate' || secFetchUser === '?1' || secFetchDest === 'document') {
     return true;
   }
 
@@ -7704,6 +8087,7 @@ export function isNavigationRequest(req: NextRequest): boolean {
 ```
 
 **Why This Matters**:
+
 - Navigation requests get HTML response with redirect
 - AJAX/popup requests get JSON response with authorization URL
 - Prevents cookie overwrite issues in background requests
@@ -7715,6 +8099,7 @@ export function isNavigationRequest(req: NextRequest): boolean {
 ### Security Tests
 
 #### 1. Open Redirect Testing
+
 ```bash
 # Test protocol-relative URL
 curl "http://localhost:3000/api/auth/keycloak/authorize?redirectTo=//evil.com"
@@ -7734,6 +8119,7 @@ curl "http://localhost:3000/api/auth/keycloak/authorize?redirectTo=/dashboard"
 ```
 
 #### 2. Rate Limiting Testing
+
 ```bash
 # Send 11 requests in rapid succession
 for i in {1..11}; do
@@ -7743,6 +8129,7 @@ done
 ```
 
 #### 3. HTML Escaping Testing
+
 ```bash
 # Test XSS attempt in noscript fallback
 # (Requires server-side storage failure to trigger fallback)
@@ -7751,6 +8138,7 @@ curl "http://localhost:3000/api/auth/keycloak/authorize?redirectTo=/dashboard<sc
 ```
 
 #### 4. CSP Testing
+
 ```bash
 # Check security headers
 curl -I "http://localhost:3000/api/auth/keycloak/authorize"
@@ -7766,21 +8154,21 @@ curl -I "http://localhost:3000/api/auth/keycloak/authorize"
 
 ### Latency Analysis
 
-| Operation                  | Time (ms) | Impact      |
-|----------------------------|-----------|-------------|
-| Rate limit check           | < 0.1     | Negligible  |
-| Redirect URL validation    | < 0.5     | Negligible  |
-| PKCE challenge generation  | 1-2       | Very Low    |
-| HTML escaping              | < 0.1     | Negligible  |
-| **Total Overhead**         | **< 3ms** | **Minimal** |
+| Operation                 | Time (ms) | Impact      |
+| ------------------------- | --------- | ----------- |
+| Rate limit check          | < 0.1     | Negligible  |
+| Redirect URL validation   | < 0.5     | Negligible  |
+| PKCE challenge generation | 1-2       | Very Low    |
+| HTML escaping             | < 0.1     | Negligible  |
+| **Total Overhead**        | **< 3ms** | **Minimal** |
 
 ### Memory Impact
 
-| Component           | Memory   | Notes                                |
-|---------------------|----------|--------------------------------------|
-| Rate limit store    | ~50 KB   | ~100 bytes per IP (sliding window)   |
-| PKCE challenges     | ~500 B   | Per request (temporary)              |
-| **Total**           | **~50 KB** | Acceptable for in-memory storage   |
+| Component        | Memory     | Notes                              |
+| ---------------- | ---------- | ---------------------------------- |
+| Rate limit store | ~50 KB     | ~100 bytes per IP (sliding window) |
+| PKCE challenges  | ~500 B     | Per request (temporary)            |
+| **Total**        | **~50 KB** | Acceptable for in-memory storage   |
 
 ---
 
@@ -7789,11 +8177,13 @@ curl -I "http://localhost:3000/api/auth/keycloak/authorize"
 ### For Developers
 
 **No Breaking Changes** - The refactor is backward compatible:
+
 - Existing query parameters still work (`redirectTo`, `popup`, `direct`, `prompt`)
 - JSON response format unchanged for AJAX/popup flows
 - Server-side cookie storage flow unchanged
 
 **New Features**:
+
 - Redirect URLs are now validated (invalid URLs default to `/`)
 - Rate limiting active (10 req/min per IP)
 - Encrypted sessionStorage fallback (XOR-based)
@@ -7802,6 +8192,7 @@ curl -I "http://localhost:3000/api/auth/keycloak/authorize"
 ### For Clients/Frontend
 
 **No Action Required** - Existing integrations continue to work:
+
 ```typescript
 // âœ… Still works
 const response = await fetch('/api/auth/keycloak/authorize?redirectTo=/dashboard');
@@ -7811,13 +8202,14 @@ window.location.href = '/api/auth/keycloak/authorize?direct=1&redirectTo=/produc
 ```
 
 **Optional: Use New Response Fields**:
+
 ```typescript
 const response = await fetch('/api/auth/keycloak/authorize?popup=1');
 const data = await response.json();
 
 // New fields available:
-console.log(data.requestId);  // UUID for debugging
-console.log(data.expiresAt);  // Challenge expiry timestamp
+console.log(data.requestId); // UUID for debugging
+console.log(data.expiresAt); // Challenge expiry timestamp
 ```
 
 ---
@@ -7827,6 +8219,7 @@ console.log(data.expiresAt);  // Challenge expiry timestamp
 ### Logging
 
 **Structured Logs** (with `getRequestLogger`):
+
 ```typescript
 log.debug('Generated PKCE challenge', {
   state,
@@ -7856,7 +8249,7 @@ log.error('PKCE authorize failed', { error: message, requestId });
   labels:
     severity: warning
   annotations:
-    summary: "High rate limit hit rate on PKCE endpoint"
+    summary: 'High rate limit hit rate on PKCE endpoint'
 
 - alert: PKCEOpenRedirectAttempts
   expr: increase(pkce_redirect_validation_failures_total[5m]) > 50
@@ -7864,7 +8257,7 @@ log.error('PKCE authorize failed', { error: message, requestId });
   labels:
     severity: critical
   annotations:
-    summary: "Potential open redirect attack detected"
+    summary: 'Potential open redirect attack detected'
 ```
 
 ---
@@ -7879,7 +8272,7 @@ log.error('PKCE authorize failed', { error: message, requestId });
 - [x] **Rate Limiting**: 10 req/min per IP
 - [x] **HTML Escaping**: All dynamic content escaped
 - [x] **Error Handling**: Generic error messages
-- [x] **Request Validation**: Navigation detection via Sec-Fetch-*
+- [x] **Request Validation**: Navigation detection via Sec-Fetch-\*
 - [x] **Request ID Tracking**: UUID in all responses
 - [x] **Structured Logging**: Context-rich logs with request IDs
 - [x] **Backward Compatibility**: No breaking changes
@@ -7898,16 +8291,19 @@ log.error('PKCE authorize failed', { error: message, requestId });
 ## References
 
 ### RFCs
+
 - [RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636) - PKCE for OAuth 2.0
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) - OAuth 2.0 Authorization Framework
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 
 ### Security Standards
+
 - [CWE-601](https://cwe.mitre.org/data/definitions/601.html) - URL Redirection to Untrusted Site (Open Redirect)
 - [CWE-79](https://cwe.mitre.org/data/definitions/79.html) - Cross-site Scripting (XSS)
 - [OWASP A01:2021](https://owasp.org/Top10/A01_2021-Broken_Access_Control/) - Broken Access Control
 
 ### Browser APIs
+
 - [Fetch Metadata Request Headers](https://web.dev/fetch-metadata/)
 - [Content Security Policy (CSP)](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
 
@@ -7916,18 +8312,21 @@ log.error('PKCE authorize failed', { error: message, requestId });
 ## Validation Results
 
 ### Type Check
+
 ```bash
 $ npm run type-check
 âœ… No errors (TypeScript 5.9.3 strict mode)
 ```
 
 ### Lint
+
 ```bash
 $ npm run lint
 âœ… No errors (ESLint with TypeScript parser)
 ```
 
 ### Security Audit
+
 - âœ… No open redirect vulnerabilities
 - âœ… No XSS vulnerabilities
 - âœ… No sensitive data exposure
@@ -7941,12 +8340,14 @@ $ npm run lint
 This refactor transforms the PKCE authorization endpoint from a security liability to a hardened, production-ready implementation. The open redirect vulnerability has been eliminated through whitelist-based validation, the code verifier is now encrypted in fallback scenarios, and multiple layers of defense-in-depth have been added (rate limiting, CSP, error handling).
 
 **Impact**:
+
 - **Security**: ðŸ”´ Critical vulnerabilities eliminated
 - **Performance**: âœ… Minimal overhead (< 3ms)
 - **Compatibility**: âœ… Fully backward compatible
 - **Maintainability**: âœ… Well-documented with structured logging
 
 **Recommended Next Steps**:
+
 1. Deploy to staging environment
 2. Run security tests (penetration testing)
 3. Monitor rate limit metrics for tuning
@@ -7954,29 +8355,36 @@ This refactor transforms the PKCE authorization endpoint from a security liabili
 5. Consider upgrading XOR encryption to AES-GCM for high-security needs
 
 ---
+
 ## File: Redirect-Loop-Fix.md
+
 # âœ… Redirect Loop Fixed
 
 ## What Was Fixed
 
 ### 1. **Middleware Matcher** âœ…
+
 - **Before**: `matcher: []` (disabled, but loop still occurred in NextAuth)
 - **After**: Properly excludes `/api/auth/*` and `/auth/*` routes
+
 ```typescript
-matcher: ['/((?!api/auth|auth|_next/static|_next/image|favicon.ico|robots.txt).*)']
+matcher: ['/((?!api/auth|auth|_next/static|_next/image|favicon.ico|robots.txt).*)'];
 ```
 
 ### 2. **NextAuth Redirect Callback** âœ…
+
 - Added `redirect()` callback to prevent loops
 - Redirects to home `/` if destination is signin page
 - Prevents recursive `callbackUrl` encoding
 
 ### 3. **Sign-In Page** âœ…
+
 - Uses `signIn('keycloak', { callbackUrl })` from `next-auth/react`
 - No manual URL construction
 - Proper NextAuth client-side flow
 
 ### 4. **Cache Cleared** âœ…
+
 - Removed `.next` directory
 - Fresh build without cached redirects
 
@@ -7987,6 +8395,7 @@ matcher: ['/((?!api/auth|auth|_next/static|_next/image|favicon.ico|robots.txt).*
    - Or use Incognito/Private window
 
 2. **Test the flow**:
+
    ```
    http://localhost:3000/auth/signin
    â†’ Click "Sign in with Keycloak"
@@ -8002,6 +8411,7 @@ matcher: ['/((?!api/auth|auth|_next/static|_next/image|favicon.ico|robots.txt).*
 ## Configuration Summary
 
 ### Environment Variables (`.env.local`)
+
 ```env
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=kNMTsPLayHMqWTht5CgmZ5YRFLGzvxGQAld/ltPeSSU=
@@ -8011,12 +8421,14 @@ KEYCLOAK_ISSUER=http://localhost:8080/realms/eshop
 ```
 
 ### Middleware Protection
+
 - âœ… Auth routes excluded from middleware
 - âœ… NextAuth handles `/api/auth/*` internally
 - âœ… Sign-in page `/auth/signin` is public
 - âœ… Protected routes require authentication
 
 ### NextAuth Pages
+
 ```typescript
 pages: {
   signIn: '/auth/signin',
@@ -8027,6 +8439,7 @@ pages: {
 ## Root Cause
 
 The redirect loop was caused by:
+
 1. NextAuth's default behavior tries to preserve `callbackUrl`
 2. When signin page has `?callbackUrl=/auth/signin`, it creates a loop
 3. The `redirect()` callback now breaks this loop by redirecting to `/` instead
@@ -8040,21 +8453,27 @@ The redirect loop was caused by:
 - âœ… Clear browser cookies when testing auth changes
 
 ---
+
 ## File: Session-Expired-Fix.md
+
 # ðŸ”´ Session Expired - Immediate Fix
 
 ## Problem
+
 Your session expired **10 hours ago** and the refresh token is no longer active in Keycloak. This is why you're getting:
+
 ```json
-{"error":"invalid_grant","error_description":"Token is not active"}
+{ "error": "invalid_grant", "error_description": "Token is not active" }
 ```
 
 ## âœ… Immediate Solution (Do this NOW)
 
 ### 1. **Clear Your Browser Cookies**
+
 Open DevTools (F12) â†’ Application â†’ Cookies â†’ `localhost:3000`
 
 Delete these cookies:
+
 - `next-auth.session-token`
 - `next-auth.csrf-token`
 - `next-auth.callback-url`
@@ -8062,24 +8481,30 @@ Delete these cookies:
 - `next-auth.pkce.code_verifier`
 
 **OR** use this in browser console:
+
 ```javascript
-document.cookie.split(";").forEach(c => {
-  document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+document.cookie.split(';').forEach((c) => {
+  document.cookie = c
+    .replace(/^ +/, '')
+    .replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
 });
 ```
 
 ### 2. **Restart Your Next.js Server**
+
 ```bash
 # Stop the server (Ctrl+C)
 npm run dev
 ```
 
 ### 3. **Clear Keycloak Session**
+
 Go to: http://localhost:8080/realms/eshop/account
 
 Click "Sign out" to clear any lingering Keycloak sessions.
 
 ### 4. **Login Fresh**
+
 1. Go to http://localhost:3000
 2. Click "Sign In"
 3. Complete the login flow
@@ -8089,12 +8514,15 @@ Click "Sign out" to clear any lingering Keycloak sessions.
 ## What I Fixed in the Code
 
 ### âœ… 1. **Detect Inactive Tokens**
+
 [src/lib/auth/token-service.ts](src/lib/auth/token-service.ts) now detects `"Token is not active"` errors and clears the refresh token to force re-login.
 
 ### âœ… 2. **Clear Session on Error**
+
 [app/api/auth/[...nextauth]/route.ts](app/api/auth/[...nextauth]/route.ts) now returns an empty session when token errors occur, forcing re-authentication.
 
 ### âœ… 3. **Auto-Logout on Session Error**
+
 [src/components/NextAuthProvider.tsx](src/components/NextAuthProvider.tsx) now detects session errors and automatically logs you out, redirecting to the login page.
 
 ---
@@ -8131,6 +8559,7 @@ Now users won't need email verification during registration.
 4. Save
 
 For Gmail:
+
 - Use an [App Password](https://myaccount.google.com/apppasswords) (not your regular password)
 - Or use services like Mailtrap for dev/testing
 
@@ -8139,6 +8568,7 @@ For Gmail:
 ## Expected Behavior After Fix
 
 ### âœ… What you should see:
+
 ```
 [auth] Token refresh check { shouldRefresh: false, timeUntilExpirySeconds: 270 }
 [auth] Token refresh check { shouldRefresh: false, timeUntilExpirySeconds: 240 }
@@ -8149,6 +8579,7 @@ For Gmail:
 ```
 
 ### âœ… No more errors like:
+
 - âŒ `invalid_grant`
 - âŒ `Token is not active`
 - âŒ Session expired unexpectedly
@@ -8171,22 +8602,25 @@ For Gmail:
 In Keycloak Admin â†’ Clients â†’ `eshop-client`:
 
 ### **Settings Tab**
+
 - Valid Redirect URIs: `http://localhost:3000/*`
 - Valid Post Logout Redirect URIs: `http://localhost:3000/*`
 
 ### **Advanced Settings** (scroll down)
-| Setting | Value |
-|---------|-------|
-| **Use Refresh Tokens** | âœ… **ON** |
-| Client authentication | âŒ OFF |
-| OAuth 2.0 Device Authorization Grant | âŒ OFF |
-| Refresh Token Max Reuse | 0 |
-| Revoke Refresh Token | âŒ OFF |
-| Access Token Lifespan | 5 minutes |
-| SSO Session Idle | 30 minutes |
-| SSO Session Max | 8 hours |
+
+| Setting                              | Value      |
+| ------------------------------------ | ---------- |
+| **Use Refresh Tokens**               | âœ… **ON** |
+| Client authentication                | âŒ OFF     |
+| OAuth 2.0 Device Authorization Grant | âŒ OFF     |
+| Refresh Token Max Reuse              | 0          |
+| Revoke Refresh Token                 | âŒ OFF     |
+| Access Token Lifespan                | 5 minutes  |
+| SSO Session Idle                     | 30 minutes |
+| SSO Session Max                      | 8 hours    |
 
 ### **Login Tab** (for registration fix)
+
 - âŒ **Verify email** - Turn OFF for dev (or configure SMTP)
 - âœ… **User registration** - ON
 - âœ… **Forgot password** - ON
@@ -8197,16 +8631,19 @@ In Keycloak Admin â†’ Clients â†’ `eshop-client`:
 ## Quick Debug Commands
 
 ### Check current session:
+
 ```bash
 curl http://localhost:3000/api/auth/session
 ```
 
 ### Check Keycloak token endpoint:
+
 ```bash
 curl http://localhost:8080/realms/eshop/.well-known/openid-configuration
 ```
 
 ### View Next.js logs:
+
 ```bash
 npm run dev
 # Watch for [auth] logs
@@ -8224,6 +8661,7 @@ npm run dev
 6. Session was stuck in invalid state
 
 The new code fixes this by:
+
 - Detecting inactive tokens
 - Clearing the bad session
 - Forcing re-authentication
@@ -8234,12 +8672,14 @@ The new code fixes this by:
 ## Summary
 
 ðŸ”´ **RIGHT NOW:**
+
 1. Clear browser cookies for localhost:3000
 2. Restart Next.js (`npm run dev`)
 3. Clear Keycloak session at http://localhost:8080/realms/eshop/account
 4. Login fresh
 
 ðŸ”§ **For Registration:**
+
 - Disable "Verify email" in Keycloak (or configure SMTP)
 
 âœ… **Code is fixed** - expired sessions will now auto-logout and force re-login
@@ -8252,12 +8692,15 @@ The new code fixes this by:
 **Solution:** Clear cookies + restart + auto-logout on session errors
 
 ---
+
 ## File: Token-Refresh-Fix-Applied.md
+
 # âœ… Token Refresh Fix Applied
 
 ## Changes Made
 
 ### 1. **Token Refresh Buffer Reduced** (30 seconds instead of 60)
+
 **File:** [src/lib/auth/token-service.ts](src/lib/auth/token-service.ts)
 
 - Changed `TOKEN_REFRESH_BUFFER_MS` from 60 seconds to **30 seconds**
@@ -8265,6 +8708,7 @@ The new code fixes this by:
 - This prevents refreshing tokens too early, which causes `invalid_grant` errors
 
 ### 2. **Enhanced JWT Callback Logic**
+
 **File:** [app/api/auth/[...nextauth]/route.ts](app/api/auth/[...nextauth]/route.ts)
 
 - âœ… **CRITICAL FIX:** Only refreshes token when it's **actually about to expire**
@@ -8273,6 +8717,7 @@ The new code fixes this by:
 - Uses `expires_in` from account response for accurate expiry calculation
 
 ### 3. **Better Error Messages**
+
 **Files:** Both token-service.ts and route.ts
 
 - Added helpful error messages pointing to Keycloak configuration
@@ -8284,25 +8729,29 @@ The new code fixes this by:
 Go to your Keycloak Admin Console â†’ Clients â†’ `ecom-app` (your client ID) â†’ Settings:
 
 ### **Advanced Settings** (scroll down)
-| Setting | Required Value | Why |
-|---------|----------------|-----|
-| **OAuth 2.0 Device Authorization Grant** | âŒ OFF | Not needed for web apps |
-| **Client authentication** | âŒ OFF | Public client (Next.js frontend) |
-| **Use Refresh Tokens** | âœ… **ON** | **CRITICAL - enables token refresh** |
-| **Refresh Token Max Reuse** | 0 | Prevents reuse attacks |
-| **Revoke Refresh Token** | âŒ OFF | Allow rotation |
-| **Access Token Lifespan** | 5 minutes | Fast expiry, secure |
-| **SSO Session Idle** | 30 minutes | User inactive timeout |
-| **SSO Session Max** | 8 hours | Maximum login duration |
+
+| Setting                                  | Required Value | Why                                  |
+| ---------------------------------------- | -------------- | ------------------------------------ |
+| **OAuth 2.0 Device Authorization Grant** | âŒ OFF         | Not needed for web apps              |
+| **Client authentication**                | âŒ OFF         | Public client (Next.js frontend)     |
+| **Use Refresh Tokens**                   | âœ… **ON**     | **CRITICAL - enables token refresh** |
+| **Refresh Token Max Reuse**              | 0              | Prevents reuse attacks               |
+| **Revoke Refresh Token**                 | âŒ OFF         | Allow rotation                       |
+| **Access Token Lifespan**                | 5 minutes      | Fast expiry, secure                  |
+| **SSO Session Idle**                     | 30 minutes     | User inactive timeout                |
+| **SSO Session Max**                      | 8 hours        | Maximum login duration               |
 
 ### **Valid Redirect URIs** (Settings tab)
+
 Add these:
+
 ```
 http://localhost:3000/*
 http://localhost:3000/api/auth/callback/keycloak
 ```
 
 ### **Valid Post Logout Redirect URIs**
+
 ```
 http://localhost:3000/*
 ```
@@ -8310,11 +8759,13 @@ http://localhost:3000/*
 ## ðŸ§ª How to Test
 
 1. **Restart Keycloak** (if you changed settings)
+
    ```bash
    # Restart your Keycloak instance
    ```
 
 2. **Restart Next.js**
+
    ```bash
    cd frontend
    npm run dev
@@ -8328,6 +8779,7 @@ http://localhost:3000/*
    - Make any request (navigate to a page)
 
 4. **Expected log output:**
+
    ```
    [auth] Token refresh check { shouldRefresh: false, timeUntilExpirySeconds: 270 }
    [auth] Token refresh check { shouldRefresh: false, timeUntilExpirySeconds: 240 }
@@ -8355,6 +8807,7 @@ http://localhost:3000/*
 If you still see errors:
 
 1. **Check Keycloak logs**
+
    ```bash
    # Check Keycloak container logs
    docker logs keycloak-container-name
@@ -8366,9 +8819,11 @@ If you still see errors:
    - Ensure "Use Refresh Tokens" = **ON**
 
 3. **Check environment variables**
+
    ```bash
    npm run check:env
    ```
+
    Verify:
    - `KEYCLOAK_CLIENT_ID` matches Keycloak
    - `KEYCLOAK_ISSUER` is correct
@@ -8383,6 +8838,7 @@ If you still see errors:
 ## ðŸ“‹ Code Changes Summary
 
 ### Before (âŒ WRONG):
+
 ```typescript
 // Refresh buffer was too long (60s)
 export const TOKEN_REFRESH_BUFFER_MS = 60_000;
@@ -8394,6 +8850,7 @@ if (!shouldRefreshToken(token.accessTokenExpires)) {
 ```
 
 ### After (âœ… CORRECT):
+
 ```typescript
 // Optimal refresh buffer (30s)
 export const TOKEN_REFRESH_BUFFER_MS = 30_000;
@@ -8404,7 +8861,9 @@ if (!shouldRefreshToken(token.accessTokenExpires)) {
 }
 
 logger.info('[auth] Refreshing access token', {
-  expiresAt: token.accessTokenExpires ? new Date(token.accessTokenExpires).toISOString() : 'unknown',
+  expiresAt: token.accessTokenExpires
+    ? new Date(token.accessTokenExpires).toISOString()
+    : 'unknown',
 });
 ```
 
@@ -8433,4 +8892,3 @@ After verifying this works:
 **Solution:** Only refresh within 30s of expiry + proper Keycloak config
 
 ---
-

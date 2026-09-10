@@ -121,69 +121,17 @@ function buildRemotePatterns(): RemotePattern[] {
 }
 
 // ============================================================
-// 3. SECURITY HEADERS
+// 3. MAIN CONFIG
 // ============================================================
-
-function buildSecurityHeaders(): { key: string; value: string }[] {
-  // ── Auth Provider Origins ────────────────────────────────────────────────────
-  // Both the server-side KEYCLOAK_ISSUER (no /realms path) and
-  // the public-facing URL must be permitted so the OAuth redirect
-  // POST and connect-src network calls succeed.
-  const keycloakBase =
-    process.env.KEYCLOAK_BASE_URL ||
-    (process.env.KEYCLOAK_ISSUER ? new URL(process.env.KEYCLOAK_ISSUER).origin : '') ||
-    process.env.NEXT_PUBLIC_KEYCLOAK_URL ||
-    'http://localhost:8080';
-
-  const baseHeaders = [
-    { key: 'X-DNS-Prefetch-Control', value: 'on' },
-    { key: 'X-Content-Type-Options', value: 'nosniff' },
-    { key: 'X-Frame-Options', value: 'DENY' },
-    { key: 'X-Permitted-Cross-Domain-Policies', value: 'none' },
-    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-    {
-      key: 'Permissions-Policy',
-      value: 'camera=(), microphone=(), geolocation=()',
-    },
-    // COOP: 'unsafe-none' in dev allows the Keycloak OAuth redirect flow to
-    // complete across origins. In production tighten to 'same-origin-allow-popups'
-    // if you use OAuth popups, or 'same-origin' if redirect-only.
-    {
-      key: 'Cross-Origin-Opener-Policy',
-      value: isProd ? 'same-origin-allow-popups' : 'unsafe-none',
-    },
-    { key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' },
-    {
-      key: 'Content-Security-Policy',
-      value: `
-        default-src 'self';
-        script-src 'self' 'unsafe-inline' 'unsafe-eval';
-        style-src 'self' 'unsafe-inline';
-        img-src 'self' data: https: http:;
-        font-src 'self' data: https:;
-        connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || ''} ${keycloakBase} ws: wss: http: https:;
-        frame-ancestors 'none';
-        base-uri 'self';
-        form-action 'self' ${keycloakBase};
-      `
-        .replace(/\s{2,}/g, ' ')
-        .trim(),
-    },
-  ];
-
-  const productionOnlyHeaders = [
-    {
-      key: 'Strict-Transport-Security',
-      value: 'max-age=63072000; includeSubDomains; preload',
-    },
-  ];
-
-  return isProd ? [...baseHeaders, ...productionOnlyHeaders] : baseHeaders;
-}
-
-// ============================================================
-// 4. MAIN CONFIG
-// ============================================================
+//
+// NOTE — security headers (CSP, HSTS, X-Frame-Options, Permissions-Policy, etc.)
+// are intentionally NOT set here. They previously duplicated — and disagreed
+// with — the per-request nonce-based CSP that proxy.ts + shared/config/
+// security-headers.ts already apply to every document/API route. Two
+// independently-authored CSPs on the same response is a real bypass risk
+// (the static version here always allowed 'unsafe-inline'/'unsafe-eval').
+// proxy.ts's matcher covers everything except pure static assets, which don't
+// need CSP anyway, so it is the single source of truth for these headers.
 
 const nextConfig: NextConfig = {
   // ── Core ────────────────────────────────────────────────
@@ -222,8 +170,10 @@ const nextConfig: NextConfig = {
   // ── Routing ─────────────────────────────────────────────
   async redirects() {
     return [
-      { source: '/admin', destination: '/admin/dashboard', permanent: false },
-      { source: '/customer', destination: '/customer/dashboard', permanent: false },
+      // No dedicated /customer/dashboard page exists — /dashboard is the
+      // real role-based redirect hub (app/(customer)/dashboard/page.tsx)
+      // and is what customers should land on.
+      { source: '/customer', destination: '/dashboard', permanent: false },
       { source: '/seller', destination: '/seller/dashboard', permanent: false },
       // Public marketing CTAs (see OnboardingLandingCTA) link to /register; the actual
       // Keycloak registration hand-off lives at /auth/register (see AUTH_ROUTE_PREFIXES
@@ -246,36 +196,46 @@ const nextConfig: NextConfig = {
     };
   },
 
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: buildSecurityHeaders(),
-      },
-      // Cache static assets aggressively
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      // Never cache API routes
-      {
-        source: '/api/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate',
-          },
-        ],
-      },
-    ];
-  },
+  /**
+   * No global Cache-Control rules — deliberately. Please do not re-add them.
+   *
+   * Headers declared here are applied by the routing layer and **override**
+   * whatever a route handler sets for the same key. That was verified against a
+   * running server: `/api/debug/env` sets
+   * `no-store, no-cache, must-revalidate, proxy-revalidate`, yet the response
+   * carried the shorter value this file used to declare. Two rules previously
+   * lived here, and both were harmful:
+   *
+   * 1. `/_next/static/:path*` → `public, max-age=31536000, immutable`
+   *
+   *    Redundant in production: Next.js already serves exactly this for
+   *    `/_next/static/*`, which is safe precisely because those filenames are
+   *    content-hashed. Actively harmful in development, where Next deliberately
+   *    does NOT send immutable caching — dev chunk names are not stable, so a
+   *    year-long immutable directive makes the browser serve stale chunks from
+   *    disk cache and ignore rebuilds. It was caching the Turbopack HMR client
+   *    itself. Next 16.3 added a startup warning for exactly this
+   *    ("Setting a custom Cache-Control header can break Next.js development
+   *    behavior"), which is what surfaced it.
+   *
+   * 2. `/api/:path*` → `no-store, no-cache, must-revalidate`
+   *
+   *    A blanket private-cache directive across a heterogeneous API surface.
+   *    It silently defeated the CDN caching that `/api/search`
+   *    (`s-maxage=60`) and `/api/search/suggest` (`s-maxage=300`) explicitly
+   *    ask for, so neither had ever actually been cacheable at the edge.
+   *
+   * Cache policy belongs with the response, since only the handler knows
+   * whether its payload is public or per-user. `shared/api/response.ts` applies
+   * `no-store` to every route by default and lets a route opt into caching
+   * explicitly; routes outside that toolkit set their own. That keeps one
+   * source of truth and makes the secure default impossible to silently lose.
+   */
 
-  // ── Webpack ─────────────────────────────────────────────
+  // ── Turbopack (Next.js 16 default bundler) ────────────
+  turbopack: {},
+
+  // ── Webpack (Compatibility fallback) ────────────────────
   webpack(config, { dev, isServer }) {
     // SVG as React components
     config.module?.rules?.push({

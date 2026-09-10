@@ -48,7 +48,7 @@ export const SellerHeaderActions = memo<SellerHeaderActionsProps>(
               disabled={isLocalePending}
               className={cn(
                 HEADER_ACTION_BUTTON_CLASS,
-                'border-slate-200 dark:border-slate-800 bg-transparent text-slate-700 dark:text-slate-350 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/40 text-xs font-semibold'
+                'border-slate-200 dark:border-slate-800 bg-transparent text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/40 text-xs font-semibold'
               )}
               aria-label={`${currentLocaleName} — language selector`}
               aria-busy={isLocalePending ? true : undefined}

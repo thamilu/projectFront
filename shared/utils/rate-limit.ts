@@ -3,6 +3,8 @@
 // env vars and packages are available, it will use the distributed limiter.
 // Otherwise a best-effort in-memory sliding window is used (not for multi-instance production).
 
+import { env } from '@/env';
+
 type RateLimitResult = {
   success: boolean;
   remaining: number;
@@ -20,9 +22,9 @@ async function initUpstashIfNeeded() {
   if (upstash !== undefined) return; // already attempted
 
   try {
-    const url = process.env.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_URL;
-    const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.UPSTASH_REDIS_TOKEN;
-    if (!url || !token) {
+    const url = env.UPSTASH_REDIS_REST_URL;
+    const token = env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token || url.includes('placeholder') || token.includes('placeholder')) {
       upstash = null;
       return;
     }
@@ -35,11 +37,18 @@ async function initUpstashIfNeeded() {
     // Use unknown and narrow where necessary to avoid `any` usage
     const redis = (Redis as unknown as { fromEnv?: () => unknown }).fromEnv
       ? (Redis as unknown as { fromEnv: () => unknown }).fromEnv()
-      : new (Redis as unknown as { new (opts: { url: string; token: string }): unknown })({ url, token });
+      : new (Redis as unknown as { new (opts: { url: string; token: string }): unknown })({
+          url,
+          token,
+        });
 
-    upstash = new (Ratelimit as unknown as { new (opts: { redis: unknown; limiter: unknown; analytics?: boolean }): unknown })({
+    upstash = new (Ratelimit as unknown as {
+      new (opts: { redis: unknown; limiter: unknown; analytics?: boolean }): unknown;
+    })({
       redis,
-      limiter: (Ratelimit as unknown as { slidingWindow: (n: number, per: string) => unknown }).slidingWindow(MEM_MAX, '1 m'),
+      limiter: (
+        Ratelimit as unknown as { slidingWindow: (n: number, per: string) => unknown }
+      ).slidingWindow(MEM_MAX, '1 m'),
       analytics: true,
     });
   } catch {
@@ -74,7 +83,11 @@ export async function limit(key: string): Promise<RateLimitResult> {
 
   entry.count++;
   memStore.set(key, entry);
-  return { success: entry.count <= MEM_MAX, remaining: Math.max(0, MEM_MAX - entry.count), reset: entry.resetAt };
+  return {
+    success: entry.count <= MEM_MAX,
+    remaining: Math.max(0, MEM_MAX - entry.count),
+    reset: entry.resetAt,
+  };
 }
 
 export default { limit };

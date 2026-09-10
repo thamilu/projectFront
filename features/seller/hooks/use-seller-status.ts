@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { sellerApi } from '@/features/seller/api/seller-api';
 import { getLocalPendingFlag, setLocalPendingFlag } from '../utils/storage';
 import { getNormalizedRoles, type AppSession } from '../utils/auth';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/routes';
 
 export type SellerFormStatus = 'IDLE' | 'SUBMITTING' | 'SUCCESS' | 'PENDING' | 'CHECKING';
 
@@ -74,7 +74,9 @@ export function useSellerProfileStatus(
             setStatus('SUCCESS');
 
             if (normalizedRoles.includes('SELLER')) {
-              toast.success('Account verified!', { description: 'Redirecting to your dashboard...' });
+              toast.success('Account verified!', {
+                description: 'Redirecting to your dashboard...',
+              });
               router.push(APP_ROUTES.SELLER.DASHBOARD);
             } else {
               toast.info('Session update required', {
@@ -119,7 +121,7 @@ export function useSellerProfileStatus(
               setLocalPendingFlag(false);
               setStatus('IDLE');
             }
-          } catch (existsError: any) {
+          } catch (_existsError: any) {
             if (getLocalPendingFlag() && !cancelled) {
               setStatus('PENDING');
               return;

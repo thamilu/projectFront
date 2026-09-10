@@ -1,12 +1,7 @@
 'use client';
 
-import { ReactNode } from 'react';
-import { AuthGuard } from './AuthGuard';
+import { UserRole } from '@/domains/auth/contracts/auth.types';
+import { createRoleGuard } from './createRoleGuard';
 
-export function CustomerGuard({ children }: { children: ReactNode }) {
-  return (
-    <AuthGuard requiredRoles={['CUSTOMER']}>
-      {children}
-    </AuthGuard>
-  );
-}
+/** Restricts access to authenticated users with the CUSTOMER role. */
+export const CustomerGuard = createRoleGuard(UserRole.CUSTOMER, 'CustomerGuard');

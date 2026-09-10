@@ -5,7 +5,7 @@
 export const PRODUCT_FORM_CONSTANTS = {
   // Query settings
   STALE_TIME_MS: 15 * 60 * 1000, // 15 minutes
-  
+
   // Default values
   DEFAULT_TAX_PERCENTAGE: 18,
   DEFAULT_DELIVERY_DAYS: 7,
@@ -13,12 +13,12 @@ export const PRODUCT_FORM_CONSTANTS = {
   DEFAULT_MAX_ORDER_QUANTITY: 999,
   DEFAULT_LOW_STOCK_THRESHOLD: 5,
   DEFAULT_COUNTRY_OF_ORIGIN: 'India',
-  
+
   // Units
   DEFAULT_WEIGHT_UNIT: 'KG',
   DEFAULT_DIMENSION_UNIT: 'CM',
-  
+
   // Status
   DEFAULT_STOCK_STATUS: 'IN_STOCK',
   DEFAULT_PRODUCT_STATUS: 'DRAFT',
-} as const
+} as const;

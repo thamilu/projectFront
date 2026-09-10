@@ -108,7 +108,7 @@ Stateless utilities, core service configurations, and external integrations.
 | Goal | Description | Status |
 | :--- | :--- | :--- |
 | **Typed SDK Generation** | Switch to Orval for automatic React Query hook generation from OpenAPI. | Planned |
-| **Infrastructure Split** | Sub-divide \`lib/\` into \`infra/\`, \`platform/\`, and \`core/\`. | Planned |
+| **Infrastructure Split** | Sub-divide \`lib/\` into \`infra/\`, \`platform/\`, and \`core/\`. | Done |
 | **Contract Testing** | Implement PACT or similar for consumer-driven contract testing. | Researching |
 | **Performance Gates** | Block CI if Lighthouse or BundleSize budgets are exceeded. | Active |
 

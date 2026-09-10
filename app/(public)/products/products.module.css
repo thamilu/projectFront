@@ -165,7 +165,10 @@
 
 .originalPrice {
   font-size: 11px;
-  color: #94a3b8;
+  /* Was a hardcoded #94a3b8 (~2.9:1 on white, fails WCAG AA 4.5:1). This
+     token matches text-muted-foreground used elsewhere on this page and
+     resolves to slate-500/slate-400 per theme — both pass AA. */
+  color: hsl(var(--color-muted-foreground));
   text-decoration: line-through;
 }
 
@@ -200,7 +203,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #94a3b8;
+  color: hsl(var(--color-muted-foreground));
 }
 
 .filterActions {
@@ -243,7 +246,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #94a3b8;
+  color: hsl(var(--color-muted-foreground));
   margin-bottom: 8px;
 }
 

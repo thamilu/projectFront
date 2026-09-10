@@ -1,64 +1,35 @@
 /**
  * Custom hook for wishlist toggle functionality
- * Provides optimized wishlist state management with memoization
+ * Backed by the real wishlistApi (via useWishlist) — NOT client-only state.
+ * Previously this read/wrote a local Zustand store that never reached the
+ * backend, so "add to wishlist" from a product card silently diverged from
+ * what /wishlist actually showed. See useWishlist for the shared cache.
  */
 
-import { useCallback, useMemo } from 'react';
-import { useWishlistStore } from '@/features/wishlist/store/wishlist-store';
+import { useCallback } from 'react';
+import { toast } from 'sonner';
+import { useWishlist } from '@/features/wishlist/hooks/use-wishlist';
 import { ProductDTO } from '@/domains/catalog/contracts/catalog.types';
 
-interface WishlistItemInput {
-  productId: number;
-  name: string;
-  price: number;
-  originalPrice: number;
-  image: string;
-  category: string;
-  rating: number;
-  reviews: number;
-  inStock: boolean;
-  priceDropAlert: boolean;
-}
-
 export function useWishlistToggle(product: ProductDTO) {
-  const wishlists = useWishlistStore((state) => state.wishlists);
-  const addItem = useWishlistStore((state) => state.addItemToWishlist);
-  const removeItem = useWishlistStore((state) => state.removeItemFromWishlist);
+  const { isInWishlist: checkInWishlist, addToWishlist, removeFromWishlist, isMutating } =
+    useWishlist();
 
-  // Memoize wishlist item lookup
-  const wishlistItem = useMemo(
-    () => wishlists.flatMap((w) => w.items).find((i) => i.productId === product.id),
-    [wishlists, product.id]
-  );
+  const isInWishlist = checkInWishlist(product.id);
 
-  const isInWishlist = Boolean(wishlistItem);
-  const defaultWishlistId = wishlists[0]?.id;
-
-  const toggle = useCallback(async () => {
-    const wishlistId = defaultWishlistId ?? crypto.randomUUID();
-
-    if (isInWishlist && wishlistItem) {
-      await removeItem(wishlistId, wishlistItem.id);
-      return { action: 'removed' as const, success: true };
+  const toggle = useCallback(() => {
+    if (isInWishlist) {
+      removeFromWishlist(product.id, {
+        onSuccess: () => toast.success('Removed from wishlist'),
+        onError: () => toast.error('Failed to update wishlist'),
+      });
     } else {
-      const itemData: WishlistItemInput = {
-        productId: product.id,
-        name: product.name,
-        price: product.discountPrice ?? product.price,
-        originalPrice: product.price,
-        image: product.imageUrl ?? '',
-        category: product.category?.name ?? '',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        rating: (product as any).averageRating ?? 0, // TODO: Add to ProductDTO
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        reviews: (product as any).reviewCount ?? 0, // TODO: Add to ProductDTO
-        inStock: product.stockQuantity > 0,
-        priceDropAlert: false,
-      };
-      await addItem(wishlistId, itemData);
-      return { action: 'added' as const, success: true };
+      addToWishlist(product.id, {
+        onSuccess: () => toast.success('Added to wishlist'),
+        onError: () => toast.error('Failed to update wishlist'),
+      });
     }
-  }, [isInWishlist, wishlistItem, defaultWishlistId, product, addItem, removeItem]);
+  }, [isInWishlist, product.id, addToWishlist, removeFromWishlist]);
 
-  return { isInWishlist, toggle };
+  return { isInWishlist, toggle, isMutating };
 }

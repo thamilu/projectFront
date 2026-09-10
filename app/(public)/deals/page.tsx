@@ -1,60 +1,146 @@
-'use client';
-
+import Image from 'next/image';
 import Link from 'next/link';
-import { Tag, Flame, ShoppingCart } from 'lucide-react';
+import { Tag } from 'lucide-react';
 import { Card, CardContent } from '@/shared/ui/atoms/card';
 import { Badge } from '@/shared/ui/atoms/badge';
-import { Button } from '@/shared/ui/atoms/button';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { AddToCartButton } from '@/features/cart';
+import { APP_ROUTES } from '@/shared/routes';
+import { productApi, isBackendDown } from '@/features/products/api/product-api';
+import { isBackendAvailable } from '@/core/client/backend-health';
+import { FEATURED_PRODUCTS_PLACEHOLDERS as demoDeals } from '@/features/products/constants/placeholders';
+import { formatMoney, type Cents, getDiscountPercentage } from '@/shared/utils';
+import { logger } from '@/core/telemetry/logger';
 
-const DEALS = [
-  { id: '1', name: 'Wireless Earbuds Pro', slug: 'wireless-earbuds-pro', category: 'Electronics', originalPrice: 4999, dealPrice: 2499, discount: 50, expires: 'Ends in 2 days' },
-  { id: '2', name: 'Running Shoes X200', slug: 'running-shoes-x200', category: 'Footwear', originalPrice: 3999, dealPrice: 1999, discount: 50, expires: 'Ends in 5 days' },
-  { id: '3', name: 'Cotton Kurta Set', slug: 'cotton-kurta-set', category: 'Fashion', originalPrice: 1499, dealPrice: 749, discount: 50, expires: 'Ends in 1 day' },
-  { id: '4', name: 'Stainless Steel Bottle', slug: 'steel-bottle', category: 'Kitchen', originalPrice: 999, dealPrice: 399, discount: 60, expires: 'Ends in 3 days' },
-  { id: '5', name: 'Yoga Mat Premium', slug: 'yoga-mat-premium', category: 'Sports', originalPrice: 1299, dealPrice: 649, discount: 50, expires: 'Ends in 4 days' },
-  { id: '6', name: 'Leather Wallet', slug: 'leather-wallet', category: 'Accessories', originalPrice: 799, dealPrice: 299, discount: 63, expires: 'Ends in 6 days' },
-];
+const formatPrice = (priceCents: number) => formatMoney(priceCents as Cents, 'INR');
 
-export default function DealsPage() {
+interface DealItem {
+  id: number | string;
+  slug?: string;
+  image: string;
+  title: string;
+  price: number; // cents
+  oldPrice?: number; // cents
+  isDemo?: boolean;
+}
+
+async function loadDeals(): Promise<DealItem[]> {
+  if (!(await isBackendAvailable())) return [];
+
+  try {
+    const response = await productApi.getProducts({
+      page: 0,
+      size: 12,
+      sort: 'discountPrice,desc',
+    });
+    return (response?.content ?? [])
+      .filter((p) => p.discountPrice != null)
+      .map((p) => ({
+        id: p.id,
+        slug: p.urlSlug,
+        image: p.imageUrl || '/images/placeholder.svg',
+        title: p.name,
+        price: Math.round((p.discountPrice ?? p.price) * 100),
+        oldPrice: Math.round(p.price * 100),
+      }));
+  } catch (error) {
+    if (!isBackendDown(error)) {
+      logger.warn('[DealsPage] Failed to fetch deals, falling back to demo deals', {
+        component: 'app/(public)/deals',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+    return [];
+  }
+}
+
+export default async function DealsPage() {
+  let deals = await loadDeals();
+
+  if (deals.length < 4) {
+    const existingIds = new Set(deals.map((d) => d.id));
+    const placeholders = demoDeals
+      .filter((d) => !existingIds.has(d.id))
+      .map((d) => ({ ...d, isDemo: true }));
+    deals = [...deals, ...placeholders].slice(0, 12);
+  }
+
   return (
     <div className="container mx-auto max-w-5xl px-4 py-10">
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-900">
-          <Tag className="h-5 w-5 text-orange-600" />
+          <Tag className="h-5 w-5 text-orange-600" aria-hidden="true" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Today's Deals</h1>
-          <p className="text-sm text-muted-foreground">Hand-picked deals updated daily</p>
+          <h1 className="text-2xl font-bold">Today&apos;s Deals</h1>
+          <p className="text-muted-foreground text-sm">
+            Our best current discounts across the catalog
+          </p>
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {DEALS.map(deal => (
-          <Card key={deal.id} className="group overflow-hidden transition-shadow hover:shadow-lg">
-            <div className="relative flex h-44 items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950">
-              <ShoppingCart className="h-16 w-16 text-orange-200 dark:text-orange-800" />
-              <Badge className="absolute left-3 top-3 bg-orange-600 text-white">
-                {deal.discount}% OFF
-              </Badge>
-              <Badge variant="outline" className="absolute right-3 top-3 text-xs">
-                {deal.expires}
-              </Badge>
-            </div>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">{deal.category}</p>
-              <Link href={APP_ROUTES.PRODUCT_DETAIL(deal.slug)} className="mt-1 line-clamp-1 font-semibold hover:text-primary hover:underline">
-                {deal.name}
-              </Link>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-lg font-bold text-orange-600">₹{deal.dealPrice.toLocaleString('en-IN')}</span>
-                <span className="text-sm text-muted-foreground line-through">₹{deal.originalPrice.toLocaleString('en-IN')}</span>
-              </div>
-              <Button size="sm" className="mt-3 w-full">Add to Cart</Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {deals.length === 0 ? (
+        <div className="bg-card/60 rounded-3xl border p-10 text-center shadow-sm">
+          <Tag className="text-muted-foreground/40 mx-auto mb-4 h-12 w-12" aria-hidden="true" />
+          <p className="text-foreground text-lg font-semibold">No deals available right now</p>
+          <p className="text-muted-foreground mt-2 text-sm">
+            Check back soon, or{' '}
+            <Link href={APP_ROUTES.PRODUCTS} className="text-primary underline underline-offset-4">
+              browse the full catalog
+            </Link>
+            .
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {deals.map((deal) => {
+            const discount = getDiscountPercentage(deal.price, deal.oldPrice);
+            const href = APP_ROUTES.PRODUCT_DETAIL(String(deal.slug || deal.id));
+
+            return (
+              <Card key={deal.id} className="group overflow-hidden transition-shadow hover:shadow-lg">
+                <Link href={href} className="block">
+                  <div className="relative flex h-44 items-center justify-center overflow-hidden bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950">
+                    <Image
+                      src={deal.image}
+                      alt={deal.title}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      unoptimized={deal.isDemo}
+                    />
+                    {discount && (
+                      <Badge className="absolute top-3 left-3 bg-orange-600 text-white">
+                        {discount}% OFF
+                      </Badge>
+                    )}
+                  </div>
+                </Link>
+                <CardContent className="p-4">
+                  <Link
+                    href={href}
+                    className="hover:text-primary line-clamp-1 font-semibold hover:underline"
+                  >
+                    {deal.title}
+                  </Link>
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <span className="text-lg font-bold text-orange-600">
+                      {formatPrice(deal.price)}
+                    </span>
+                    {deal.oldPrice && (
+                      <span className="text-muted-foreground text-sm line-through">
+                        {formatPrice(deal.oldPrice)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-3">
+                    <AddToCartButton product={{ id: Number(deal.id), title: deal.title }} />
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

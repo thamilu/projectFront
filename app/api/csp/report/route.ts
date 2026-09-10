@@ -1,5 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { logger } from '@/core/telemetry/logger'
+import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/core/telemetry/logger';
+
+/**
+ * A violation report must never be cached or stored by an intermediary —
+ * it describes a security event on a specific document and has no reuse value.
+ */
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate',
+  'X-Content-Type-Options': 'nosniff',
+} as const;
 
 /**
  * Standard CSP Violation Report Structure
@@ -7,26 +16,26 @@ import { logger } from '@/core/telemetry/logger'
  */
 interface CSPViolationReport {
   'csp-report': {
-    'document-uri': string
-    'blocked-uri': string
-    'violated-directive': string
-    'effective-directive': string
-    'original-policy': string
-    'disposition': 'enforce' | 'report'
-    'status-code': number
-    'source-file'?: string
-    'line-number'?: number
-    'column-number'?: number
-    'script-sample'?: string
-  }
+    'document-uri': string;
+    'blocked-uri': string;
+    'violated-directive': string;
+    'effective-directive': string;
+    'original-policy': string;
+    disposition: 'enforce' | 'report';
+    'status-code': number;
+    'source-file'?: string;
+    'line-number'?: number;
+    'column-number'?: number;
+    'script-sample'?: string;
+  };
 }
 
-type CSPReportPayload = CSPViolationReport | string | null
+type CSPReportPayload = CSPViolationReport | string | null;
 
 interface ParseResult {
-  payload: CSPReportPayload
-  contentType: string
-  error?: string
+  payload: CSPReportPayload;
+  contentType: string;
+  error?: string;
 }
 
 /**
@@ -35,21 +44,21 @@ interface ParseResult {
  * @returns Parsed payload with metadata
  */
 async function parseCSPPayload(req: NextRequest): Promise<ParseResult> {
-  const contentType = req.headers.get('content-type') || ''
+  const contentType = req.headers.get('content-type') || '';
 
   try {
     const isJSON =
-      contentType.includes('application/json') || contentType.includes('application/csp-report')
+      contentType.includes('application/json') || contentType.includes('application/csp-report');
 
-    const payload = isJSON ? await req.json() : await req.text()
-    return { payload, contentType }
+    const payload = isJSON ? await req.json() : await req.text();
+    return { payload, contentType };
   } catch (err) {
     logger.warn('[CSP Report] Failed to parse request body', {
       contentType,
       error: err instanceof Error ? err.message : 'Unknown parsing error',
       userAgent: req.headers.get('user-agent'),
-    })
-    return { payload: null, contentType, error: 'parse_failed' }
+    });
+    return { payload: null, contentType, error: 'parse_failed' };
   }
 }
 
@@ -59,13 +68,13 @@ async function parseCSPPayload(req: NextRequest): Promise<ParseResult> {
  * @returns true if payload contains expected CSP report structure
  */
 function isValidCSPReport(payload: unknown): payload is CSPViolationReport {
-  if (!payload || typeof payload !== 'object') return false
-  const report = payload as Record<string, unknown>
+  if (!payload || typeof payload !== 'object') return false;
+  const report = payload as Record<string, unknown>;
   return (
     'csp-report' in report &&
     typeof report['csp-report'] === 'object' &&
     report['csp-report'] !== null
-  )
+  );
 }
 
 /**
@@ -74,24 +83,24 @@ function isValidCSPReport(payload: unknown): payload is CSPViolationReport {
  * @returns Appropriate log level
  */
 function getViolationSeverity(report: CSPViolationReport): 'error' | 'warn' | 'info' {
-  const directive = report['csp-report']['violated-directive']
-  const effectiveDirective = report['csp-report']['effective-directive']
+  const directive = report['csp-report']['violated-directive'];
+  const effectiveDirective = report['csp-report']['effective-directive'];
 
   // Critical directives that could indicate XSS attempts
-  const criticalDirectives = ['script-src', 'default-src', 'script-src-elem', 'script-src-attr']
+  const criticalDirectives = ['script-src', 'default-src', 'script-src-elem', 'script-src-attr'];
 
   if (criticalDirectives.some((d) => directive.includes(d) || effectiveDirective.includes(d))) {
-    return 'error'
+    return 'error';
   }
 
   // Moderate severity for other security-relevant directives
-  const moderateDirectives = ['style-src', 'connect-src', 'frame-src', 'object-src']
+  const moderateDirectives = ['style-src', 'connect-src', 'frame-src', 'object-src'];
   if (moderateDirectives.some((d) => directive.includes(d) || effectiveDirective.includes(d))) {
-    return 'warn'
+    return 'warn';
   }
 
   // Lower severity for resource directives
-  return 'info'
+  return 'info';
 }
 
 /**
@@ -113,7 +122,7 @@ function getViolationSeverity(report: CSPViolationReport): 'error' | 'warn' | 'i
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
  */
 export async function POST(req: NextRequest) {
-  const { payload, contentType, error } = await parseCSPPayload(req)
+  const { payload, contentType, error } = await parseCSPPayload(req);
 
   // Handle parsing failures
   if (error || payload === null) {
@@ -123,8 +132,8 @@ export async function POST(req: NextRequest) {
       userAgent: req.headers.get('user-agent'),
       referer: req.headers.get('referer'),
       requestId: req.headers.get('x-request-id'),
-    })
-    return NextResponse.json({ error: 'invalid_report' }, { status: 400 })
+    });
+    return NextResponse.json({ error: 'invalid_report' }, { status: 400 });
   }
 
   // Extract request metadata for correlation
@@ -134,12 +143,12 @@ export async function POST(req: NextRequest) {
     referer: req.headers.get('referer'),
     requestId: req.headers.get('x-request-id'),
     timestamp: new Date().toISOString(),
-  }
+  };
 
   // Validate and log CSP violation reports
   if (isValidCSPReport(payload)) {
-    const severity = getViolationSeverity(payload)
-    const cspReport = payload['csp-report']
+    const severity = getViolationSeverity(payload);
+    const cspReport = payload['csp-report'];
 
     // Log with appropriate severity based on violation type
     logger[severity]('[CSP Violation]', {
@@ -154,17 +163,23 @@ export async function POST(req: NextRequest) {
       columnNumber: cspReport['column-number'],
       scriptSample: cspReport['script-sample'],
       statusCode: cspReport['status-code'],
-    })
+    });
   } else {
     // Log non-standard payloads with lower severity
     logger.info('[CSP Report] Non-standard payload received', {
       ...metadata,
       payload: typeof payload === 'string' ? payload.substring(0, 500) : payload,
-    })
+    });
   }
 
-  // Return 204 No Content (optimal response - no body overhead)
-  return new NextResponse(null, { status: 204 })
+  // 204 No Content — optimal for a report sink: nothing to parse, no body
+  // overhead. `no-store` is explicit rather than inherited: a blanket
+  // `/api/:path*` rule in next.config.ts used to supply it, and was removed
+  // because it also overrode the deliberate CDN caching on the search routes.
+  return new NextResponse(null, {
+    status: 204,
+    headers: NO_STORE_HEADERS,
+  });
 }
 
 /**
@@ -176,5 +191,5 @@ export async function POST(req: NextRequest) {
  * @returns 204 - Endpoint is available
  */
 export function GET() {
-  return new NextResponse(null, { status: 204 })
+  return new NextResponse(null, { status: 204, headers: NO_STORE_HEADERS });
 }

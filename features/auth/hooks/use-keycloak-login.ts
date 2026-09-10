@@ -1,48 +1,79 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useMemo } from 'react';
-import { sanitizeCallbackUrl } from '../utils/sanitize-callback-url';
+import { sanitizeCallbackUrl } from '@/domains/auth/utils/sanitize-callback-url';
+
+/**
+ * Accepts '1' or 'true' from either source. Only the URL param
+ * (?force_login=1) is actually written by any code today — nothing in
+ * this app currently sets the sessionStorage key — but both are checked
+ * the same way so a future "switch account" flow can write either
+ * representation without silently being ignored here.
+ */
+function isTruthyFlag(value: string | null): boolean {
+  return value === '1' || value === 'true';
+}
+
+/**
+ * sessionStorage.getItem can throw in restrictive browser contexts (some
+ * private-browsing modes, storage-partitioned iframes). This must never
+ * crash the login page over a non-essential, defensive-only read.
+ */
+function readSessionStorage(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Custom hook to derive Keycloak login settings, callback URLs,
  * and loop prevention states from search parameters and storage.
+ *
+ * Pure state derivation only — this hook does not itself call signIn() or
+ * decide whether to redirect. See useAuthRedirect.ts's effect, which
+ * gates every auto-redirect on `if (isAuthError || sessionExpired ||
+ * hasRedirected.current) return;` before ever calling signIn(). The
+ * fields below are meaningless as loop-prevention on their own; they only
+ * work because that specific guard reads them.
  */
 export function useKeycloakLogin() {
   const params = useSearchParams();
 
-  const callbackUrl = useMemo(
-    () => sanitizeCallbackUrl(params?.get('callbackUrl') || params?.get('from')),
-    [params]
-  );
+  const callbackUrl = sanitizeCallbackUrl(params?.get('callbackUrl') || params?.get('from'));
 
-  const forceLogin = useMemo(() => {
-    const forceLoginParam =
-      params?.get('force_login') === '1' || params?.get('force_login') === 'true';
-    const forceLoginStorage =
-      typeof window !== 'undefined' && sessionStorage.getItem('force_login') === '1';
-    return forceLoginParam || forceLoginStorage;
-  }, [params]);
+  const forceLogin =
+    isTruthyFlag(params?.get('force_login') ?? null) || isTruthyFlag(readSessionStorage('force_login'));
 
-  const errorCode = params?.get('error');
+  const errorCode = params?.get('error') ?? null;
 
   /**
-   * SessionExpired is now treated as an auth error to prevent the auto-redirect
-   * to Keycloak when the session is broken (which causes an infinite loop).
-   * Any non-null error code is considered an auth error — the login page will
-   * show a retry button instead of silently redirecting.
+   * Deliberately broad, not an allowlist of known NextAuth error codes:
+   * ANY non-null `error` param stops the auto-redirect (see
+   * useAuthRedirect.ts) and shows a manual retry button instead. This is
+   * the fail-SAFE direction — an allowlist would fail unsafe instead: a
+   * NextAuth/Keycloak error code this app's allowlist doesn't yet know
+   * about (a new NextAuth version, an unmapped Keycloak response) would
+   * fall outside it, isAuthError would be false, and the page would
+   * resume auto-redirecting into the same failure — exactly the infinite
+   * loop this flag exists to prevent. The cost of being broad is a
+   * generic "Authentication Error" message (see useErrorMessage, which
+   * already maps unrecognized codes to a safe default rather than ever
+   * rendering the raw query value) for a hand-crafted/unrecognized error=
+   * value; the cost of an allowlist being incomplete is a redirect loop.
    */
-  const isAuthError = useMemo(() => {
-    return errorCode !== null && errorCode !== undefined;
-  }, [errorCode]);
+  const isAuthError = errorCode !== null;
 
   /**
-   * Separate flag for the UI to distinguish session expiry from other errors
-   * (e.g., showing "Your session has expired" vs "Authentication Error").
+   * Session-expiry is a UI-message selector (which alert text shows),
+   * never a privilege or access-control signal — a user manually crafting
+   * ?session_expired=true only changes which harmless message they see on
+   * their own screen, same as isAuthError above already treats URL state
+   * as a hint rather than an authority.
    */
-  const sessionExpired = useMemo(() => {
-    return params?.get('session_expired') === 'true' || errorCode === 'SessionExpired';
-  }, [params, errorCode]);
+  const sessionExpired = params?.get('session_expired') === 'true' || errorCode === 'SessionExpired';
 
   return {
     callbackUrl,

@@ -1,11 +1,10 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { env } from '@/env';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/atoms/card';
 import { Badge } from '@/shared/ui/atoms/badge';
 import { Button } from '@/shared/ui/atoms/button';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Table,
@@ -15,7 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/ui/atoms/table';
-import { apiClient } from '@/core/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,147 +22,103 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/atoms/dropdown-menu';
-import { Eye, MoreHorizontal, Package, Truck } from 'lucide-react';
-import { OrderStatus, PaymentStatus } from '@/domains/order/contracts/order.types';
-import { logger } from '@/core/telemetry/logger';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { Eye, MoreHorizontal, Package, Truck, AlertCircle, RotateCcw, Download } from 'lucide-react';
+import { OrderStatus } from '@/domains/order/contracts/order.types';
+import { APP_ROUTES } from '@/shared/routes';
+import { useSellerOrders, useUpdateOrderStatus } from '@/features/orders/hooks/use-orders';
 
-// Interface matching Backend OrderResponse
-interface SellerOrder {
-  id: number;
-  orderNumber: string;
-  customerId: number;
-  customerName: string;
-  customerEmail: string;
-  items: any[]; // define stricter if needed
-  totalAmount: number;
-  shippingAddress: string;
-  orderStatus: OrderStatus;
-  paymentStatus: PaymentStatus;
-  createdAt: string;
+const PAGE_SIZE = 20;
+
+// A seller only ever advances an order forward through fulfillment — they
+// never cancel a customer's order (that's the customer's own action, via
+// app/(customer)/orders). PLACED/CONFIRMED orders can be marked PACKED;
+// PACKED orders can be marked SHIPPED.
+const NEXT_STATUS: Partial<Record<OrderStatus, { label: string; status: OrderStatus }>> = {
+  [OrderStatus.PLACED]: { label: 'Mark as Packed', status: OrderStatus.PACKED },
+  [OrderStatus.CONFIRMED]: { label: 'Mark as Packed', status: OrderStatus.PACKED },
+  [OrderStatus.PACKED]: { label: 'Mark as Shipped', status: OrderStatus.SHIPPED },
+};
+
+function getStatusBadge(status: OrderStatus) {
+  switch (status) {
+    case OrderStatus.PLACED:
+      return <Badge variant="secondary">Placed</Badge>;
+    case OrderStatus.CONFIRMED:
+      return <Badge className="bg-blue-500">Confirmed</Badge>;
+    case OrderStatus.PACKED:
+      return <Badge className="bg-purple-500">Packed</Badge>;
+    case OrderStatus.SHIPPED:
+      return <Badge className="bg-orange-500">Shipped</Badge>;
+    case OrderStatus.DELIVERED:
+      return <Badge className="bg-green-500">Delivered</Badge>;
+    case OrderStatus.CANCELLED:
+      return <Badge variant="destructive">Cancelled</Badge>;
+    default:
+      return <Badge variant="outline">{status}</Badge>;
+  }
 }
 
-// Mock data for development when API is not ready
-const MOCK_ORDERS: SellerOrder[] = [
-  {
-    id: 1,
-    orderNumber: 'ORD-2024-001',
-    customerId: 101,
-    customerName: 'John Doe',
-    customerEmail: 'john@example.com',
-    items: [],
-    totalAmount: 156.0,
-    shippingAddress: '123 Main St, Anytown, USA',
-    orderStatus: OrderStatus.PLACED,
-    paymentStatus: PaymentStatus.PAID,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    orderNumber: 'ORD-2024-002',
-    customerId: 102,
-    customerName: 'Jane Smith',
-    customerEmail: 'jane@example.com',
-    items: [],
-    totalAmount: 89.5,
-    shippingAddress: '456 Oak Ave, Somewhere, CA',
-    orderStatus: OrderStatus.SHIPPED,
-    paymentStatus: PaymentStatus.PAID,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: 3,
-    orderNumber: 'ORD-2024-003',
-    customerId: 103,
-    customerName: 'Bob Jones',
-    customerEmail: 'bob@example.com',
-    items: [],
-    totalAmount: 210.0,
-    shippingAddress: '789 Pine Ln, Nowhere, NY',
-    orderStatus: OrderStatus.DELIVERED,
-    paymentStatus: PaymentStatus.PAID,
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-  },
-];
+/** Quotes a CSV field only when it contains a character that would otherwise break it. */
+function csvField(value: string | number): string {
+  const str = String(value);
+  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+}
 
 export default function SellerOrdersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [orders, setOrders] = useState<SellerOrder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
     if (status === 'loading') return;
-
     if (status === 'unauthenticated') {
       router.push(APP_ROUTES.HOME);
       return;
     }
-
     const roles = (session?.roles || []) as string[];
     if (!roles.includes('SELLER')) {
       router.push(APP_ROUTES.HOME);
-      return;
     }
-
-    fetchOrders();
   }, [session, status, router]);
 
-  const fetchOrders = async () => {
-    try {
-      const { data: result } = await apiClient.get<any>(`/api/v1/orders/seller`);
+  const isAuthorizedSeller =
+    status === 'authenticated' && ((session?.roles || []) as string[]).includes('SELLER');
 
-      if (result?.success && result.data && Array.isArray(result.data.data)) {
-        setOrders(result.data.data);
-      } else if (result?.content && Array.isArray(result.content)) {
-        setOrders(result.content);
-      } else if (result?.data && Array.isArray(result.data)) {
-        setOrders(result.data);
-      } else {
-        logger.warn('[Seller/Orders] Unexpected response structure:', result);
-        setOrders([]);
-      }
-    } catch (err: any) {
-      console.error('[Seller/Orders] Fetch failed', err);
-      setOrders(MOCK_ORDERS);
-    } finally {
-      setLoading(false);
-    }
+  const { data, isLoading, isError, refetch } = useSellerOrders(
+    { page, size: PAGE_SIZE },
+    { enabled: isAuthorizedSeller }
+  );
+  const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateOrderStatus();
+
+  const orders = useMemo(() => data?.content ?? [], [data]);
+
+  const handleExport = () => {
+    const header = ['Order #', 'Customer', 'Email', 'Date', 'Status', 'Payment', 'Total'];
+    const rows = orders.map((order) => [
+      order.orderNumber,
+      `${order.customer.firstName} ${order.customer.lastName}`.trim(),
+      order.customer.email,
+      new Date(order.createdAt).toLocaleDateString(),
+      order.orderStatus,
+      order.paymentStatus,
+      order.totalAmount.toFixed(2),
+    ]);
+    const csv = [header, ...rows].map((row) => row.map(csvField).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `orders-page-${page + 1}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
-  const getStatusBadge = (status: OrderStatus) => {
-    // Helper to safely handle potential string values that might not strictly match enum at runtime
-    const normalizedStatus = status as string;
-
-    switch (normalizedStatus) {
-      case OrderStatus.PLACED:
-      case 'PLACED':
-        return <Badge variant="secondary">Placed</Badge>;
-      case OrderStatus.CONFIRMED:
-      case 'CONFIRMED':
-        return <Badge className="bg-blue-500">Confirmed</Badge>;
-      case OrderStatus.PACKED:
-      case 'PACKED':
-        return <Badge className="bg-purple-500">Packed</Badge>;
-      case OrderStatus.SHIPPED:
-      case 'SHIPPED':
-        return <Badge className="bg-orange-500">Shipped</Badge>;
-      case OrderStatus.DELIVERED:
-      case 'DELIVERED':
-        return <Badge className="bg-green-500">Delivered</Badge>;
-      case OrderStatus.CANCELLED:
-      case 'CANCELLED':
-        return <Badge variant="destructive">Cancelled</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  if (status === 'loading' || loading) {
+  if (status === 'loading' || (isLoading && isAuthorizedSeller)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
+          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600" />
           <span className="text-gray-600">Loading orders...</span>
         </div>
       </div>
@@ -174,10 +128,14 @@ export default function SellerOrdersPage() {
   return (
     <div className="min-h-screen bg-linear-to-b from-white to-gray-50 dark:from-gray-950 dark:to-gray-900">
       <div className="container mx-auto px-4 py-6 md:px-6">
-        <main className="space-y-6">
+        {/* Plain <div>: the root layout owns the only main landmark. */}
+        <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-            <Button>Export Orders</Button>
+            <Button onClick={handleExport} disabled={orders.length === 0}>
+              <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+              Export Orders
+            </Button>
           </div>
 
           <Card>
@@ -186,69 +144,161 @@ export default function SellerOrdersPage() {
               <CardDescription>Manage your shop&apos;s orders and shipments.</CardDescription>
             </CardHeader>
             <CardContent>
-              {orders.length === 0 ? (
+              {isError ? (
+                <div
+                  className="flex flex-col items-center gap-4 py-10 text-center"
+                  data-testid="seller-orders-error"
+                >
+                  <AlertCircle className="text-destructive h-10 w-10" aria-hidden="true" />
+                  <div>
+                    <p className="font-semibold">Couldn&apos;t load your orders</p>
+                    <p className="text-muted-foreground text-sm">
+                      Please check your connection and try again.
+                    </p>
+                  </div>
+                  <Button onClick={() => refetch()} variant="outline" className="gap-2">
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                    Retry
+                  </Button>
+                </div>
+              ) : orders.length === 0 ? (
                 <div className="text-muted-foreground py-10 text-center">No orders found.</div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order #</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {orders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">{order.orderNumber}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span>{order.customerName}</span>
-                            <span className="text-muted-foreground text-xs">
-                              {order.customerEmail}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell>{getStatusBadge(order.orderStatus)}</TableCell>
-                        <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>
-                                <Package className="mr-2 h-4 w-4" />
-                                Mark as Packed
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Truck className="mr-2 h-4 w-4" />
-                                Mark as Shipped
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Order #</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.map((order) => {
+                        const nextAction = NEXT_STATUS[order.orderStatus];
+                        return (
+                          <Fragment key={order.id}>
+                            <TableRow>
+                              <TableCell className="font-medium">{order.orderNumber}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span>
+                                    {order.customer.firstName} {order.customer.lastName}
+                                  </span>
+                                  <span className="text-muted-foreground text-xs">
+                                    {order.customer.email}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
+                              <TableCell>{getStatusBadge(order.orderStatus)}</TableCell>
+                              <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                      <span className="sr-only">Open menu</span>
+                                      <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem
+                                      onSelect={() =>
+                                        setExpandedId((id) => (id === order.id ? null : order.id))
+                                      }
+                                    >
+                                      <Eye className="mr-2 h-4 w-4" aria-hidden="true" />
+                                      View Details
+                                    </DropdownMenuItem>
+                                    {nextAction && (
+                                      <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          disabled={isUpdatingStatus}
+                                          onSelect={() =>
+                                            updateStatus({ id: order.id, status: nextAction.status })
+                                          }
+                                        >
+                                          {nextAction.status === OrderStatus.PACKED ? (
+                                            <Package className="mr-2 h-4 w-4" aria-hidden="true" />
+                                          ) : (
+                                            <Truck className="mr-2 h-4 w-4" aria-hidden="true" />
+                                          )}
+                                          {nextAction.label}
+                                        </DropdownMenuItem>
+                                      </>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                            {expandedId === order.id && (
+                              <TableRow>
+                                <TableCell colSpan={6} className="bg-muted/30">
+                                  <div className="space-y-3 py-2">
+                                    <div>
+                                      <p className="text-sm font-medium">Shipping Address</p>
+                                      <p className="text-muted-foreground text-sm">
+                                        {order.shippingAddress}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-medium">
+                                        Items ({order.items.length})
+                                      </p>
+                                      <ul className="text-muted-foreground mt-1 space-y-1 text-sm">
+                                        {order.items.map((item) => (
+                                          <li key={item.id}>
+                                            {item.quantity} × {item.product?.name ?? 'Product'} — $
+                                            {item.subtotal.toFixed(2)}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </Fragment>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+
+                  {data && data.totalPages > 1 && (
+                    <div className="mt-4 flex items-center justify-between">
+                      <p className="text-muted-foreground text-sm">
+                        Page {data.number + 1} of {data.totalPages}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={data.first}
+                          onClick={() => setPage((p) => Math.max(0, p - 1))}
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={data.last}
+                          onClick={() => setPage((p) => p + 1)}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
-        </main>
+        </div>
       </div>
     </div>
   );

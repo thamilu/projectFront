@@ -14,6 +14,11 @@ import { useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import { sellerApi } from '@/domains/seller/infrastructure/api/seller-api';
 import { logger } from '@/core/telemetry/logger';
+// Direct import (not @/auth) is deliberate: this is a client component, and
+// @/auth's first export line executes the real NextAuth() init server guard,
+// which throws in the browser. lib/auth/types has zero next-auth/jose
+// runtime dependencies, so it's safe here — see auth.ts's docblock.
+import { AuthErrorCode } from '@/lib/auth/types';
 
 // Widget imports
 import { DashboardHeader } from '@/features/seller/components/dashboard/DashboardHeader';
@@ -64,23 +69,26 @@ export default function SellerDashboardClient({
 
   // Sync data states
   const [products, setProducts] = useState(initialData?.recentProducts || []);
+  // Regression: this previously defaulted to hardcoded demo numbers (180 /
+  // 5 / 42580 / 18) whenever server-fetched initialData wasn't provided —
+  // the exact same fabricated-fallback pattern already fixed in fetchStats()
+  // below. A seller's dashboard should show 0/empty before real data
+  // loads, never numbers that look like a real, populated store.
   const [stats, setStats] = useState<DashboardStats | undefined>(
     initialData?.stats || {
-      totalProducts: 180,
-      lowStockProducts: 5,
-      totalRevenue: 42580,
-      pendingOrders: 18,
+      totalProducts: 0,
+      lowStockProducts: 0,
+      totalRevenue: 0,
+      pendingOrders: 0,
     }
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(initialData?.error || null);
 
   // Active configurations
-  const [selectedStore, setSelectedStore] = useState('Main Storefront');
   const [activeTimeframe, setActiveTimeframe] = useState<Timeframe>('30D');
   const [lastRefreshedSecs, setLastRefreshedSecs] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncProgress, setSyncProgress] = useState<number | null>(null);
 
   // Modals & overlay triggers
   const [isShortcutOpen, setIsShortcutOpen] = useState(false);
@@ -145,7 +153,7 @@ export default function SellerDashboardClient({
 
   // Session check triggers
   useEffect(() => {
-    if (session.error === 'TokenExpired' || session.error === 'RefreshAccessTokenError') {
+    if (session.error === AuthErrorCode.REFRESH_TOKEN_ERROR) {
       logger.warn('[Dashboard/Client] Session expired, redirecting to login');
       signOut({ callbackUrl: '/login?error=session_expired' });
     }
@@ -188,12 +196,17 @@ export default function SellerDashboardClient({
       const response = await sellerApi.getDashboardStats();
       const responseData = response?.data ?? response;
 
+      // Regression: these previously fell back to hardcoded demo numbers
+      // (180 / 5 / 42580 / 18) whenever the response shape didn't match —
+      // not just for a genuinely-zero value (0 ?? 180 correctly stays 0),
+      // but for any malformed/unexpected API response, silently showing a
+      // fabricated "real" store size instead of an honest 0/empty state.
       const storeOverview = responseData?.storeOverview || responseData?.shopOverview || {};
       const newStats = {
-        totalProducts: storeOverview.totalProducts ?? 180,
-        lowStockProducts: storeOverview.outOfStockProducts ?? 5,
-        totalRevenue: Number(responseData?.salesMetrics?.totalSales) || 42580,
-        pendingOrders: responseData?.orderManagement?.newOrders ?? 18,
+        totalProducts: storeOverview.totalProducts ?? 0,
+        lowStockProducts: storeOverview.outOfStockProducts ?? 0,
+        totalRevenue: Number(responseData?.salesMetrics?.totalSales) || 0,
+        pendingOrders: responseData?.orderManagement?.newOrders ?? 0,
       };
 
       const newProducts = (responseData?.topProducts || []).map((p: any) => ({
@@ -218,27 +231,21 @@ export default function SellerDashboardClient({
     }
   };
 
-  // Sync catalog flow handler
-  const handleInventorySync = useCallback(() => {
+  // Regression: this previously ran a fake setInterval progress bar (fixed
+  // 25% steps every 250ms, always completing in exactly 1 second)
+  // completely disconnected from any real backend operation — there is no
+  // catalog-sync endpoint; the only real work here is re-fetching the
+  // dashboard's own stats. The fake, precisely-timed percentage implied a
+  // granular sync operation that never existed. This now just reflects
+  // whether the real refresh request is actually in flight.
+  const handleInventorySync = useCallback(async () => {
     if (isSyncing) return;
     setIsSyncing(true);
-    setSyncProgress(0);
-
-    const interval = setInterval(() => {
-      setSyncProgress((prev) => {
-        if (prev === null) return 0;
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            setIsSyncing(false);
-            setSyncProgress(null);
-            void fetchStats();
-          }, 400);
-          return 100;
-        }
-        return prev + 25;
-      });
-    }, 250);
+    try {
+      await fetchStats();
+    } finally {
+      setIsSyncing(false);
+    }
   }, [isSyncing]);
 
   // Reply submission
@@ -311,8 +318,6 @@ export default function SellerDashboardClient({
           loading={loading}
           onRefresh={fetchStats}
           onCustomizeClick={() => setIsCustomizerOpen(true)}
-          selectedStore={selectedStore}
-          onStoreChange={setSelectedStore}
           selectedTimeframe={activeTimeframe}
           onTimeframeChange={(tf) => setActiveTimeframe(tf as Timeframe)}
         />
@@ -343,9 +348,8 @@ export default function SellerDashboardClient({
                   return (
                     <div key={widget.id} className="lg:col-span-3">
                       <MetricsOverview
-                        catalogUsed={stats?.totalProducts || 180}
+                        catalogUsed={stats?.totalProducts || 0}
                         catalogLimit={500}
-                        conversionRate={2.4}
                       />
                     </div>
                   );
@@ -353,9 +357,9 @@ export default function SellerDashboardClient({
                   return (
                     <div key={widget.id} className="lg:col-span-3">
                       <KpiCards
-                        totalRevenue={stats?.totalRevenue || 42580}
-                        pendingOrders={stats?.pendingOrders ?? 18}
-                        lowStockProducts={stats?.lowStockProducts ?? 5}
+                        totalRevenue={stats?.totalRevenue || 0}
+                        pendingOrders={stats?.pendingOrders ?? 0}
+                        lowStockProducts={stats?.lowStockProducts ?? 0}
                         onNavigate={(href) => router.push(href)}
                       />
                     </div>
@@ -382,8 +386,8 @@ export default function SellerDashboardClient({
                   return (
                     <div key={widget.id} className="lg:col-span-2">
                       <ActionCenter
-                        pendingOrders={stats?.pendingOrders ?? 18}
-                        lowStockProducts={stats?.lowStockProducts ?? 5}
+                        pendingOrders={stats?.pendingOrders ?? 0}
+                        lowStockProducts={stats?.lowStockProducts ?? 0}
                       />
                     </div>
                   );
@@ -400,7 +404,6 @@ export default function SellerDashboardClient({
                         products={products}
                         onSync={handleInventorySync}
                         isSyncing={isSyncing}
-                        syncProgress={syncProgress}
                       />
                     </div>
                   );

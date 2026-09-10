@@ -1,15 +1,32 @@
 export interface SellerDashboardResponse {
-  shopOverview: {
-    totalProducts: number;
-    outOfStockProducts: number;
+  storeOverview?: {
+    storeName?: string;
+    storeStatus?: string;
+    totalProducts?: number;
+    activeProducts?: number;
+    outOfStockProducts?: number;
+    storeRating?: number;
   };
-  orderManagement: {
-    newOrders: number;
+  shopOverview?: {
+    totalProducts?: number;
+    outOfStockProducts?: number;
   };
-  topProducts: Array<{
-    productId: number;
-    productName: string;
-    currentPrice: number;
-    stockQuantity: number;
+  salesMetrics?: {
+    todaySales?: number;
+    weeklySales?: number;
+    monthlySales?: number;
+    totalSales?: number;
+  };
+  orderManagement?: {
+    newOrders?: number;
+    processingOrders?: number;
+    shippedOrders?: number;
+    completedOrders?: number;
+  };
+  topProducts?: Array<{
+    productId?: number;
+    productName?: string;
+    currentPrice?: number;
+    stockQuantity?: number;
   }>;
 }

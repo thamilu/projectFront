@@ -1,33 +1,66 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
-import { apiClient } from '@/core/client';
+/**
+ * POST /api/onboarding/delivery
+ *
+ * Submits a delivery-agent registration application to the backend.
+ *
+ * Mirrors `app/api/onboarding/seller/route.ts` deliberately: the two flows are
+ * structurally identical, and the shared `withRoute` / guard pipeline is what
+ * keeps them from drifting apart the way they previously had — one built its
+ * backend URL by hand with a hardcoded `localhost:8082` fallback while the
+ * other used `API_ENDPOINTS`, and only one had been corrected for the missing
+ * `/api/v1` version segment.
+ */
 
-export async function POST(req: NextRequest) {
+import { z } from 'zod';
+import {
+  withRoute,
+  requireSession,
+  readValidatedBody,
+  enforceRateLimit,
+  apiSuccess,
+  mapUpstreamError,
+} from '@/shared/api';
+import { serverBackendFetch } from '@/core/client/server-fetch';
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
+
+/**
+ * Edge-level shape check. The backend stays authoritative on licence
+ * validation, background checks and vehicle eligibility; this bounds field
+ * sizes and rejects structurally impossible payloads before they cost an
+ * upstream round trip. See the seller route for why `passthrough()` is used.
+ */
+const deliveryApplicationSchema = z
+  .object({
+    fullName: z.string().trim().min(2).max(120),
+    phone: z.string().trim().min(6).max(20),
+    vehicleType: z.string().trim().min(1).max(50),
+  })
+  .passthrough();
+
+const RATE_LIMIT_MESSAGE = 'Too many submissions. Please wait a moment before trying again.';
+
+export const POST = withRoute('onboarding/delivery', async (req, { log }) => {
+  const caller = await requireSession(req);
+
+  await enforceRateLimit(`onboarding:delivery:${caller.userId}`, RATE_LIMIT_MESSAGE);
+
+  const application = await readValidatedBody(req, deliveryApplicationSchema);
+
+  log.info('Submitting delivery agent application', { userId: caller.userId });
+
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const { data } = await serverBackendFetch<unknown>(
+      API_ENDPOINTS.DELIVERY.REGISTER,
+      caller.accessToken,
+      { method: 'POST', body: application }
+    );
 
-    if (!token) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await req.json();
-    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8082/api/v1';
-
-    try {
-      const { data } = await apiClient.post(`/delivery/register`, body, {
-        headers: {
-          Authorization: `Bearer ${token.accessToken}`,
-        },
-      });
-
-      return NextResponse.json(data, { status: 201 });
-    } catch (err: any) {
-      const status = err?.status || 502;
-      const message = err?.message || 'Failed to submit application';
-      return NextResponse.json({ message }, { status });
-    }
+    log.info('Delivery agent application submitted', { userId: caller.userId });
+    return apiSuccess(data, { status: 201 });
   } catch (error) {
-    console.error('Delivery onboarding error:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    // A 4xx from the backend is a real answer the applicant must read
+    // ("handle already taken", "application already in review"), so it is
+    // preserved rather than flattened into a generic 502.
+    throw mapUpstreamError(error, 'Could not submit your application. Please try again.');
   }
-}
+});

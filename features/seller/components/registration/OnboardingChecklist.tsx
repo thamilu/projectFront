@@ -290,7 +290,7 @@ export const OnboardingChecklist = React.memo(function OnboardingChecklist({
                 : `${remainingStepsCount} ${remainingStepsCount === 1 ? 'step' : 'steps'} remaining`}
             </p>
           </div>
-          <span className="text-blue-600 dark:text-blue-450 bg-blue-50 dark:bg-blue-950/30 rounded-full px-2.5 py-0.5 text-xs font-bold border border-blue-100 dark:border-blue-900/30">
+          <span className="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 rounded-full px-2.5 py-0.5 text-xs font-bold border border-blue-100 dark:border-blue-900/30">
             {percentComplete}%
           </span>
         </div>
@@ -388,7 +388,7 @@ export const OnboardingChecklist = React.memo(function OnboardingChecklist({
                             className="flex items-center justify-between text-xs py-1 border-b border-slate-100/50 dark:border-slate-800/40 last:border-0 last:pb-0"
                           >
                             <div className="flex flex-col pr-2">
-                              <span className="font-semibold text-slate-700 dark:text-slate-350">
+                              <span className="font-semibold text-slate-700 dark:text-slate-300">
                                 {t(doc.labelKey)}
                                 {doc.required && ' *'}
                               </span>

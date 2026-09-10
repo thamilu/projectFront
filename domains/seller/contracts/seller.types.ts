@@ -46,6 +46,7 @@ export interface StoreDTO {
   postalCode?: string;
   domain?: string;
   rating?: number;
+  currencyCode?: string;
   active: boolean;
   seller: UserDTO;
   sellerId?: number;

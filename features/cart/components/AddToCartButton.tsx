@@ -1,20 +1,30 @@
-"use client";
+'use client';
 
 import { Button } from '@/shared/ui/atoms/button';
-import { useCartStore } from '@/features/cart/store/cart-store';
+import { useCart } from '@/features/cart/hooks/use-cart';
 
 const LABEL = 'Add to Cart';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function AddToCartButton({ product }: { product: any }) {
-  const addToCart = useCartStore((s) => s.addItem);
+interface AddToCartButtonProduct {
+  id: number;
+  title?: string;
+  name?: string;
+}
+
+export function AddToCartButton({ product }: { product: AddToCartButtonProduct }) {
+  const { addToCart, isAdding } = useCart();
 
   return (
     <Button
       size="sm"
-      className="w-full min-h-[44px]"
-      onClick={() => addToCart(product)}
-      aria-label={`${LABEL} ${product?.title || 'product'}`}
+      className="min-h-[44px] w-full"
+      onClick={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        addToCart({ productId: product.id, quantity: 1 });
+      }}
+      disabled={isAdding}
+      aria-label={`${LABEL} ${product?.title || product?.name || 'product'}`}
     >
       {LABEL}
     </Button>

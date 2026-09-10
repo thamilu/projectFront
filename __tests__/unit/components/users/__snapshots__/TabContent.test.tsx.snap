@@ -1,0 +1,54 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`TabContent snapshots matches snapshot 1`] = `
+<div
+  aria-atomic="false"
+  aria-live="polite"
+  class="w-full"
+>
+  <div
+    aria-labelledby="tab-personal"
+    id="tabpanel-personal"
+    role="tabpanel"
+    tabindex="0"
+  >
+    <div
+      aria-labelledby="_r_f_"
+      class="card text-card-foreground [--card-padding-h:1.5rem] [--card-padding-v:1rem] [--card-section-gap:1rem] rounded-xl bg-card border border-border/60 shadow-xs"
+      data-analytics-component="card"
+      data-intent="neutral"
+      data-slot="card"
+      data-variant="default"
+    >
+      <div
+        class="card-header"
+        data-slot="card-header"
+      >
+        <h3
+          class="card-title mb-2 text-lg font-bold text-slate-900 dark:text-slate-100"
+          data-slot="card-title"
+          id="_r_f_"
+        >
+          Personal Information
+        </h3>
+        <p
+          class="card-description text-sm font-medium text-slate-600 dark:text-slate-300"
+          data-slot="card-description"
+        >
+          Manage your core profile identity and contact details.
+        </p>
+      </div>
+      <div
+        class="card-body"
+        data-slot="card-content"
+      >
+        <div
+          data-testid="personal-tab"
+        >
+          Mock Personal Tab Content
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

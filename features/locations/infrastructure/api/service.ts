@@ -4,6 +4,7 @@ import { locationMapper } from './mapper';
 import * as DTOs from './dto';
 import * as Models from './models';
 import { RequestOptions } from '@/core/client/types';
+import { logger } from '@/core/telemetry/logger';
 import { z } from 'zod';
 
 /**
@@ -23,7 +24,10 @@ export const locationService = {
     return validated.map(locationMapper.toState);
   },
 
-  getDistricts: async (stateId: string, options: RequestOptions = {}): Promise<Models.District[]> => {
+  getDistricts: async (
+    stateId: string,
+    options: RequestOptions = {}
+  ): Promise<Models.District[]> => {
     const rawData = await locationApi.getDistricts(stateId, options);
     const validated = DTOs.DistrictDTOSchema.array().parse(rawData);
     return validated.map(locationMapper.toDistrict);
@@ -35,19 +39,38 @@ export const locationService = {
     return validated.map(locationMapper.toTaluk);
   },
 
-  getPincodes: async (districtId: string, options: RequestOptions = {}): Promise<Models.Pincode[]> => {
+  getPincodes: async (
+    districtId: string,
+    options: RequestOptions = {}
+  ): Promise<Models.Pincode[]> => {
     const rawData = await locationApi.getPincodesByDistrict(districtId, options);
     const validated = DTOs.PincodeDTOSchema.array().parse(rawData);
     return validated.map(locationMapper.toPincode);
   },
 
-  getPincodesByTaluk: async (talukId: string, options: RequestOptions = {}): Promise<Models.Pincode[]> => {
+  getPincodesByTaluk: async (
+    talukId: string,
+    options: RequestOptions = {}
+  ): Promise<Models.Pincode[]> => {
     const rawData = await locationApi.getPincodesByTaluk(talukId, options);
     const validated = DTOs.PincodeDTOSchema.array().parse(rawData);
     return validated.map(locationMapper.toPincode);
   },
 
-  getByPinCode: async (code: string, options: RequestOptions = {}): Promise<Models.LocationDetail | null> => {
+  /**
+   * Returns `null` only for outcomes that are legitimately "no data" —
+   * a canceled request, or the backend confirming the pincode doesn't exist
+   * (404). Any other failure (network outage, 5xx, a malformed/unparseable
+   * response) now propagates instead of being swallowed: previously every
+   * error here — including a genuine backend outage — resolved to the exact
+   * same `null` as an invalid pincode, so an address form couldn't tell "you
+   * mistyped the pincode" apart from "we couldn't reach the server" and
+   * silently showed the former for both.
+   */
+  getByPinCode: async (
+    code: string,
+    options: RequestOptions = {}
+  ): Promise<Models.LocationDetail | null> => {
     try {
       const rawData = await locationApi.getByPinCode(code, options);
       const validated = DTOs.LocationResponseSchema.parse(rawData);
@@ -57,9 +80,13 @@ export const locationService = {
       if (axios.isCancel(error)) {
         return null;
       }
-      
-      console.error('[LocationService] Pincode lookup failed:', error);
-      return null;
+
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return null;
+      }
+
+      logger.error('[LocationService] Pincode lookup failed', { code, error });
+      throw error;
     }
   },
 

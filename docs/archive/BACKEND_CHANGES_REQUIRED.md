@@ -84,6 +84,7 @@ GET /api/v1/dashboard/seller
 
 **A. Existing: `SellerBusinessType`**
 File: `com.eshop.app.enums.SellerBusinessType.java`
+
 ```java
 package com.eshop.app.enums;
 
@@ -96,6 +97,7 @@ public enum SellerBusinessType {
 
 **B. NEW: `SellerIdentityType` (Must Create)**
 File: `com.eshop.app.enums.SellerIdentityType.java`
+
 ```java
 package com.eshop.app.enums;
 
@@ -193,9 +195,11 @@ public class SecurityConfig {
 ```
 
 ### 2. Update User Role Enum
+
 **File:** `com.eshop.app.enums.UserRole.java`
 
 **Verify logic matches:**
+
 ```java
 package com.eshop.app.enums;
 
@@ -206,7 +210,8 @@ public enum UserRole {
     DELIVERY_AGENT;
 }
 ```
-*(User confirmed this already exists. Ensure no other legacy roles like FARMER/RETAILER exist in this enum.)*
+
+_(User confirmed this already exists. Ensure no other legacy roles like FARMER/RETAILER exist in this enum.)_
 
 ### 3. Update Database Schema
 
@@ -815,39 +820,42 @@ SellerType.BUSINESS
 
 ### 7. ✅ Seller & Delivery Agent Onboarding (Entity-Based)
 
-**Refactored Logic:** Do not use meaningful separate "Request" tables. The *Profile itself* represents the request when status is PENDING.
+**Refactored Logic:** Do not use meaningful separate "Request" tables. The _Profile itself_ represents the request when status is PENDING.
 
 #### A. Updates to SellerProfile
+
 - **New Columns**:
-    - `identity_type` (ENUM: INDIVIDUAL, BUSINESS)
-    - `business_type` (ENUM: FARMER, WHOLESALER, RETAILER)
+  - `identity_type` (ENUM: INDIVIDUAL, BUSINESS)
+  - `business_type` (ENUM: FARMER, WHOLESALER, RETAILER)
 - **Status Enum**: Update `SellerStatus` to include `PENDING`, `REJECTED`.
 - **Logic**:
-    - `POST /api/v1/sellers/register` -> Accepts both types. Creates profile with `PENDING`.
-    - User remains `CUSTOMER` role until approved.
+  - `POST /api/v1/sellers/register` -> Accepts both types. Creates profile with `PENDING`.
+  - User remains `CUSTOMER` role until approved.
 
 #### B. New Entity: DeliveryAgentProfile (New)
+
 - **Table**: `delivery_agent_profiles`
-    - `id` (UUID)
-    - `user_id` (BIGINT, Unique)
-    - `vehicle_type` (VARCHAR)
-    - `license_number` (VARCHAR)
-    - `status` (ENUM: PENDING, ACTIVE, REJECTED)
-    - `current_latitude`, `current_longitude` (Double, nullable)
-    - `is_online` (Boolean)
+  - `id` (UUID)
+  - `user_id` (BIGINT, Unique)
+  - `vehicle_type` (VARCHAR)
+  - `license_number` (VARCHAR)
+  - `status` (ENUM: PENDING, ACTIVE, REJECTED)
+  - `current_latitude`, `current_longitude` (Double, nullable)
+  - `is_online` (Boolean)
 - **Controller**: `DeliveryAgentController`
-    - `POST /register`: Create profile (PENDING).
-    - `GET /profile`: Get own profile.
+  - `POST /register`: Create profile (PENDING).
+  - `GET /profile`: Get own profile.
 
 #### C. Admin Approval Workflow
+
 - **Controller**: `AdminApprovalController`
 - **Endpoints**:
-    - `GET /api/v1/admin/approvals/pending`: List all PENDING profiles (Sellers + Agents).
-    - `POST /api/v1/admin/approvals/{type}/{id}/approve`:
-        1. Find Profile.
-        2. Set Status = `ACTIVE`.
-        3. **Keycloak**: Assign Role (`SELLER` or `DELIVERY_AGENT`).
-    - `POST /api/v1/admin/approvals/{type}/{id}/reject`: Set Status = `REJECTED`.
+  - `GET /api/v1/admin/approvals/pending`: List all PENDING profiles (Sellers + Agents).
+  - `POST /api/v1/admin/approvals/{type}/{id}/approve`:
+    1. Find Profile.
+    2. Set Status = `ACTIVE`.
+    3. **Keycloak**: Assign Role (`SELLER` or `DELIVERY_AGENT`).
+  - `POST /api/v1/admin/approvals/{type}/{id}/reject`: Set Status = `REJECTED`.
 
 ### Phase 5: Testing (2 days)
 

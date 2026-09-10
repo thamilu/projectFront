@@ -1,14 +1,14 @@
 /**
  * GET /api/search
- * 
+ *
  * Advanced product search endpoint using Elasticsearch
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { apiClient } from '@/core/client';
-import { API_ENDPOINTS } from '@/shared/constants/api/endpoints'
-import { getRequestLogger } from '@/core/telemetry/logger'
+import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
+import { getRequestLogger } from '@/core/telemetry/logger';
 
 const searchSchema = z.object({
   q: z.string().min(1, 'Query is required'),
@@ -24,14 +24,14 @@ const searchSchema = z.object({
     .default('relevance'),
   page: z.coerce.number().positive().optional().default(1),
   limit: z.coerce.number().positive().max(100).optional().default(24),
-})
+});
 
 export async function GET(request: NextRequest) {
-  const requestId = request.headers.get('x-request-id') || crypto.randomUUID()
-  const log = getRequestLogger(requestId)
+  const requestId = request.headers.get('x-request-id') || crypto.randomUUID();
+  const log = getRequestLogger(requestId);
 
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(request.url);
 
     // Parse and validate query parameters
     const params = searchSchema.parse({
@@ -45,15 +45,16 @@ export async function GET(request: NextRequest) {
       sort: searchParams.get('sort') || 'relevance',
       page: searchParams.get('page') || '1',
       limit: searchParams.get('limit') || '24',
-    })
+    });
 
     log.info('Search request', {
       query: params.q,
       filters: {
         category: params.category,
-        priceRange: params.minPrice || params.maxPrice
-          ? { min: params.minPrice, max: params.maxPrice }
-          : undefined,
+        priceRange:
+          params.minPrice || params.maxPrice
+            ? { min: params.minPrice, max: params.maxPrice }
+            : undefined,
         inStock: params.inStock,
         rating: params.rating,
         tags: params.tags,
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
       sort: params.sort,
       page: params.page,
       requestId,
-    })
+    });
 
     // Execute search via backend API
     const { data: resp } = await apiClient.get<any>(API_ENDPOINTS.PRODUCTS.SEARCH, {
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
         sort: params.sort,
         page: params.page - 1, // Spring Boot uses 0-based paging
         size: params.limit,
-      }
+      },
     });
 
     const results = resp?.data ?? resp;
@@ -86,7 +87,7 @@ export async function GET(request: NextRequest) {
       resultsCount: results.content?.length ?? 0,
       totalResults: results.totalElements ?? 0,
       requestId,
-    })
+    });
 
     return NextResponse.json(
       {
@@ -105,9 +106,9 @@ export async function GET(request: NextRequest) {
           'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
         },
       }
-    )
+    );
   } catch (error) {
-    log.error('Search request failed', { error, requestId })
+    log.error('Search request failed', { error, requestId });
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -119,7 +120,7 @@ export async function GET(request: NextRequest) {
           status: 400,
           headers: { 'X-Request-ID': requestId },
         }
-      )
+      );
     }
 
     return NextResponse.json(
@@ -131,6 +132,6 @@ export async function GET(request: NextRequest) {
         status: 500,
         headers: { 'X-Request-ID': requestId },
       }
-    )
+    );
   }
 }

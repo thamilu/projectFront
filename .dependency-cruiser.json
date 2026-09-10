@@ -1,0 +1,76 @@
+{
+  "forbidden": [
+    {
+      "name": "no-circular",
+      "severity": "error",
+      "comment": "Circular dependencies are strictly forbidden.",
+      "from": {},
+      "to": { "circular": true }
+    },
+    {
+      "name": "feature-isolation",
+      "comment": "Features must not depend on other features.",
+      "severity": "error",
+      "from": { "path": "^features/([^/]+)/" },
+      "to": {
+        "path": "^features/([^/]+)/",
+        "pathNot": "^features/$1/"
+      }
+    },
+    {
+      "name": "lib-isolation",
+      "comment": "The lib layer must not depend on any higher layer.",
+      "severity": "error",
+      "from": { "path": "^lib/" },
+      "to": { "path": "^(features|shared|app)/" }
+    },
+    {
+      "name": "shared-isolation",
+      "comment": "The shared layer must not depend on features or app.",
+      "severity": "error",
+      "from": { "path": "^shared/" },
+      "to": { "path": "^(features|app)/" }
+    },
+    {
+      "name": "core-isolation",
+      "comment": "The core layer must not depend on shared, features, or app.",
+      "severity": "error",
+      "from": { "path": "^core/" },
+      "to": { "path": "^(shared|features|app)/" }
+    },
+    {
+      "name": "feature-internal-access",
+      "comment": "Features must only be accessed through their public API (index.ts).",
+      "severity": "error",
+      "from": {
+        "path": "^(app|features)/",
+        "pathNot": "^features/([^/]+)/"
+      },
+      "to": {
+        "path": "^features/([^/]+)/",
+        "pathNot": "^features/([^/]+)/index\\.ts$"
+      }
+    }
+  ],
+  "options": {
+    "doNotFollow": {
+      "path": "node_modules"
+    },
+    "tsPreCompilationDeps": true,
+    "tsConfig": {
+      "fileName": "tsconfig.json"
+    },
+    "enhancedResolveOptions": {
+      "exportsFields": ["exports"],
+      "conditionNames": ["import", "require", "node", "default"]
+    },
+    "reporterOptions": {
+      "dot": {
+        "collapsePattern": "node_modules/(@[^/]+/[^/]+|[^/]+)"
+      },
+      "archi": {
+        "collapsePattern": "^(packages|src|lib|app|bin|test|spec)/([^/]+)/"
+      }
+    }
+  }
+}

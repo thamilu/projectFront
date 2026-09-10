@@ -13,7 +13,7 @@
 
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogIn, UserPlus, Loader2, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -28,7 +28,7 @@ import {
   CardTitle,
 } from '@/shared/ui/atoms/card';
 import { useAuth } from '@/features/auth';
-import { sanitizeCallbackUrl } from '@/features/auth/utils/sanitize-callback-url';
+import { sanitizeCallbackUrl } from '@/domains/auth/utils/sanitize-callback-url';
 import { cn } from '@/shared/utils';
 import { APP_ROUTES } from '@/shared/routes';
 
@@ -36,6 +36,29 @@ interface ModernAuthUIProps {
   redirectTo?: string;
   showRegister?: boolean;
   className?: string;
+}
+
+/** How long the success toast/authenticated state is visible before navigating away. */
+const AUTH_REDIRECT_DELAY_MS = 500;
+
+// sessionStorage can throw (SecurityError) in sandboxed iframes or certain
+// privacy-mode browser configurations — plausible here given this
+// component's own docs describe embedded/modal usage. Failing closed (treat
+// as "no stored redirect") is correct: it just falls back to `redirectTo`.
+function safeSessionStorageGet(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSessionStorageRemove(key: string): void {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Nothing to clean up if storage isn't accessible in the first place.
+  }
 }
 
 /**
@@ -55,10 +78,17 @@ export function ModernAuthUI({
   className,
 }: ModernAuthUIProps) {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading, login, logout, error, isLoggingIn, isLoggingOut } =
-    useAuth();
-
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const {
+    user,
+    isAuthenticated,
+    isLoading,
+    login,
+    logout,
+    error,
+    loginError,
+    isLoggingIn,
+    isLoggingOut,
+  } = useAuth();
 
   // One-shot snapshot of "was the user already authenticated the instant this
   // component mounted" — never updated after mount. Lets the welcome toast
@@ -67,13 +97,34 @@ export function ModernAuthUI({
   // valid (which would otherwise re-fire the toast on every mount).
   const wasAlreadyAuthenticatedRef = useRef(isAuthenticated);
 
+  // Tracks "has the auto-redirect sequence already been kicked off for the
+  // CURRENT authenticated session" — a ref, not state, because it's purely
+  // an internal re-entry guard with no bearing on what renders. It used to
+  // be state that also gated the buttons-vs-spinner JSX below; that coupled
+  // "don't restart the toast/timer on every re-render" with "hide the
+  // Continue to App / Sign Out buttons", and since the state flip happened
+  // essentially the instant the component became authenticated, those
+  // buttons were never actually visible/clickable for a real user (at best
+  // one paint frame) despite being the intended manual override to the
+  // auto-redirect. Decoupling: the buttons are now always shown alongside a
+  // "redirecting shortly" status line (see JSX below) so they're genuinely
+  // usable during the delay, while this ref still ensures the effect only
+  // fires once per sign-in, not on every unrelated re-render.
+  const redirectStartedRef = useRef(false);
+
   /**
    * Handle successful authentication redirect
    */
   useEffect(() => {
-    if (!isAuthenticated || isRedirecting) return;
-
-    setIsRedirecting(true);
+    if (!isAuthenticated) {
+      // Reset so a persisted instance of this "drop-in" card (its own docs
+      // describe modal/embedded usage, i.e. it may never unmount) runs the
+      // redirect flow again on a subsequent login rather than no-op'ing.
+      redirectStartedRef.current = false;
+      return;
+    }
+    if (redirectStartedRef.current) return;
+    redirectStartedRef.current = true;
 
     // Check for a stored redirect (set by a route guard before bouncing an
     // unauthenticated user here). sanitizeCallbackUrl constrains it to a
@@ -81,7 +132,7 @@ export function ModernAuthUI({
     // gateways — since this value ultimately reaches router.push() directly,
     // bypassing NextAuth's own server-side redirect validation.
     const storedRedirect =
-      typeof window !== 'undefined' ? sessionStorage.getItem('auth_redirect') : null;
+      typeof window !== 'undefined' ? safeSessionStorageGet('auth_redirect') : null;
     const destination = sanitizeCallbackUrl(storedRedirect || redirectTo);
 
     if (!wasAlreadyAuthenticatedRef.current) {
@@ -91,31 +142,36 @@ export function ModernAuthUI({
       });
     }
 
-    // Clear stored redirect
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('auth_redirect');
+      safeSessionStorageRemove('auth_redirect');
     }
 
-    // Redirect after short delay so the toast is visible before navigation.
+    // Redirect after a short delay — long enough for the toast/manual
+    // buttons below to be visible, short enough to feel automatic. If the
+    // user clicks "Sign Out" during this window, isAuthenticated flips
+    // false, the effect re-runs, and this cleanup cancels the pending
+    // navigation before it can fire.
     const timerId = setTimeout(() => {
       router.push(destination);
-    }, 500);
+    }, AUTH_REDIRECT_DELAY_MS);
 
     return () => clearTimeout(timerId);
-  }, [isAuthenticated, isRedirecting, redirectTo, router, user]);
+  }, [isAuthenticated, redirectTo, router, user]);
 
   /**
-   * Handle authentication errors
+   * Handle authentication errors. Depends on `loginError` (not just the
+   * derived `error` string) because AR.fail() constructs a fresh AuthError
+   * object on every failed attempt even when its .message text is
+   * identical — e.g. two consecutive "Authentication failed" results in a
+   * row. React's dependency comparison is by value, so keying this effect
+   * on the string alone would silently skip the toast on a repeat failure;
+   * the object reference always changes, so it doesn't.
    */
   useEffect(() => {
     if (error) {
-      // useAuth()'s `error` is always string | null (session?.error or
-      // loginError?.message) — never a raw Error/unknown — so no cast needed.
-      toast.error('Authentication Failed', {
-        description: error || 'Unable to authenticate. Please try again.',
-      });
+      toast.error('Authentication Failed', { description: error });
     }
-  }, [error]);
+  }, [error, loginError]);
 
   /**
    * Handle login button click
@@ -134,14 +190,17 @@ export function ModernAuthUI({
   // Show loading state
   if (isLoading) {
     return (
-      <Card className={cn('mx-auto w-full max-w-md', className)}>
+      <Card className={cn('mx-auto min-h-[26rem] w-full max-w-md', className)}>
         <CardContent className="pt-6">
           <div
             className="flex flex-col items-center justify-center space-y-4 py-8"
             role="status"
             aria-live="polite"
           >
-            <Loader2 className="text-primary h-8 w-8 animate-spin" aria-hidden="true" />
+            <Loader2
+              className="text-primary h-8 w-8 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
             <p className="text-muted-foreground text-sm">Checking authentication...</p>
           </div>
         </CardContent>
@@ -152,7 +211,7 @@ export function ModernAuthUI({
   // Show authenticated state
   if (isAuthenticated && user) {
     return (
-      <Card className={cn('mx-auto w-full max-w-md', className)}>
+      <Card className={cn('mx-auto min-h-[26rem] w-full max-w-md', className)}>
         <CardHeader>
           <div className="mb-4 flex items-center justify-center">
             <ShieldCheck className="text-success h-12 w-12" aria-hidden="true" />
@@ -162,39 +221,46 @@ export function ModernAuthUI({
             You are signed in as <strong>{user.name || user.email}</strong>
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {isRedirecting ? (
-            <div
-              className="flex flex-col items-center space-y-4 py-4"
-              role="status"
-              aria-live="polite"
+        <CardContent className="space-y-4">
+          <div
+            className="text-muted-foreground flex items-center justify-center gap-2 text-sm"
+            role="status"
+            aria-live="polite"
+          >
+            <Loader2
+              className="h-4 w-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            Redirecting shortly…
+          </div>
+          <div className="space-y-3">
+            <Button
+              onClick={() => router.push(sanitizeCallbackUrl(redirectTo))}
+              className="w-full"
+              size="lg"
             >
-              <Loader2 className="text-primary h-6 w-6 animate-spin" aria-hidden="true" />
-              <p className="text-muted-foreground text-sm">Redirecting...</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <Button onClick={() => router.push(redirectTo)} className="w-full" size="lg">
-                Continue to App
-              </Button>
-              <Button
-                onClick={() => logout()}
-                variant="outline"
-                className="w-full"
-                size="lg"
-                disabled={isLoggingOut}
-              >
-                {isLoggingOut ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                    Signing out...
-                  </>
-                ) : (
-                  'Sign Out'
-                )}
-              </Button>
-            </div>
-          )}
+              Continue to App
+            </Button>
+            <Button
+              onClick={() => logout()}
+              variant="outline"
+              className="w-full"
+              size="lg"
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? (
+                <>
+                  <Loader2
+                    className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
+                    aria-hidden="true"
+                  />
+                  Signing out...
+                </>
+              ) : (
+                'Sign Out'
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -202,7 +268,7 @@ export function ModernAuthUI({
 
   // Show login UI
   return (
-    <Card className={cn('mx-auto w-full max-w-md', className)}>
+    <Card className={cn('mx-auto min-h-[26rem] w-full max-w-md', className)}>
       <CardHeader className="space-y-1">
         <CardTitle className="text-center text-2xl font-bold">Welcome Back</CardTitle>
         <CardDescription className="text-center">
@@ -214,7 +280,10 @@ export function ModernAuthUI({
         <Button onClick={handleLogin} disabled={isLoggingIn} className="w-full" size="lg">
           {isLoggingIn ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+              <Loader2
+                className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
               Connecting...
             </>
           ) : (

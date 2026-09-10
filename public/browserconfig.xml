@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Windows tile configuration for pinned sites (IE11 / legacy Edge).
+
+  Referenced by the `msapplication-config` meta tag in app/layout.tsx, which
+  pointed at this file while it did not exist — a 404 on every pinned-site
+  request. Created rather than removing the meta tag, since the tile assets it
+  needs already exist.
+
+  `TileColor` matches `msapplication-TileColor` in the same metadata block.
+-->
+<browserconfig>
+  <msapplication>
+    <tile>
+      <square150x150logo src="/icon-192x192.png"/>
+      <square310x310logo src="/icon-512x512.png"/>
+      <TileColor>#0a0a0a</TileColor>
+    </tile>
+  </msapplication>
+</browserconfig>

@@ -90,9 +90,14 @@ export const LanguageFields = memo(function LanguageFields({
   );
 
   const languageOptions = useMemo(() => {
+    // Deliberately text-only, not `${lang.flag} ${lang.name}` — Windows
+    // Chromium browsers (Chrome/Edge) have no system font that renders
+    // regional-indicator flag emoji as flags; they fall back to the raw
+    // two-letter glyphs, so "🇺🇸 English" renders as the confusing literal
+    // text "us English" for a large share of real users, not a flag icon.
     return LANGUAGES.map((lang) => ({
       value: lang.code,
-      label: `${lang.flag} ${lang.name}`,
+      label: lang.name,
     }));
   }, []);
 
@@ -135,7 +140,6 @@ export const LanguageFields = memo(function LanguageFields({
         inputMode="tel"
         autoComplete="tel"
         helperText="Backup contact number used strictly for secondary account recovery alerts."
-        aria-describedby={errors.alternatePhone?.message ? 'alternatePhone-error' : undefined}
       />
 
       {/* Preferred Language Combobox */}

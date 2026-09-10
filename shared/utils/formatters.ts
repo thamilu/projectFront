@@ -1,5 +1,17 @@
-const DEFAULT_LOCALE = 'en-US';
-const DEFAULT_CURRENCY = 'USD';
+import { env } from '@/env';
+
+// Previously hardcoded to 'en-US'/'USD' regardless of deployment config —
+// on this app's actual default configuration (NEXT_PUBLIC_DEFAULT_CURRENCY
+// defaults to INR), every caller that relied on these defaults instead of
+// passing currency/locale explicitly (most product prices across the
+// catalog — see FeaturedProductsSection, FlashDealsSection, the product
+// detail page) rendered a literal "$" in front of an INR-denominated price.
+// Reading from the already-validated, already-NEXT_PUBLIC_-safe env config
+// here fixes every one of those call sites from this single definition,
+// while still letting any caller override either value explicitly (as
+// app/(customer)/cart/page.tsx and checkout/page.tsx already do).
+const DEFAULT_LOCALE = env.NEXT_PUBLIC_DEFAULT_LOCALE;
+const DEFAULT_CURRENCY = env.NEXT_PUBLIC_DEFAULT_CURRENCY;
 
 export function formatCurrency(
   amount: number,
@@ -17,40 +29,11 @@ export function formatCurrency(
 // Alias for formatCurrency as requested by generic components
 export const formatPrice = formatCurrency;
 
-export function formatNumber(
-  value: number,
-  locale: string = DEFAULT_LOCALE
-): string {
+export function formatNumber(value: number, locale: string = DEFAULT_LOCALE): string {
   return new Intl.NumberFormat(locale).format(value);
 }
 
-export function formatCompactNumber(
-  value: number,
-  locale: string = DEFAULT_LOCALE
-): string {
-  return new Intl.NumberFormat(locale, {
-    notation: 'compact',
-    compactDisplay: 'short',
-    maximumFractionDigits: 1,
-  }).format(value);
-}
-
-export function formatPercentage(
-  value: number,
-  decimals: number = 1,
-  locale: string = DEFAULT_LOCALE
-): string {
-  return new Intl.NumberFormat(locale, {
-    style: 'percent',
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(value / 100);
-}
-
-export function calculateDiscount(
-  originalPrice: number,
-  sellingPrice: number
-): number {
+export function calculateDiscount(originalPrice: number, sellingPrice: number): number {
   if (!originalPrice || !sellingPrice || originalPrice <= sellingPrice) return 0;
   return Math.round(((originalPrice - sellingPrice) / originalPrice) * 100);
 }
@@ -68,10 +51,7 @@ export function formatDate(
   return new Intl.DateTimeFormat(locale, options).format(date);
 }
 
-export function formatDateTime(
-  dateString: string,
-  locale: string = DEFAULT_LOCALE
-): string {
+export function formatDateTime(dateString: string, locale: string = DEFAULT_LOCALE): string {
   return formatDate(
     dateString,
     {
@@ -85,38 +65,10 @@ export function formatDateTime(
   );
 }
 
-export function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) {
-    return 'Just now';
-  }
-
-  if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes}m ago`;
-  }
-
-  if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours}h ago`;
-  }
-
-  if (diffInSeconds < 604800) {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days}d ago`;
-  }
-
-  return formatDate(dateString, { month: 'short', day: 'numeric' });
-}
-
-export function formatOrderNumber(orderNumber: string): string {
-  return orderNumber.toUpperCase();
-}
-
-export function truncate(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, maxLength)}...`;
-}
+/**
+ * NOTE: `formatRelativeTime` deliberately lives in
+ * `shared/utils/format-relative-time.ts`, not here. It is re-exported from
+ * `shared/utils/index.ts` alongside these formatters, so consumers import both
+ * from the same barrel — but the implementation stays in one file so the two
+ * cannot diverge under one name.
+ */

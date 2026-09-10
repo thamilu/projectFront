@@ -12,5 +12,8 @@ export interface Notification {
   message: string;
   read: boolean;
   actionUrl?: string;
-  createdAt: Date;
+  /** ISO 8601 timestamp string, as received over JSON — never a real `Date`
+   * instance, since `notificationsApi.getNotifications` returns the API
+   * response directly with no date-parsing step. */
+  createdAt: string;
 }

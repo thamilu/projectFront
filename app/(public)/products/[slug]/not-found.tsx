@@ -9,11 +9,13 @@ export default function NotFound() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
-            <div className="rounded-full bg-muted p-6">
-              <Search className="h-12 w-12 text-muted-foreground" />
+            <div className="bg-muted rounded-full p-6">
+              <Search className="text-muted-foreground h-12 w-12" />
             </div>
           </div>
-          <CardTitle className="text-3xl">404 - Not Found</CardTitle>
+          <CardTitle as="h1" className="text-3xl">
+            404 - Not Found
+          </CardTitle>
           <CardDescription className="text-base">
             The page you're looking for doesn't exist or has been moved.
           </CardDescription>

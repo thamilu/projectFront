@@ -1,0 +1,940 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════
+ * ENTERPRISE DESIGN SYSTEM — ANIMATION KEYFRAME DEFINITIONS
+ * Version: 2.0.0
+ *
+ * Architecture:
+ *   @layer animations  — Keyframe definitions only (this file)
+ *   @layer utilities   — .animate-* utility classes (utilities.css)
+ *
+ * Performance contract:
+ *   ✅ GPU-composited : opacity, transform     → zero paint cost
+ *   ⚠️  Moderate      : background-position    → use sparingly
+ *   ❌ Never animate  : box-shadow, width/height in keyframes directly
+ *
+ * Accessibility:
+ *   @media (prefers-reduced-motion: reduce) — collapses all keyframes
+ *   @media (forced-colors: active)          — system color keywords
+ *
+ * Keyframe groups:
+ *   1. Accordion    — Generic (max-height) + Radix-specific variants
+ *   2. Entrance     — fade-in, zoom-in, slide-in-from-*
+ *   3. Exit         — fade-out, zoom-out, slide-out-to-*
+ *   4. Viewport-slide — Full-viewport entrance/exit (drawers, toasts)
+ *   5. Feedback     — shake, bounce, heartbeat, wiggle
+ *   6. Ambient      — shimmer-transform, spin-slow, pulse-ring, ping, skeleton-wave
+ *   7. Progress     — progress-indeterminate
+ *   8. Reduced-motion overrides
+ *   9. Forced-colors adaptations
+ *
+ * @see utilities.css  — .animate-* utility classes
+ * @see types/animations.ts — TypeScript animation registry
+ * @see tokens.css      — --duration-*, --ease-* motion tokens
+ * ═══════════════════════════════════════════════════════════════════
+ */
+
+@layer animations {
+  /* ════════════════════════════════════════════════════════════════
+     §1. ACCORDION
+     ─────────────────────────────────────────────────────────────
+     Two strategies:
+     A. Generic  — max-height trick, works everywhere, no library dep
+     B. Radix    — uses --radix-accordion-content-height CSS variable
+                   set by @radix-ui/react-accordion at runtime.
+                   DO NOT use B outside a Radix Accordion context.
+     ════════════════════════════════════════════════════════════════ */
+
+  /**
+   * accordion-down / accordion-up
+   * Generic variant — library-agnostic, safe everywhere.
+   * Set --accordion-max-height to your content's max height.
+   * Default fallback: 9999px (works but disables hardware hint).
+   */
+  @keyframes accordion-down {
+    from {
+      max-height: 0;
+      opacity: 0;
+    }
+    to {
+      max-height: var(--accordion-max-height, 9999px);
+      opacity: 1;
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      max-height: var(--accordion-max-height, 9999px);
+      opacity: 1;
+    }
+    to {
+      max-height: 0;
+      opacity: 0;
+    }
+  }
+
+  /**
+   * accordion-down-radix / accordion-up-radix
+   * Radix UI variant — uses the exact measured content height.
+   * ONLY use with @radix-ui/react-accordion (provides the variable).
+   */
+  @keyframes accordion-down-radix {
+    from {
+      height: 0;
+      opacity: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
+  }
+
+  @keyframes accordion-up-radix {
+    from {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
+    to {
+      height: 0;
+      opacity: 0;
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     §2. ENTRANCE — GPU-composited: opacity + transform
+     ════════════════════════════════════════════════════════════════ */
+
+  /** fade-in: General-purpose mount animation. Modals, tooltips, popovers. */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /** zoom-in: Scale from 95%→100%. Dropdowns, context menus, cards. */
+  @keyframes zoom-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /**
+   * slide-in-from-* (element-relative — moves by element's own dimensions)
+   * Best for: modals sliding in, dropdown menus, tooltips.
+   * Note: translateY(-100%) = element's own height, NOT viewport height.
+   * For viewport-relative slides (drawers, toasts) → §4 below.
+   */
+  @keyframes slide-in-from-top {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-in-from-bottom {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-in-from-right {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slide-in-from-left {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     §3. EXIT — GPU-composited: opacity + transform
+     ════════════════════════════════════════════════════════════════ */
+
+  /** fade-out: General-purpose unmount animation. */
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
+  /** zoom-out: Scale from 100%→95%. Reverse of zoom-in. */
+  @keyframes zoom-out {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+  }
+
+  @keyframes slide-out-to-right {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes slide-out-to-left {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-100%);
+    }
+  }
+
+  @keyframes slide-out-to-top {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-100%);
+    }
+  }
+
+  @keyframes slide-out-to-bottom {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(100%);
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     §4. VIEWPORT-RELATIVE SLIDES
+     ─────────────────────────────────────────────────────────────
+     Uses 100vh/100vw instead of 100% so the element always
+     travels the FULL viewport distance regardless of its height.
+     Best for: toast notifications, mobile navigation drawers,
+               full-screen overlays (position: fixed elements).
+     ════════════════════════════════════════════════════════════════ */
+
+  @keyframes slide-in-from-top-viewport {
+    from {
+      transform: translateY(-100vh);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-in-from-bottom-viewport {
+    from {
+      transform: translateY(100vh);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-in-from-right-viewport {
+    from {
+      transform: translateX(100vw);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slide-in-from-left-viewport {
+    from {
+      transform: translateX(-100vw);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slide-out-to-right-viewport {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(100vw);
+    }
+  }
+
+  @keyframes slide-out-to-left-viewport {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-100vw);
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     §5. FEEDBACK — UX response to user actions
+     ════════════════════════════════════════════════════════════════ */
+
+  /**
+   * shake: Form validation errors, authentication failures.
+   * Short, horizontal oscillation signals "something is wrong".
+   * GPU-composited: transform only.
+   */
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+      transform: translateX(-4px);
+    }
+    20%,
+    40%,
+    60%,
+    80% {
+      transform: translateX(4px);
+    }
+  }
+
+  /**
+   * bounce-feedback: Success confirmations, item additions to cart.
+   * Bounces the element down-then-back (natural physics feel).
+   * GPU-composited: transform only.
+   */
+  @keyframes bounce-feedback {
+    0%,
+    100% {
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+
+  /**
+   * heartbeat: Live indicators, notification badges, "online" dots.
+   * Double-pulse pattern mimics a real heartbeat rhythm.
+   * GPU-composited: transform only.
+   */
+  @keyframes heartbeat {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    14% {
+      transform: scale(1.15);
+    }
+    28% {
+      transform: scale(1);
+    }
+    42% {
+      transform: scale(1.15);
+    }
+    70% {
+      transform: scale(1);
+    }
+  }
+
+  /**
+   * wiggle: Attention-grabbing CTAs, hint animations, tutorial pointers.
+   * Gentle rotation left-right. Use sparingly — only one element at a time.
+   * GPU-composited: transform only.
+   */
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(-3deg);
+    }
+    75% {
+      transform: rotate(3deg);
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     §6. AMBIENT — Continuous/looping animations
+     ════════════════════════════════════════════════════════════════ */
+
+  /**
+   * shimmer-transform — GPU-composited skeleton loading shimmer.
+   *
+   * CRITICAL performance note: this replaces the legacy shimmer
+   * (background-position based) with a translate-based approach.
+   *
+   * Pattern: Apply to a ::before pseudo-element with a gradient background.
+   * The pseudo-element translates across the skeleton (GPU-composited).
+   * The parent skeleton element stays static.
+   *
+   * Example:
+   *   .skeleton { position: relative; overflow: hidden; }
+   *   .skeleton::before {
+   *     content: '';
+   *     position: absolute; inset: 0;
+   *     background: linear-gradient(90deg, transparent, hsl(var(--color-muted-foreground) / 0.1), transparent);
+   *     animation: shimmer-transform var(--duration-1500) linear infinite;
+   *     will-change: transform;
+   *   }
+   */
+  @keyframes shimmer-transform {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /**
+   * shimmer — LEGACY background-position variant.
+   * Kept for backward compatibility with components using
+   * background-size: 200% patterns.
+   * Prefer shimmer-transform for new implementations.
+   */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /**
+   * spin-slow — Slow 360° rotation. Loading spinners, refresh icons.
+   * GPU-composited: transform only.
+   */
+  @keyframes spin-slow {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /**
+   * pulse-ring — GPU-OPTIMIZED call-to-action ring effect.
+   *
+   * CRITICAL performance note (CRITICAL-02):
+   * This keyframe animates ONLY opacity + transform.
+   * box-shadow must NEVER be animated directly in keyframes — it
+   * triggers paint on every frame (30–60 paints/sec = severe jank).
+   *
+   * REQUIRED pattern — use with a ::after pseudo-element:
+   *
+   *   .pulse-button { position: relative; isolation: isolate; }
+   *   .pulse-button::after {
+   *     content: '';
+   *     position: absolute;
+   *     inset: -8px;
+   *     border-radius: inherit;
+   *     box-shadow: 0 0 0 10px hsl(var(--color-primary-tinted-70, 221 83% 70%));
+   *     pointer-events: none;
+   *     z-index: -1;
+   *     animation: var(--animation-pulse-ring);
+   *     will-change: transform, opacity;
+   *   }
+   *
+   * GPU-composited: opacity + transform only.
+   */
+  @keyframes pulse-ring {
+    0%,
+    100% {
+      transform: scale(0.95);
+      opacity: 1;
+    }
+    70% {
+      transform: scale(1.05);
+      opacity: 0;
+    }
+  }
+
+  /**
+   * ping — Notification badge pulse. Scale + fade to transparent.
+   * Use the Tailwind `animate-ping` pattern: absolute child on a relative parent.
+   * GPU-composited: opacity + transform only.
+   */
+  @keyframes ping {
+    75%,
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+
+  /**
+   * skeleton-wave — Opacity-only skeleton pulse (alt to shimmer).
+   * Simpler than shimmer, zero layout cost.
+   * GPU-composited: opacity only.
+   */
+  @keyframes skeleton-wave {
+    0%,
+    100% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     §7. PROGRESS
+     ════════════════════════════════════════════════════════════════ */
+
+  /**
+   * progress-indeterminate — Indeterminate progress bar animation.
+   * The animated element should be a child of overflow:hidden parent.
+   * GPU-composited: transform only.
+   *
+   * Pattern:
+   *   .progress-bar { position: relative; overflow: hidden; height: 4px; }
+   *   .progress-bar::before {
+   *     content: '';
+   *     position: absolute; inset: 0;
+   *     background: hsl(var(--color-primary));
+   *     animation: progress-indeterminate var(--duration-1500) var(--ease-in-out) infinite;
+   *     will-change: transform;
+   *   }
+   */
+  @keyframes progress-indeterminate {
+    0% {
+      transform: translateX(-100%) scaleX(0.3);
+    }
+    50% {
+      transform: translateX(0%) scaleX(0.7);
+    }
+    100% {
+      transform: translateX(100%) scaleX(0.3);
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     §8. REDUCED MOTION OVERRIDES (WCAG 2.3.3)
+     ─────────────────────────────────────────────────────────────
+     Collapses all animated keyframes to instant/static states.
+     Duration tokens set to 0ms in tokens.css handle CSS transition
+     properties; these overrides handle @animation keyframes directly.
+     ════════════════════════════════════════════════════════════════ */
+
+  @media (prefers-reduced-motion: reduce) {
+    /* §2 Entrance */
+    @keyframes fade-in {
+      from,
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    @keyframes zoom-in {
+      from,
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    @keyframes slide-in-from-top {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes slide-in-from-bottom {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes slide-in-from-right {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes slide-in-from-left {
+      from,
+      to {
+        transform: none;
+      }
+    }
+
+    /* §3 Exit */
+    @keyframes fade-out {
+      from,
+      to {
+        opacity: 0;
+        transform: none;
+      }
+    }
+    @keyframes zoom-out {
+      from,
+      to {
+        opacity: 0;
+        transform: none;
+      }
+    }
+    @keyframes slide-out-to-right {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes slide-out-to-left {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes slide-out-to-top {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes slide-out-to-bottom {
+      from,
+      to {
+        transform: none;
+      }
+    }
+
+    /* §4 Viewport slides */
+    @keyframes slide-in-from-top-viewport {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes slide-in-from-bottom-viewport {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes slide-in-from-right-viewport {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes slide-in-from-left-viewport {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes slide-out-to-right-viewport {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes slide-out-to-left-viewport {
+      from,
+      to {
+        transform: none;
+      }
+    }
+
+    /* §5 Feedback — instant visual state (no motion) */
+    @keyframes shake {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes bounce-feedback {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes heartbeat {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes wiggle {
+      from,
+      to {
+        transform: none;
+      }
+    }
+
+    /* §6 Ambient — halt all looping */
+    @keyframes shimmer-transform {
+      from,
+      to {
+        transform: none;
+      }
+    }
+    @keyframes shimmer {
+      from,
+      to {
+        background-position: 0 0;
+      }
+    }
+    @keyframes spin-slow {
+      to {
+        transform: none;
+      }
+    }
+    @keyframes pulse-ring {
+      from,
+      to {
+        transform: none;
+        opacity: 0.5;
+      }
+    }
+    @keyframes ping {
+      from,
+      to {
+        transform: none;
+        opacity: 0.5;
+      }
+    }
+    @keyframes skeleton-wave {
+      from,
+      to {
+        opacity: 0.8;
+      }
+    }
+
+    /* §7 Progress — halt */
+    @keyframes progress-indeterminate {
+      from,
+      to {
+        transform: none;
+      }
+    }
+
+    /* §10 RedirectingScreen — halt all ambient loops */
+    @keyframes mesh-orb-a {
+      from,
+      to {
+        transform: none;
+        opacity: 0.7;
+      }
+    }
+    @keyframes mesh-orb-b {
+      from,
+      to {
+        transform: none;
+        opacity: 0.7;
+      }
+    }
+    @keyframes card-enter {
+      from,
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    .animate-mesh-orb-a,
+    .animate-mesh-orb-b {
+      will-change: auto;
+    }
+    .animate-card-enter {
+      will-change: auto;
+    }
+
+    /*
+     * §1 Accordion — special case.
+     * Users EXPECT accordions to open/close (it's UI behavior, not decoration).
+     * We keep the expand/collapse but skip the opacity fade animation.
+     * The height transition is still handled by the CSS transition property.
+     */
+    @keyframes accordion-down {
+      from,
+      to {
+        max-height: var(--accordion-max-height, 9999px);
+        opacity: 1;
+      }
+    }
+    @keyframes accordion-up {
+      from,
+      to {
+        max-height: 0;
+        opacity: 0;
+      }
+    }
+    @keyframes accordion-down-radix {
+      from,
+      to {
+        height: var(--radix-accordion-content-height);
+        opacity: 1;
+      }
+    }
+    @keyframes accordion-up-radix {
+      from,
+      to {
+        height: 0;
+        opacity: 0;
+      }
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     §10. REDIRECTING SCREEN
+     ─────────────────────────────────────────────────────────────
+     Keyframes for features/auth/components/redirects/redirecting-screen.tsx
+
+     ALL three animations are GPU-composited (opacity + transform only).
+     They are intentionally NOT applied when prefers-reduced-motion: reduce
+     is active — the JS layer (useReducedMotion hook) conditionally adds
+     these class names, so the @media block below is a belt-and-suspenders
+     safety net.
+     ════════════════════════════════════════════════════════════════ */
+
+  /**
+   * mesh-orb-a — Primary ambient background orb (top-left).
+   * 20 s loop. Slow scale + rotation + positional drift.
+   * GPU-composited: transform + opacity only.
+   */
+  @keyframes mesh-orb-a {
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg) translate(-20px, -20px);
+      opacity: 0.8;
+    }
+    50% {
+      transform: scale(1.2) rotate(90deg) translate(20px, 20px);
+      opacity: 0.6;
+    }
+  }
+
+  /**
+   * mesh-orb-b — Secondary ambient background orb (bottom-right).
+   * 25 s loop. Counter-rotation with offset phase.
+   * GPU-composited: transform + opacity only.
+   */
+  @keyframes mesh-orb-b {
+    0%,
+    100% {
+      transform: scale(1.2) rotate(0deg) translate(20px, 20px);
+      opacity: 0.6;
+    }
+    50% {
+      transform: scale(1) rotate(-90deg) translate(-20px, -20px);
+      opacity: 0.8;
+    }
+  }
+
+  /**
+   * card-enter — Glassmorphic card entrance.
+   * 500 ms ease-out. Single play (fill: both).
+   * GPU-composited: opacity + transform only.
+   */
+  @keyframes card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Tailwind utility classes that reference these keyframes */
+  .animate-mesh-orb-a {
+    animation: mesh-orb-a 20s linear infinite;
+    will-change: transform, opacity;
+  }
+
+  .animate-mesh-orb-b {
+    animation: mesh-orb-b 25s linear infinite;
+    will-change: transform, opacity;
+  }
+
+  .animate-card-enter {
+    animation: card-enter 500ms cubic-bezier(0, 0, 0.2, 1) both;
+    will-change: opacity, transform;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     §9. FORCED-COLORS (Windows High Contrast Mode)
+     ─────────────────────────────────────────────────────────────
+     hsl() colors are overridden by the OS in forced-colors mode.
+     Remap to system color keywords to maintain visual signal.
+     ════════════════════════════════════════════════════════════════ */
+
+  @media (forced-colors: active) {
+    /* Shimmer: gradient becomes invisible — use system face color */
+    @keyframes shimmer-transform {
+      0% {
+        transform: translateX(-100%);
+        background: ButtonFace;
+      }
+      100% {
+        transform: translateX(100%);
+        background: ButtonFace;
+      }
+    }
+    @keyframes shimmer {
+      from,
+      to {
+        background: ButtonFace;
+        background-position: 0 0;
+      }
+    }
+
+    /* Skeleton-wave: opacity still works in forced-colors */
+
+    /* Pulse-ring: remap to ButtonText so the ring is visible */
+    @keyframes pulse-ring {
+      0%,
+      100% {
+        transform: scale(0.95);
+        opacity: 1;
+        outline: 2px solid ButtonText;
+        outline-offset: 0;
+      }
+      70% {
+        transform: scale(1.05);
+        opacity: 0;
+        outline-offset: 8px;
+      }
+    }
+
+    /* Ping: ensure it stays visible in high-contrast context */
+    @keyframes ping {
+      75%,
+      100% {
+        transform: scale(2);
+        opacity: 0;
+        outline: 1px solid ButtonText;
+      }
+    }
+  }
+}

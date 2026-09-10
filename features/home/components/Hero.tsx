@@ -1,7 +1,3 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { cn } from '@/shared/utils';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
 import { BannerCarousel } from './BannerCarousel';
 
 // ============================================================================

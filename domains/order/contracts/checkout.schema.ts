@@ -1,29 +1,33 @@
 import { z } from 'zod';
 
-export const AddressSchema = z.object({
-  street: z.string().min(1, 'Street address is required').max(200),
-  apartment: z.string().max(100).optional(),
-  city: z.string().min(1, 'City is required').max(100),
-  state: z.string().min(1, 'State is required').max(100),
-  postalCode: z.string().min(2, 'Postal code is required').max(20),
-  country: z.string().min(2).max(100),
-});
-
-export const CardSchema = z.object({
-  name: z.string().min(1, 'Cardholder name is required'),
-  number: z.string().min(12, 'Card number looks short').max(19),
-  expiry: z.string().regex(/^(0[1-9]|1[0-2])\/[0-9]{2}$/, 'Expiry must be MM/YY'),
-  cvc: z.string().min(3).max(4),
-});
-
-export const CheckoutSchema = z.object({
-  shipping: AddressSchema,
-  billingSameAsShipping: z.boolean().default(true),
-  billing: AddressSchema.optional(),
-  paymentMethod: z.enum(['card', 'upi', 'wallet', 'emi']),
-  card: CardSchema.optional(),
-  acceptTerms: z.boolean().refine(v => v === true, { message: 'You must accept the terms' }),
-});
+/**
+ * Card number/expiry/CVC fields were removed from this schema entirely —
+ * they used to be collected as plain form inputs and were never actually
+ * submitted anywhere (see the checkout page's prior TODO), but keeping them
+ * in the schema/UI at all was a latent PCI-DSS risk: Stripe Elements exists
+ * specifically so raw cardholder data never touches this frontend's own
+ * form state or servers. Real card entry now goes through
+ * features/checkout/components/StripePaymentForm.tsx, which mounts Stripe's
+ * own PaymentElement — Stripe tokenizes the card directly in its iframe and
+ * this app never sees the PAN/CVC at all.
+ */
+const CheckoutSchema = z
+  .object({
+    shippingAddressId: z.string().min(1, 'Please select a shipping address'),
+    billingSameAsShipping: z.boolean().default(true),
+    billingAddressId: z.string().optional(),
+    // Only 'card' (via Stripe) is a real, working payment method today —
+    // UPI/wallet/EMI have no backend integration and are shown disabled in
+    // the UI rather than silently accepted here. See the infrastructure/
+    // review's "incomplete Stripe checkout integration" finding.
+    paymentMethod: z.literal('card').default('card'),
+    notes: z.string().max(500).optional(),
+    acceptTerms: z.boolean().refine((v) => v === true, { message: 'You must accept the terms' }),
+  })
+  .refine((data) => data.billingSameAsShipping || !!data.billingAddressId, {
+    message: 'Please select a billing address',
+    path: ['billingAddressId'],
+  });
 
 export type CheckoutFormValues = z.infer<typeof CheckoutSchema>;
 

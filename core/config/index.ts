@@ -13,3 +13,5 @@ export { navigationConfig } from './navigation';
 export type { NavItem, NavSection } from './navigation';
 
 export { socialConfig } from './social';
+
+export { AUTH_CONFIG } from './auth';

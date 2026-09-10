@@ -15,3 +15,4 @@
 13. **Edge Compatibility**: Edge runtime code must avoid Node.js-specific APIs.
 14. **Error Mapping**: Map backend `ErrorCodes` consistently to `AppError` hierarchy for predictable UI behavior.
 15. **Distributed Tracing**: Propagate `X-Correlation-ID` and trace headers in all outgoing requests.
+16. **Step Toggling & Validation**: Any multi-step form step that supports inline editing and locking MUST use the centralized `useEditableStepValidation` hook to guarantee validation on locking, try/catch defensive state management, and proper screen-reader (aria-live) status announcements.

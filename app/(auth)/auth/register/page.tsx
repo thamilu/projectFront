@@ -1,19 +1,10 @@
-/**
- * Register Page - Keycloak Registration Gateway
- *
- * Mirrors app/(auth)/login/page.tsx: auto-redirects to Keycloak's
- * registration screen (via screen_hint), but surfaces a manual retry
- * instead of leaving the user on an infinite spinner if the IdP is
- * unreachable or slow to respond.
- */
-
 'use client';
 
 import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn, useSession } from 'next-auth/react';
 import { logger } from '@/core/telemetry/logger';
-import { sanitizeCallbackUrl } from '@/features/auth/utils/sanitize-callback-url';
+import { sanitizeCallbackUrl } from '@/domains/auth/utils/sanitize-callback-url';
 import {
   AuthAlert,
   LoginLayout,
@@ -23,22 +14,24 @@ import {
   LoginLoadingState,
 } from '@/features/auth';
 
-// Safety net for a registration hand-off that never resolves or rejects
-// (e.g. an unresponsive Keycloak instance hanging mid-request).
 const STUCK_SIGN_IN_TIMEOUT_MS = 15_000;
 
 function RegisterContent() {
   const params = useSearchParams();
   const callbackUrl = sanitizeCallbackUrl(params?.get('callbackUrl') || params?.get('from'));
+  const { status } = useSession();
+  const router = useRouter();
 
   const hasStarted = useRef(false);
   const [failed, setFailed] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const alertRef = useRef<HTMLDivElement>(null);
 
   const startRegistration = useCallback(() => {
     setFailed(false);
     setTimedOut(false);
+    setAttempt((n) => n + 1);
     signIn('keycloak', { callbackUrl }, { screen_hint: 'register' }).catch((err) => {
       logger.error('[RegisterPage] Failed to reach Keycloak registration', {
         error: err instanceof Error ? err.message : String(err),
@@ -47,20 +40,21 @@ function RegisterContent() {
     });
   }, [callbackUrl]);
 
-  // Auto-start once on mount (guarded against StrictMode double-invoke).
   useEffect(() => {
-    if (hasStarted.current) return;
+    if (hasStarted.current || status === 'loading') return;
     hasStarted.current = true;
+    if (status === 'authenticated') {
+      router.replace(callbackUrl);
+      return;
+    }
     startRegistration();
-  }, [startRegistration]);
+  }, [status, callbackUrl, router, startRegistration]);
 
-  // If the hand-off is still pending after STUCK_SIGN_IN_TIMEOUT_MS, surface
-  // a manual retry instead of leaving the spinner running forever.
   useEffect(() => {
     if (failed) return;
     const timer = setTimeout(() => setTimedOut(true), STUCK_SIGN_IN_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [failed]);
+  }, [failed, attempt]);
 
   const handleRetry = useCallback(() => {
     startRegistration();
@@ -105,10 +99,13 @@ function RegisterContent() {
   );
 }
 
-export default function RegisterPage() {
+function RegisterPageInner() {
   return (
     <LoginLayout>
-      <main aria-labelledby="register-heading">
+      {/* <section>, not <main>: the root layout owns the document's single
+          main landmark. A named section is still a `region` landmark, so the
+          heading association is preserved. */}
+      <section aria-labelledby="register-heading">
         <LoginCard>
           <LoginLogo />
 
@@ -119,13 +116,19 @@ export default function RegisterPage() {
             Create your eShop account
           </h1>
 
-          <Suspense
-            fallback={<LoginLoadingState isSigningIn={true} label="Redirecting to registration..." />}
-          >
-            <RegisterContent />
-          </Suspense>
+          <RegisterContent />
         </LoginCard>
-      </main>
+      </section>
     </LoginLayout>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={<LoginLoadingState isSigningIn={true} label="Redirecting to registration..." />}
+    >
+      <RegisterPageInner />
+    </Suspense>
   );
 }

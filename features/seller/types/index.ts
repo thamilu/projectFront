@@ -1,4 +1,8 @@
-import { SellerIdentityType, SellerBusinessType, SELLER_BUSINESS_TYPE_LABELS } from '@/domains/seller/contracts/seller.types';
+import {
+  SellerIdentityType,
+  SellerBusinessType,
+  SELLER_BUSINESS_TYPE_LABELS,
+} from '@/domains/seller/contracts/seller.types';
 
 export { SellerIdentityType, SellerBusinessType, SELLER_BUSINESS_TYPE_LABELS };
 
@@ -24,7 +28,7 @@ export interface SellerProfile {
   createdAt: string;
   updatedAt: string;
   email?: string;
-  
+
   // New Dual Address System
   addressLine1?: string;
   addressLine2?: string;
@@ -34,7 +38,7 @@ export interface SellerProfile {
   state?: string;
   pincode?: string;
   country?: string;
-  
+
   // Store specific address (if different)
   storeAddressLine1?: string;
   storeAddressLine2?: string;
@@ -44,10 +48,10 @@ export interface SellerProfile {
   storeState?: string;
   storePincode?: string;
   storeCountry?: string;
-  
+
   googleMapsUrl?: string;
   businessMobileNumber?: string;
-  
+
   // Nested structures for modular backend
   kyc?: {
     idType: string;
@@ -79,7 +83,7 @@ export interface SellerRegisterRequest {
   businessName?: string;
   businessTypes: SellerBusinessType[];
   description?: string;
-  
+
   // Personal / Permanent Address
   addressLine1?: string;
   addressLine2?: string;
@@ -89,7 +93,7 @@ export interface SellerRegisterRequest {
   state?: string;
   pincode?: string;
   country?: string;
-  
+
   // Store / Warehouse Address
   storeAddressLine1?: string;
   storeAddressLine2?: string;
@@ -99,10 +103,10 @@ export interface SellerRegisterRequest {
   storeState?: string;
   storePincode?: string;
   storeCountry?: string;
-  
+
   googleMapsUrl?: string;
-  phone?: string;          // Personal phone
-  businessPhone?: string;  // Customer support phone
+  phone?: string; // Personal phone
+  businessPhone?: string; // Customer support phone
 }
 
 export type SellerOnboardingRequest = SellerRegisterRequest;
@@ -134,9 +138,13 @@ export interface Store {
   isVerified?: boolean;
   rating?: number;
   totalRatings?: number;
+  currencyCode?: string;
 }
 
-export interface StoreCreateRequest extends Omit<Store, 'id' | 'rating' | 'totalRatings' | 'isVerified'> {}
+export interface StoreCreateRequest extends Omit<
+  Store,
+  'id' | 'rating' | 'totalRatings' | 'isVerified'
+> {}
 
 export interface StoreUpdateRequest extends Partial<StoreCreateRequest> {
   id?: string;

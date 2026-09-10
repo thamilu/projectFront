@@ -1,5 +1,5 @@
 /**
- * FeaturedStoresSection â€” Async Server Component
+ * FeaturedStoresSection — Async Server Component
  *
  * Fetches and renders a horizontal scroll of seller stores.
  * Follows the same pattern as FeaturedProductsSection (async SSC + error boundary).
@@ -8,31 +8,34 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { z } from 'zod';
-import { ArrowRight, ChevronRight, Store } from 'lucide-react';
+import { ArrowRight, ChevronRight, Store, Star } from 'lucide-react';
 import { Button } from '@/shared/ui/atoms/button';
 import { cn, isValidImageUrl } from '@/shared/utils';
 import { logger } from '@/core/telemetry/logger';
 import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
 import { apiClient } from '@/core/client';
 import { siteConfig } from '@/core/config/site';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/routes';
 import {
   getStoreDisplayName,
   getStoreInitials,
   getStoreAvatarColor,
 } from '@/shared/store/store-helpers';
-// Remove CSS module import
-// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+import { sanitizeCSSValue } from '@/lib/sanitize';
+import { unstable_cache } from 'next/cache';
 
-interface ShopSummary {
+// ─── Types ─────────────────────────────────────────────────────────────
+
+export interface ShopSummary {
   id: number;
-  shopName?: string;
-  name?: string;
-  description?: string;
-  logoUrl?: string;
-  productCount?: number;
-  rating?: number;
+  shopName?: string | null;
+  name?: string | null;
+  description?: string | null;
+  logoUrl?: string | null;
+  productCount?: number | null;
+  rating?: number | null;
 }
+
 
 const ShopSummarySchema = z
   .object({
@@ -44,7 +47,7 @@ const ShopSummarySchema = z
     productCount: z.coerce.number().nullable().optional(),
     rating: z.coerce.number().nullable().optional(),
   })
-  .passthrough();
+  .strip();
 
 const FeaturedStoresResponseSchema = z.union([
   z
@@ -53,24 +56,36 @@ const FeaturedStoresResponseSchema = z.union([
         .object({
           content: z.array(ShopSummarySchema),
         })
-        .passthrough(),
+        .strip(),
     })
-    .passthrough(),
+    .strip(),
   z
     .object({
       content: z.array(ShopSummarySchema),
     })
-    .passthrough(),
+    .strip(),
   z.array(ShopSummarySchema),
 ]);
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Helpers ────────────────────────────────────────────────────────────
+
+interface ApiError {
+  status?: number;
+  message?: string;
+  name?: string;
+}
+
+function isApiError(error: unknown): error is ApiError {
+  return typeof error === 'object' && error !== null;
+}
 
 /** Fetch stores using the authenticated server-side fetch wrapper */
 async function fetchStores(size = 10): Promise<ShopSummary[]> {
   try {
+    // Clamp size parameter to prevent injection vectors
+    const safeSize = Math.max(1, Math.min(size, 50));
     const { data: response } = await apiClient.get<unknown>(
-      `${API_ENDPOINTS.STORES.LIST}?page=0&size=${size}`
+      `${API_ENDPOINTS.STORES.LIST}?page=0&size=${safeSize}`
     );
 
     const parsed = FeaturedStoresResponseSchema.safeParse(response);
@@ -82,7 +97,7 @@ async function fetchStores(size = 10): Promise<ShopSummary[]> {
     }
 
     const value = parsed.data;
-    if (Array.isArray(value)) return value as ShopSummary[];
+    if (Array.isArray(value)) return value;
 
     if (
       'data' in value &&
@@ -90,42 +105,52 @@ async function fetchStores(size = 10): Promise<ShopSummary[]> {
       typeof value.data === 'object' &&
       'content' in value.data
     ) {
-      const content = (value.data as { content?: unknown }).content;
-      return Array.isArray(content) ? (content as ShopSummary[]) : [];
+      const content = value.data.content;
+      return Array.isArray(content) ? content : [];
     }
 
     if ('content' in value) {
-      const content = (value as { content?: unknown }).content;
-      return Array.isArray(content) ? (content as ShopSummary[]) : [];
+      const content = value.content;
+      return Array.isArray(content) ? content : [];
     }
 
     return [];
   } catch (error: unknown) {
-    const err = error as { status?: number; message?: string; name?: string };
-    if (err?.status === 401 || String(err?.message).includes('401')) {
-      // Silently fail for guests since stores might uniquely require authorization
-      logger.debug('[FeaturedStores] Guest user skipping stores fetch (401).');
-    } else if (
-      err?.status === 0 ||
-      String(err?.message || '')
-        .toLowerCase()
-        .includes('fetch failed')
-    ) {
-      // Non-critical homepage section: backend offline / network issue
-      logger.warn('[FeaturedStores] Backend unreachable. Showing empty state.');
+    if (isApiError(error)) {
+      if (error.status === 401 || String(error.message).includes('401')) {
+        // Silently fail for guests since stores might uniquely require authorization
+        logger.debug('[FeaturedStores] Guest user skipping stores fetch (401).');
+      } else if (
+        error.status === 0 ||
+        String(error.message || '')
+          .toLowerCase()
+          .includes('fetch failed')
+      ) {
+        // Non-critical homepage section: backend offline / network issue
+        logger.warn('[FeaturedStores] Backend unreachable. Showing empty state.');
+      } else {
+        // Non-critical homepage section: don't surface a dev overlay error.
+        logger.warn('[FeaturedStores] Failed to fetch featured stores. Showing empty state.', {
+          message: error.message,
+          status: error.status,
+          name: error.name,
+        });
+      }
     } else {
-      // Non-critical homepage section: don't surface a dev overlay error.
-      logger.warn('[FeaturedStores] Failed to fetch featured stores. Showing empty state.', {
-        message: err?.message,
-        status: err?.status,
-        name: err?.name,
-      });
+      logger.warn('[FeaturedStores] Non-API error fetching stores. Showing empty state.');
     }
     return [];
   }
 }
 
-// â”€â”€â”€ Store Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+/** Cache stores query wrapper to prevent homepage DoS amplification on backend API */
+const getCachedFeaturedStores = unstable_cache(
+  async (size: number) => fetchStores(size),
+  ['featured-stores'],
+  { revalidate: 300, tags: ['stores', 'featured-stores'] }
+);
+
+// ─── Store Card ────────────────────────────────────────────────────────
 
 function StoreCard({ shop }: { shop: ShopSummary }) {
   const name = getStoreDisplayName(shop);
@@ -133,17 +158,24 @@ function StoreCard({ shop }: { shop: ShopSummary }) {
   const color = getStoreAvatarColor(shop.id);
   const hasValidLogo = isValidImageUrl(shop.logoUrl);
 
+  // Generate and sanitize colors individually to secure inline dynamic styling
+  const sanitizedColor = sanitizeCSSValue(color);
+  const transparentColor = color.replace('hsl(', 'hsla(').replace(')', ', 0.6)');
+  const sanitizedTransparentColor = sanitizeCSSValue(transparentColor);
+
   return (
     <Link
       href={APP_ROUTES.STORES.DETAIL(String(shop.id))}
-      className={cn('flex flex-col w-[180px] rounded-2xl bg-white border-[1.5px] border-black/5 p-4 pt-4 pb-3.5 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:shadow-xl hover:border-indigo-500/35 dark:bg-slate-800 dark:border-white/10 relative overflow-hidden', 'group shrink-0')}
+      className={cn(
+        'relative flex w-[180px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-border/50 bg-card p-4 pt-4 pb-3.5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl dark:border-white/10 group shrink-0 snap-start'
+      )}
       aria-label={`Visit ${name}`}
     >
       {/* Avatar */}
-      <div className="w-14 h-14 rounded-xl overflow-hidden mb-3 shadow-sm shrink-0 relative">
-        {hasValidLogo ? (
+      <div className="relative mb-3 h-14 w-14 shrink-0 overflow-hidden rounded-xl shadow-sm bg-muted/20">
+        {hasValidLogo && shop.logoUrl ? (
           <Image
-            src={shop.logoUrl!}
+            src={shop.logoUrl}
             alt={`${name} logo`}
             fill
             sizes="56px"
@@ -151,8 +183,10 @@ function StoreCard({ shop }: { shop: ShopSummary }) {
           />
         ) : (
           <div
-            className="w-full h-full flex items-center justify-center text-[18px] font-extrabold text-white tracking-wide"
-            style={{ background: `linear-gradient(135deg, ${color}, ${color}99)` }}
+            className="flex h-full w-full items-center justify-center text-[18px] font-extrabold tracking-wide text-white"
+            style={{
+              background: `linear-gradient(135deg, ${sanitizedColor}, ${sanitizedTransparentColor})`,
+            }}
             aria-hidden="true"
           >
             {initials}
@@ -161,54 +195,75 @@ function StoreCard({ shop }: { shop: ShopSummary }) {
       </div>
 
       {/* Info */}
-      <div className="flex-1 min-w-0">
-        <h3 className="text-[13px] font-bold leading-snug line-clamp-2 mb-1">{name}</h3>
-        {shop.description && <p className="text-[11px] text-slate-400 line-clamp-2 mb-2 leading-relaxed">{shop.description}</p>}
-        <div className="flex items-center flex-wrap gap-1">
+      <div className="min-w-0 flex-1">
+        <h3 className="mb-1 line-clamp-2 text-2xs leading-snug font-bold">{name}</h3>
+        {shop.description && (
+          <p className="mb-2 line-clamp-2 text-2xs leading-relaxed text-muted-foreground">
+            {shop.description}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-1.5">
           {typeof shop.productCount === 'number' && (
-            <span className="text-[10px] font-semibold bg-indigo-500/10 text-indigo-500 px-2 py-0.5 rounded-full">{shop.productCount} Products</span>
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xxs font-semibold text-primary">
+              {shop.productCount} {shop.productCount === 1 ? 'Product' : 'Products'}
+            </span>
           )}
           {typeof shop.rating === 'number' && (
-            <span className="text-[10px] text-stone-500 font-medium">â­ {shop.rating.toFixed(1)}</span>
+            <span
+              className="flex items-center gap-0.5 text-xxs font-medium text-muted-foreground"
+              aria-label={`Rating: ${shop.rating.toFixed(1)} out of 5`}
+            >
+              <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" aria-hidden="true" />
+              {shop.rating.toFixed(1)}
+            </span>
           )}
         </div>
       </div>
 
       {/* CTA */}
-      <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
-        <ArrowRight className="h-4 w-4 text-indigo-500 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
+      <div className="absolute top-1/2 right-3.5 -translate-y-1/2">
+        <ArrowRight className="h-4 w-4 text-primary opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" aria-hidden="true" />
       </div>
     </Link>
   );
 }
 
-// â”€â”€â”€ Empty State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Empty State ───────────────────────────────────────────────────────
 
 function EmptyStores() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[180px] text-center p-6 w-full">
-      <div className="w-14 h-14 rounded-xl bg-linear-to-br from-indigo-50 to-indigo-100 flex items-center justify-center mb-3">
-        <Store className="h-8 w-8 text-indigo-400" />
+    <div
+      data-testid="featured-stores-empty"
+      className="flex min-h-[180px] w-full flex-col items-center justify-center p-6 text-center"
+    >
+      <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
+        <Store className="h-8 w-8 text-primary/70" aria-hidden="true" />
       </div>
       <h3 className="text-base font-semibold">No stores yet</h3>
       <p className="text-muted-foreground mt-1 text-sm">
         Be among the first sellers on {siteConfig.name}!
       </p>
-      <Button asChild size="sm" className="mt-4 bg-indigo-600 text-white hover:bg-indigo-700">
-        <Link href="/become-seller">Open Your Store â†’</Link>
+      <Button asChild size="sm" className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90">
+        <Link href={APP_ROUTES.BECOME_SELLER}>
+          Open Your Store <ArrowRight className="ml-1 inline-block h-4 w-4" aria-hidden="true" />
+        </Link>
       </Button>
     </div>
   );
 }
 
-// â”€â”€â”€ Main Section Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main Section Component ────────────────────────────────────────────
 
 export async function FeaturedStoresSection() {
-  const stores = await fetchStores(10);
+  const stores = await getCachedFeaturedStores(10);
 
   return (
-    <section className="py-10 md:py-14" aria-labelledby="featured-stores-heading">
-      <div className="container mx-auto px-4 md:px-6">
+    <section
+      data-testid="featured-stores-section"
+      className="py-10 md:py-14"
+      aria-labelledby="featured-stores-heading"
+    >
+      <div className="container mx-auto">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -216,7 +271,7 @@ export async function FeaturedStoresSection() {
               id="featured-stores-heading"
               className="text-2xl font-black tracking-tight md:text-3xl"
             >
-              <Store className="mr-2 inline-block h-6 w-6 align-sub text-indigo-500" />
+              <Store className="mr-2 inline-block h-6 w-6 align-sub text-primary" aria-hidden="true" />
               Featured Stores
             </h2>
             <p className="text-muted-foreground mt-1 text-sm">
@@ -226,10 +281,10 @@ export async function FeaturedStoresSection() {
           <Button
             variant="ghost"
             asChild
-            className="hidden items-center gap-1 text-indigo-600 hover:text-indigo-700 md:inline-flex"
+            className="hidden items-center gap-1 text-primary hover:text-primary/80 md:inline-flex"
           >
             <Link href={APP_ROUTES.STORES.LIST}>
-              All Stores <ChevronRight className="h-4 w-4" />
+              All Stores <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
         </div>
@@ -239,25 +294,30 @@ export async function FeaturedStoresSection() {
           <EmptyStores />
         ) : (
           <>
-            {/* Horizontal scroll row */}
-            <div
-              className="flex gap-4 overflow-x-auto scroll-smooth pb-3"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              role="list"
-              aria-label="Featured stores"
-            >
-              {stores.map((shop) => (
-                <div key={shop.id} role="listitem">
-                  <StoreCard shop={shop} />
-                </div>
-              ))}
+            {/* Horizontal scroll row wrapper with fade gradients */}
+            <div className="relative">
+              <ul
+                data-testid="featured-stores-list"
+                className="hide-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-3 snap-x snap-mandatory"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                aria-label="Featured stores"
+              >
+                {stores.map((shop) => (
+                  <li key={shop.id} className="shrink-0 snap-start" data-testid={`store-card-wrapper-${shop.id}`}>
+                    <StoreCard shop={shop} />
+                  </li>
+                ))}
+              </ul>
+
+              {/* Right-edge fade overlay indicating more content */}
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-background to-transparent dark:from-background/90" />
             </div>
 
             {/* Mobile CTA */}
             <div className="mt-4 md:hidden">
               <Button variant="outline" asChild className="w-full">
                 <Link href={APP_ROUTES.STORES.LIST}>
-                  View All Stores <ChevronRight className="ml-1 h-4 w-4" />
+                  View All Stores <ChevronRight className="ml-1 h-4 w-4" aria-hidden="true" />
                 </Link>
               </Button>
             </div>

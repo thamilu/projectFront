@@ -1,138 +1,267 @@
-import { useFormContext } from 'react-hook-form';
-import { motion } from 'framer-motion';
-import { ShieldCheck } from 'lucide-react';
-import { Input } from '@/shared/ui/atoms/input';
-import { Label } from '@/shared/ui/atoms/label';
+'use client';
+
+import React, { Suspense, memo, useEffect, useRef, useMemo } from 'react';
+import { useFormContext, useWatch } from 'react-hook-form';
+import { motion, AnimatePresence } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import { SellerIdentityType } from '@/domains/seller/contracts/seller.types';
-import { SellerOnboardingFormData } from '@/domains/seller/contracts/seller.schema';
+import type { SellerOnboardingValues } from '@/domains/seller/contracts/seller.schema';
+import { PageAnimations, FadeAnimations } from '@/shared/config';
+import { useAnimationConfig } from '@/shared/hooks';
+import { ONBOARDING_STEP_KEYS } from '@/domains/seller/config/onboarding-steps';
+import { KycStepHeader } from './KycStepHeader';
+import { KycFormSkeleton } from './KycFormSkeleton';
+import { ErrorBoundary } from '@/shared/ui/feedback/error-boundary';
+import { Button } from '@/shared/ui/atoms/button';
+import { AlertTriangle } from 'lucide-react';
+import { useI18n } from '@/core/i18n';
+import { refreshPage } from '@/shared/utils';
+import { logger } from '@/core/telemetry/logger';
+import { trackEvent } from '@/core/providers/analytics-provider';
 
-export function KycStep() {
-  const {
-    register,
-    watch,
-    formState: { errors },
-  } = useFormContext<SellerOnboardingFormData>();
 
-  const identityType = watch('identityType');
+/**
+ * Helper to retry dynamic imports when a chunk loading error occurs.
+ * Enhances runtime resilience against network interruptions or deployments that invalidate old chunks.
+ */
+export function retryImport<T>(fn: () => Promise<T>, retriesLeft = 3, interval = 1000): Promise<T> {
+  return new Promise((resolve, reject) => {
+    fn()
+      .then(resolve)
+      .catch((error) => {
+        if (retriesLeft === 0) {
+          if (
+            typeof window !== 'undefined' &&
+            (error.name === 'ChunkLoadError' ||
+              error.message?.includes('Loading chunk') ||
+              error.message?.includes('Failed to fetch dynamically imported module'))
+          ) {
+            logger.warn('ChunkLoadError detected, forcing page reload to get fresh assets', { error });
+            refreshPage();
+            reject(error);
+          } else {
+            reject(error);
+          }
+          return;
+        }
+        setTimeout(() => {
+          logger.warn(`Failed to load chunk, retrying... (${retriesLeft} retries left)`, { error });
+          retryImport(fn, retriesLeft - 1, interval).then(resolve, reject);
+        }, interval);
+      });
+  });
+}
+
+// Code-split: only load the form the user actually needs with chunk load retry and telemetry
+const IndividualKycForm = dynamic(() =>
+  retryImport(() =>
+    import(
+      /* webpackChunkName: "seller-onboarding-individual-kyc" */
+      './IndividualKycForm'
+    )
+  )
+    .then((m) => {
+      trackEvent('kyc_form_loaded', { identityType: SellerIdentityType.INDIVIDUAL });
+      return { default: m.IndividualKycForm };
+    })
+    .catch((err) => {
+      trackEvent('kyc_form_error', { identityType: SellerIdentityType.INDIVIDUAL, error: err.message });
+      throw err;
+    }),
+  { ssr: false }
+);
+
+const BusinessKycForm = dynamic(() =>
+  retryImport(() =>
+    import(
+      /* webpackChunkName: "seller-onboarding-business-kyc" */
+      './BusinessKycForm'
+    )
+  )
+    .then((m) => {
+      trackEvent('kyc_form_loaded', { identityType: SellerIdentityType.BUSINESS });
+      return { default: m.BusinessKycForm };
+    })
+    .catch((err) => {
+      trackEvent('kyc_form_error', { identityType: SellerIdentityType.BUSINESS, error: err.message });
+      throw err;
+    }),
+  { ssr: false }
+);
+
+// `satisfies` enforces exhaustiveness — adding a new SellerIdentityType
+// without updating this map will cause a compile-time error
+const KYC_FORM_MAP = {
+  [SellerIdentityType.INDIVIDUAL]: IndividualKycForm,
+  [SellerIdentityType.BUSINESS]: BusinessKycForm,
+} satisfies Record<SellerIdentityType, React.ComponentType<Record<string, never>>>;
+
+
+/**
+ * KycStep Component
+ *
+ * Orchestrator that manages structure, dynamic form selections, dynamic code splitting,
+ * page/fade transition animations, error boundaries, and focus restoration across dynamic swaps.
+ */
+export const KycStep = memo(function KycStep(): React.ReactElement {
+  const { control } = useFormContext<SellerOnboardingValues>();
+  const { t } = useI18n();
+
+  // useWatch is field-scoped — prevents re-renders from unrelated field changes
+  const identityType = useWatch({ name: 'identityType', control });
+
+  // Dynamically resolve form type component with diagnostic console logging fallbacks
+  const KycForm = useMemo(() => {
+    if (identityType === undefined) {
+      return IndividualKycForm;
+    }
+    const form = KYC_FORM_MAP[identityType];
+    if (!form) {
+      logger.error(`[KycStep] Unknown identityType selection: ${identityType}`);
+      return IndividualKycForm;
+    }
+    return form;
+  }, [identityType]);
+
+  const pageAnim = useAnimationConfig(PageAnimations);
+  const fadeAnim = useAnimationConfig(FadeAnimations);
+
+  // Focus management references to handle dynamic swapping for AT/keyboard users
+  const formGroupRef = useRef<HTMLDivElement>(null);
+  const previousIdentityType = useRef<SellerIdentityType | undefined>(undefined);
+
+  useEffect(() => {
+    const prev = previousIdentityType.current;
+    previousIdentityType.current = identityType;
+
+    // Only restore focus on subsequent changes (prevent initial mount auto-focus clash)
+    if (prev !== undefined && identityType !== prev) {
+      trackEvent('identity_type_changed', { from: prev, to: identityType });
+
+      const duration = fadeAnim.transition?.duration ? fadeAnim.transition.duration * 1000 + 50 : 350;
+      const timer = setTimeout(() => {
+        formGroupRef.current?.focus();
+      }, duration);
+      return () => clearTimeout(timer);
+    }
+  }, [identityType, fadeAnim.transition]);
+
+  // Screen Reader polite dynamic announcement message
+  const liveAnnouncement = useMemo(() => {
+    if (!identityType) return '';
+    return identityType === SellerIdentityType.INDIVIDUAL
+      ? t('sellerOnboarding.kyc.announcement.individual', {
+          defaultValue: 'Individual verification form loaded',
+        })
+      : identityType === SellerIdentityType.BUSINESS
+      ? t('sellerOnboarding.kyc.announcement.business', {
+          defaultValue: 'Business verification form loaded',
+        })
+      : '';
+  }, [identityType, t]);
 
   return (
-    <motion.div
-      key="step3"
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
+    <motion.section
+      key={ONBOARDING_STEP_KEYS.KYC}
+      aria-labelledby="kyc-step-heading"
+      aria-describedby="kyc-step-heading-desc"
+      variants={pageAnim.variants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={pageAnim.transition}
       className="space-y-8"
+      data-testid="kyc-step"
     >
-      <div className="mb-8 text-center">
-        <h2 className="text-2xl font-bold tracking-tight">Verify Your Identity</h2>
-        <p className="text-muted-foreground mt-2">
-          <ShieldCheck className="mr-1 inline-block h-4 w-4 text-green-500" />
-          We need this to securely verify your seller status.
-        </p>
+      {/* Announce form switch to screen readers with polite status region */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+        data-testid="kyc-live-region"
+      >
+        {liveAnnouncement}
       </div>
 
-      <div className="bg-muted/30 border-border/50 rounded-2xl border p-6">
-        {identityType === SellerIdentityType.INDIVIDUAL ? (
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="panNumber" className="text-base">
-                PAN Number
-              </Label>
-              <Input
-                id="panNumber"
-                placeholder="ABCDE1234F"
-                className="h-12 font-mono tracking-wider uppercase"
-                aria-invalid={!!errors.panNumber}
-                {...register('panNumber', {
-                  onChange: (e) => {
-                    e.target.value = e.target.value.toUpperCase();
-                  }
-                })}
-              />
-              {errors.panNumber && <p className="text-destructive text-sm">{errors.panNumber.message}</p>}
-            </div>
+      <KycStepHeader headingId="kyc-step-heading" />
 
-            <div className="space-y-2">
-              <Label htmlFor="aadhar" className="text-base">
-                Aadhaar Number{' '}
-                <span className="text-muted-foreground text-sm font-normal">
-                  (Optional)
-                </span>
-              </Label>
-              <Input
-                id="aadhar"
-                placeholder="1234 5678 9012"
-                className="h-12 font-mono tracking-widest"
-                aria-invalid={!!errors.aadhar}
-                {...register('aadhar')}
-              />
-              {errors.aadhar && (
-                <p className="text-destructive text-sm">{errors.aadhar.message}</p>
+      <div
+        ref={formGroupRef}
+        tabIndex={-1}
+        className="bg-muted/30 border-border/50 rounded-2xl border p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        role="group"
+        aria-label={t('sellerOnboarding.kyc.formGroup.label', {
+          defaultValue: 'Identity verification fields',
+        })}
+        data-testid="kyc-form-container"
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={identityType}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            variants={fadeAnim.variants}
+            transition={fadeAnim.transition}
+          >
+            <ErrorBoundary
+              name="KycFormErrorBoundary"
+              onError={(error) => {
+                trackEvent('kyc_form_error', {
+                  error: error.message,
+                  identityType: identityType ?? 'undefined',
+                });
+              }}
+              fallback={(error, retry) => (
+                <div
+                  role="alert"
+                  className="flex flex-col items-center gap-4 py-8 text-center"
+                  data-testid="kyc-form-error"
+                >
+                  <AlertTriangle className="text-destructive h-8 w-8" aria-hidden="true" />
+                  <p className="text-muted-foreground text-sm">
+                    {t('sellerOnboarding.kyc.errors.loadFailure', {
+                      defaultValue: 'Something went wrong loading this step.',
+                    })}
+                  </p>
+                  
+                  {/* Sanitized diagnostic context safely displayed to aid support without leaking credentials/stack */}
+                  <div
+                    className="text-muted-foreground/80 mt-1 font-mono text-xs"
+                    data-testid="kyc-diagnostic-context"
+                  >
+                    <div>Error Code: KYC_LOAD_FAILURE</div>
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="mt-1 max-w-md break-words text-left bg-muted p-2 rounded border border-border">
+                        {error.message}
+                      </div>
+                    )}
+                  </div>
+
+                  <Button variant="outline" onClick={retry}>
+                    {t('common.retry', { defaultValue: 'Try Again' })}
+                  </Button>
+                </div>
               )}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="businessName" className="text-base">
-                Legal Business Name
-              </Label>
-              <Input
-                id="businessName"
-                placeholder="As written on your incorporation documents"
-                className="h-12"
-                aria-invalid={!!errors.businessName}
-                {...register('businessName')}
-              />
-              {errors.businessName && (
-                <p className="text-destructive text-sm">{errors.businessName.message}</p>
-              )}
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="businessPan" className="text-base">
-                  Business PAN
-                </Label>
-                <Input
-                  id="businessPan"
-                  placeholder="ABCDE1234F"
-                  className="h-12 font-mono tracking-wider uppercase"
-                  aria-invalid={!!errors.businessPan}
-                  {...register('businessPan', {
-                    onChange: (e) => {
-                      e.target.value = e.target.value.toUpperCase();
-                    }
-                  })}
-                />
-                {errors.businessPan && (
-                  <p className="text-destructive text-sm">{errors.businessPan.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="gstin" className="text-base">
-                  GSTIN (Tax ID)
-                </Label>
-                <Input
-                  id="gstin"
-                  placeholder="22AAAAA0000A1Z5"
-                  className="h-12 font-mono tracking-wider uppercase"
-                  aria-invalid={!!errors.gstin}
-                  {...register('gstin', {
-                    onChange: (e) => {
-                      e.target.value = e.target.value.toUpperCase();
-                    }
-                  })}
-                />
-                {errors.gstin && (
-                  <p className="text-destructive text-sm">{errors.gstin.message}</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+            >
+              <Suspense
+                fallback={
+                  <KycFormSkeleton
+                    fieldCount={identityType === SellerIdentityType.BUSINESS ? 4 : 2}
+                    columns={identityType === SellerIdentityType.BUSINESS ? 2 : 1}
+                    showSectionHeaders={identityType === SellerIdentityType.BUSINESS}
+                  />
+                }
+              >
+                <KycForm />
+              </Suspense>
+            </ErrorBoundary>
+          </motion.div>
+        </AnimatePresence>
       </div>
-    </motion.div>
+    </motion.section>
   );
-}
+});
+
+KycStep.displayName = 'KycStep';

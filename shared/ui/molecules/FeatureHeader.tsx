@@ -22,30 +22,31 @@ export function FeatureHeader({
   className,
 }: FeatureHeaderProps) {
   return (
-    <div className={cn("flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10", className)}>
+    <div
+      className={cn(
+        'mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-center',
+        className
+      )}
+    >
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           {Icon && (
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+            <div className="bg-primary/10 text-primary rounded-xl p-2">
               <Icon className="h-5 w-5" />
             </div>
           )}
-          <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter text-white uppercase leading-none">
+          <h1 className="text-4xl leading-none font-black tracking-tighter text-white uppercase italic md:text-5xl">
             {title}
           </h1>
         </div>
         {subtitle && (
-          <p className="text-muted-foreground text-sm font-medium uppercase tracking-[0.25em] pl-1">
+          <p className="text-muted-foreground pl-1 text-sm font-medium tracking-[0.25em] uppercase">
             {subtitle}
           </p>
         )}
       </div>
-      
-      {actions && (
-        <div className="flex items-center gap-3">
-          {actions}
-        </div>
-      )}
+
+      {actions && <div className="flex items-center gap-3">{actions}</div>}
     </div>
   );
 }

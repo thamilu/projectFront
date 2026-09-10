@@ -8,35 +8,38 @@ The project follows a **Feature-First Bounded Context** architecture (Modular Mo
 
 ## 🏛️ Layer Matrix Enforcement [HARDEN]
 
-| Layer | Allowed Imports | Responsibility |
-| :--- | :--- | :--- |
-| **app** | features, shared, lib | Routing, Page composition, Global providers |
-| **features** | shared, lib | Bounded contexts, Business UI, Feature-state |
-| **shared** | lib | Cross-domain UI components, Global hooks |
-| **lib** | lib (internal) | Infrastructure, API clients, Low-level utils |
-| **ui** | nothing | Primitive, stateless UI components (Shadcn) |
+| Layer        | Allowed Imports       | Responsibility                               |
+| :----------- | :-------------------- | :------------------------------------------- |
+| **app**      | features, shared, lib | Routing, Page composition, Global providers  |
+| **features** | shared, lib           | Bounded contexts, Business UI, Feature-state |
+| **shared**   | lib                   | Cross-domain UI components, Global hooks     |
+| **lib**      | lib (internal)        | Infrastructure, API clients, Low-level utils |
+| **ui**       | nothing               | Primitive, stateless UI components (Shadcn)  |
 
 ## 📜 Layer Responsibilities
 
 ### 1. The Feature Layer (/features)
+
 Each feature folder is a **Bounded Context** that encapsulates a specific business domain.
 
 ### 2. The Shared Layer (/shared)
+
 Business-logic-aware primitives shared across features.
 
 ### 3. The Infrastructure Layer (/lib)
+
 Stateless utilities, core service configurations, and external integrations.
 
 ---
 
 ## 🗺️ Architectural Roadmap [FUTURE]
 
-| Goal | Description | Status |
-| :--- | :--- | :--- |
-| **Typed SDK Generation** | Switch to Orval for automatic React Query hook generation from OpenAPI. | Planned |
-| **Infrastructure Split** | Sub-divide `lib/` into `infra/`, `platform/`, and `core/`. | Planned |
-| **Contract Testing** | Implement PACT or similar for consumer-driven contract testing. | Researching |
-| **Performance Gates** | Block CI if Lighthouse or BundleSize budgets are exceeded. | Active |
+| Goal                     | Description                                                             | Status      |
+| :----------------------- | :---------------------------------------------------------------------- | :---------- |
+| **Typed SDK Generation** | Switch to Orval for automatic React Query hook generation from OpenAPI. | Planned     |
+| **Infrastructure Split** | Sub-divide `lib/` into `infra/`, `platform/`, and `core/`.              | Planned     |
+| **Contract Testing**     | Implement PACT or similar for consumer-driven contract testing.         | Researching |
+| **Performance Gates**    | Block CI if Lighthouse or BundleSize budgets are exceeded.              | Active      |
 
 ---
 

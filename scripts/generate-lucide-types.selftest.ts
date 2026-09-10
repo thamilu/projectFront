@@ -10,11 +10,7 @@ const __dirname = path.dirname(__filename);
   try {
     const modPath = path.join(__dirname, 'generate-lucide-types.ts');
     const mod = await import(pathToFileURL(modPath).href);
-    const {
-      extractNames,
-      filterNames,
-      generateOutput
-    } = mod as {
+    const { extractNames, filterNames, generateOutput } = mod as {
       extractNames: (content: string) => string[];
       filterNames: (names: string[]) => string[];
       generateOutput: (names: string[]) => string;

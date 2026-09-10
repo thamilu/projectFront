@@ -1,79 +1,51 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-// Time Complexity: O(n) where n is number of class names
-// Space Complexity: O(n) for merged string
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
 // ---------------------------------------------------------------------------
-// Formatter re-exports — canonical implementations live in lib/formatters.ts
-// ---------------------------------------------------------------------------
-export {
-  formatCurrency,
-  formatPrice,
-  formatDate,
-  formatDateTime,
-  calculateDiscount,
-  truncate as truncateText,
-} from './formatters';
-
-// ---------------------------------------------------------------------------
-// DRY Utilities - Fetch, Error Handling, Tokens, API Client
+// DRY Utilities - Fetch, Error Handling, Tokens, API Client, cn(), formatters
+// (formatters.ts's formatCurrency/formatPrice/formatDate/formatDateTime/
+// calculateDiscount are re-exported transitively via this file's own
+// `export * from './formatters'`.)
 // ---------------------------------------------------------------------------
 export * from './utils';
-
-// Token utilities
-export {
-  storeTokens,
-  clearTokens,
-  areTokensExpired,
-  extractAccessToken,
-  extractRefreshToken,
-  extractTokenExpiry,
-  extractTokenData,
-  type TokenData,
-} from './token-utils';
-
-// ---------------------------------------------------------------------------
-// Inventory helpers (unique to this module)
-// ---------------------------------------------------------------------------
-
-// Time Complexity: O(1)
-export function isLowStock(quantity: number, threshold: number = 10): boolean {
-  return quantity > 0 && quantity <= threshold;
-}
-
-// Time Complexity: O(1)
-export function isOutOfStock(quantity: number): boolean {
-  return quantity <= 0;
-}
 
 // ---------------------------------------------------------------------------
 // String helpers (unique to this module)
 // ---------------------------------------------------------------------------
 
 // Time Complexity: O(1)
-export function debounce<T extends (...args: unknown[]) => unknown>(
-  func: T,
-  delay: number
-): (...args: Parameters<T>) => void {
-  let timeoutId: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  };
-}
-
-// Time Complexity: O(1)
 export function getInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
-// Time Complexity: O(1)
-export function generateOrderNumber(): string {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 10000);
-  return `ORD-${timestamp}-${random}`;
-}
+// ---------------------------------------------------------------------------
+// Session & Role utilities
+// ---------------------------------------------------------------------------
+export { extractRoles } from './session';
+
+export { withErrorHandling } from './error-handler';
+export { generateHomeMetadata } from './metadata';
+export { warnOnce } from './dev-warning';
+export * from './input-formatters';
+export * from './logger';
+export * from './error-utils';
+export { getErrorMessage } from './get-error-message';
+export * from './generate-id';
+export { navigation } from './navigation';
+
+// Money, Pricing, and Count utilities
+export { toCents, fromCents, addMoney, multiplyMoney, formatMoney } from './money.utils';
+export type { Cents } from './money.utils';
+export { getDiscountPercentage } from './pricing.utils';
+export { formatCount } from './format.utils';
+export { formatRelativeTime } from './format-relative-time';
+export { formatBadgeCount } from './format-badge-count';
+
+// Path safety & URL Query utilities
+export {
+  validateId,
+  validateSlug,
+  validateHandle,
+  validateSlugOrId,
+  validateAlphanumeric,
+} from './path-safety';
+export { buildQueryString, buildSearchUrl } from './url-builder';
+export type { ProductSearchParams } from './url-builder';
+export * from './avatar';

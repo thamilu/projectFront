@@ -1,10 +1,8 @@
 'use client';
 
-import PromotionalBanner from './promotional-banner';
-
 import Header from './header';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
-
+import { HeaderErrorBoundary } from './header-boundary';
+import { APP_ROUTES } from '@/shared/routes';
 import { usePathname } from 'next/navigation';
 
 export default function HeaderWrapper() {
@@ -16,9 +14,8 @@ export default function HeaderWrapper() {
   }
 
   return (
-    <>
-      <PromotionalBanner />
+    <HeaderErrorBoundary>
       <Header />
-    </>
+    </HeaderErrorBoundary>
   );
 }

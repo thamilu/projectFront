@@ -1,8 +1,12 @@
 import Link from 'next/link';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { APP_ROUTES } from '@/shared/routes';
 
 export const metadata = {
-  title: 'Privacy Policy | E-Shop',
+  // Title only. The root layout's `title.template` appends the site name;
+  // hardcoding a suffix here doubled it in the tab and in og:title — and
+  // used a brand spelling ('E-Shop') that does not match the configured
+  // `siteConfig.name` either.
+  title: 'Privacy Policy',
   description: 'Read the E-Shop Privacy Policy to understand how we collect and use your data.',
 };
 
@@ -37,7 +41,7 @@ export default function PrivacyPage() {
       content: `We implement industry-standard security measures including SSL encryption, access controls, and regular security audits. However, no method of transmission over the internet is 100% secure.`,
     },
     {
-      title: '8. Children\'s Privacy',
+      title: "8. Children's Privacy",
       content: `Our platform is not directed to children under 13 years of age. We do not knowingly collect personal information from children. If you believe a child has provided us with personal data, please contact us immediately.`,
     },
     {
@@ -57,10 +61,11 @@ export default function PrivacyPage() {
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12">
       <h1 className="mb-2 text-4xl font-bold">Privacy Policy</h1>
-      <p className="mb-8 text-sm text-muted-foreground">Last updated: February 2026</p>
+      <p className="text-muted-foreground mb-8 text-sm">Last updated: February 2026</p>
 
-      <p className="mb-8 text-muted-foreground leading-relaxed">
-        At E-Shop, your privacy is important to us. This policy explains how we collect, use, disclose, and safeguard your personal information when you use our platform.
+      <p className="text-muted-foreground mb-8 leading-relaxed">
+        At E-Shop, your privacy is important to us. This policy explains how we collect, use,
+        disclose, and safeguard your personal information when you use our platform.
       </p>
 
       <div className="space-y-8">
@@ -72,7 +77,7 @@ export default function PrivacyPage() {
         ))}
       </div>
 
-      <div className="mt-12 rounded-xl border p-5 text-sm text-muted-foreground">
+      <div className="text-muted-foreground mt-12 rounded-xl border p-5 text-sm">
         For the full terms governing your use of E-Shop, please see our{' '}
         <Link href={APP_ROUTES.TERMS} className="text-primary hover:underline">
           Terms of Service

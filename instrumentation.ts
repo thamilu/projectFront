@@ -4,17 +4,12 @@ export async function register() {
      * Suppress legacy url.parse() deprecation warning (DEP0169)
      */
     const originalEmit = process.emit;
-    // @ts-expect-error - process.emit types are strict
-    process.emit = function (name, data, ...args) {
-      if (
-        name === 'warning' &&
-        typeof data === 'object' &&
-        (data as any).code === 'DEP0169'
-      ) {
+    process.emit = function (name: any, data: any, ...args: any[]) {
+      if (name === 'warning' && typeof data === 'object' && (data as any).code === 'DEP0169') {
         return false;
       }
-      return originalEmit.apply(process, [name, data, ...args]);
-    };
+      return (originalEmit as any).apply(process, [name, data, ...args]);
+    } as any;
 
     // Register Server-Side Observability (OpenTelemetry / Sentry)
     // if (process.env.NODE_ENV === 'production') {

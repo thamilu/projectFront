@@ -19,6 +19,8 @@
  * - Use correlation IDs for distributed tracing
  */
 
+import * as Sentry from '@sentry/nextjs';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -129,41 +131,97 @@ class Logger {
    * - API keys
    * - PII (configurable)
    */
-  private sanitizeContext(context: LogContext): LogContext {
+  private sanitizeContext(
+    context: LogContext,
+    seen: WeakSet<object> = new WeakSet(),
+    depth = 0
+  ): LogContext {
+    // Regression: these were previously mixed-case ('accessToken', 'panNumber',
+    // 'businessPan', 'apiKey', 'codeVerifier', etc.) while `lowerKey` below is
+    // already lower-cased before comparison — `"pannumber".includes("panNumber")`
+    // is case-sensitive and always false, so this redaction rule silently
+    // never fired for those keys (they only accidentally got caught when a
+    // fully-lowercase substring like "token" also happened to match). Since
+    // PAN/Aadhaar/GSTIN numbers are exactly the fields this list exists to
+    // protect, this let real government ID numbers reach structured logs
+    // (sent via /api/logs) unredacted. Every entry here MUST be lowercase.
     const sensitiveKeys = [
       'password',
       'token',
-      'accessToken',
-      'refreshToken',
-      'idToken',
+      'accesstoken',
+      'refreshtoken',
+      'idtoken',
       'secret',
-      'apiKey',
+      'apikey',
       'authorization',
       'cookie',
-      'codeVerifier',
+      'codeverifier',
+      'pannumber',
+      'aadhar',
+      'gstin',
+      'businesspan',
+      'phone',
+      'email',
     ];
+
+    if (typeof context !== 'object' || context === null) {
+      return context;
+    }
+
+    const MAX_DEPTH = 5;
+    if (depth > MAX_DEPTH) {
+      return { _depthExceeded: '[Max Depth Exceeded]' };
+    }
 
     const sanitized: LogContext = {};
 
-    for (const [key, value] of Object.entries(context)) {
-      const lowerKey = key.toLowerCase();
+    try {
+      seen.add(context);
 
-      if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
-        sanitized[key] = '[REDACTED]';
-      } else if (value instanceof Error) {
-        // Preserve useful diagnostics. Error fields are non-enumerable so a naive
-        // object sanitize would erase them (showing `{}` in logs).
-        sanitized[key] = {
-          name: value.name,
-          message: value.message,
-          stack: value.stack,
-          cause: value.cause,
-        };
-      } else if (typeof value === 'object' && value !== null) {
-        sanitized[key] = this.sanitizeContext(value as LogContext);
-      } else {
-        sanitized[key] = value;
+      for (const [key, value] of Object.entries(context)) {
+        const lowerKey = key.toLowerCase();
+
+        if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
+          sanitized[key] = '[REDACTED]';
+        } else if (value instanceof Error) {
+          if (seen.has(value)) {
+            sanitized[key] = '[Circular]';
+          } else {
+            seen.add(value);
+
+            let sanitizedCause: unknown = undefined;
+            if (value.cause) {
+              if (typeof value.cause === 'object') {
+                if (seen.has(value.cause)) {
+                  sanitizedCause = '[Circular]';
+                } else {
+                  sanitizedCause = this.sanitizeContext(value.cause as LogContext, seen, depth + 1);
+                }
+              } else {
+                sanitizedCause = value.cause;
+              }
+            }
+
+            sanitized[key] = {
+              name: value.name,
+              message: value.message,
+              stack: value.stack,
+              cause: sanitizedCause,
+            };
+          }
+        } else if (typeof value === 'object' && value !== null) {
+          if (seen.has(value)) {
+            sanitized[key] = '[Circular]';
+          } else {
+            seen.add(value);
+            sanitized[key] = this.sanitizeContext(value as LogContext, seen, depth + 1);
+          }
+        } else {
+          sanitized[key] = value;
+        }
       }
+    } catch (err) {
+      sanitized._sanitizeError = err instanceof Error ? err.message : String(err);
     }
 
     return sanitized;
@@ -260,8 +318,8 @@ class Logger {
     // Write to local log file if running on server-side Node.js
     if (typeof window === 'undefined') {
       try {
-        const fs = eval("require")('fs');
-        const path = eval("require")('path');
+        const fs = eval('require')('fs');
+        const path = eval('require')('path');
         const logDir = path.join(process.cwd(), 'logs');
         if (!fs.existsSync(logDir)) {
           fs.mkdirSync(logDir, { recursive: true });
@@ -375,7 +433,17 @@ class Logger {
    */
   error(message: string, context?: LogContext): void {
     if (this.shouldLog('error')) {
-      this.write(this.formatEntry('error', message, context));
+      const entry = this.formatEntry('error', message, context);
+      this.write(entry);
+      // `entry.context` is already sanitizeContext()-redacted — reporting
+      // that (not the raw `context` param) keeps the same "never send
+      // secrets/PII" guarantee this module already enforces for its own
+      // console/file/API-route output. Previously logger.error() never
+      // reached Sentry at all — only uncaught exceptions and the handful of
+      // call sites that separately call captureException themselves did —
+      // so the hundreds of logger.error(...) calls across business logic
+      // (form submission failures, API errors, etc.) were invisible to it.
+      reportToSentry(message, entry.context, findErrorInContext(context));
     }
   }
 
@@ -402,6 +470,43 @@ class Logger {
     };
 
     return childLogger;
+  }
+}
+
+// ============================================================================
+// Sentry bridge (error() only — see the comment at its call site)
+// ============================================================================
+
+/**
+ * Scans a raw (pre-sanitization) log context one level deep for an actual
+ * Error instance, so Sentry gets a real stack trace via captureException
+ * rather than the serialized `{name, message, stack}` plain object
+ * sanitizeContext() produces for display/storage purposes.
+ */
+function findErrorInContext(context?: LogContext): Error | undefined {
+  if (!context) return undefined;
+  for (const value of Object.values(context)) {
+    if (value instanceof Error) return value;
+  }
+  return undefined;
+}
+
+/**
+ * Reports an error-level log entry to Sentry. Never throws — a reporting
+ * failure must not affect the caller's own error handling. Uses
+ * captureException when a real Error object was found in the context (for
+ * a proper stack trace and grouping), otherwise captureMessage so the
+ * event still reaches Sentry with its message and sanitized context.
+ */
+function reportToSentry(message: string, sanitizedContext: LogContext | undefined, error?: Error): void {
+  try {
+    if (error) {
+      Sentry.captureException(error, { extra: { message, ...sanitizedContext } });
+    } else {
+      Sentry.captureMessage(message, { level: 'error', extra: sanitizedContext });
+    }
+  } catch {
+    // Reporting must never crash the app it's trying to observe.
   }
 }
 

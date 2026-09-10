@@ -59,8 +59,8 @@ export function ShortcutOverlay({ isOpen, onOpenChange }: ShortcutOverlayProps) 
                       key={shortcut.key}
                       className="flex items-center justify-between gap-4 p-3 hover:bg-slate-900/35 transition-colors text-xs"
                     >
-                      <span className="text-slate-350 leading-relaxed font-medium">{shortcut.desc}</span>
-                      <kbd className="shrink-0 bg-slate-800 text-slate-100 dark:bg-slate-850 px-2 py-1 rounded border border-slate-700/80 font-mono text-[10px] font-semibold tracking-wider">
+                      <span className="text-slate-300 leading-relaxed font-medium">{shortcut.desc}</span>
+                      <kbd className="shrink-0 bg-slate-800 text-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-700/80 font-mono text-[10px] font-semibold tracking-wider">
                         {shortcut.key}
                       </kbd>
                     </div>

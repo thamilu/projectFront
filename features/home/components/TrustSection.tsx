@@ -42,32 +42,41 @@ const TRUST_ITEMS: TrustItem[] = [
 
 export default function TrustSection() {
   return (
-    <section aria-labelledby="trust-heading" className="py-10 md:py-14 bg-background dark:bg-muted/30">
-      <div className="container mx-auto px-4 md:px-6">
+    <section
+      aria-labelledby="trust-heading"
+      className="bg-background dark:bg-muted/30 py-10 md:py-14"
+    >
+      <div className="container mx-auto">
         <h3 id="trust-heading" className="sr-only">
           Why customers trust us
         </h3>
 
-        <ul className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6" role="list">
+        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:gap-6" role="list">
           {TRUST_ITEMS.map((item) => {
             const Icon = item.icon;
             return (
               <li
                 key={item.title}
-                className="group relative p-6 rounded-2xl border border-white/5 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-sm shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 text-center"
+                className="group relative rounded-2xl border border-white/5 bg-white/50 p-6 text-center shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-white/10 dark:bg-white/5"
               >
                 {/* Gradient glow behind icon */}
-                <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                
+                <div
+                  className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${item.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`}
+                />
+
                 <span
                   aria-hidden="true"
-                  className={`relative z-10 h-14 w-14 mx-auto rounded-xl bg-gradient-to-br ${item.gradient} shadow-md flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-110`}
+                  className={`relative z-10 mx-auto h-14 w-14 rounded-xl bg-gradient-to-br ${item.gradient} mb-3 flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110`}
                 >
                   <Icon className={`h-6 w-6 ${item.iconColor}`} strokeWidth={2} />
                 </span>
 
-                <div className="relative z-10 font-bold text-base md:text-lg text-foreground">{item.title}</div>
-                <div className="relative z-10 text-sm text-muted-foreground mt-1">{item.subtitle}</div>
+                <div className="text-foreground relative z-10 text-base font-bold md:text-lg">
+                  {item.title}
+                </div>
+                <div className="text-muted-foreground relative z-10 mt-1 text-sm">
+                  {item.subtitle}
+                </div>
               </li>
             );
           })}

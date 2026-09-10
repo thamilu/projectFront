@@ -1,19 +1,15 @@
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
+import { productApi } from '@/features/products/api/product-api';
+import { fetchHomepageSectionData, padWithDemoData } from '@/features/products/utils/fetch-with-fallback';
+import { PreviewBadge } from '@/features/products/components/PreviewBadge';
+import { FLASH_DEALS_PLACEHOLDERS as demoDeals } from '@/features/products/constants/placeholders';
+import { PRODUCT_FORM_CONSTANTS } from '@/features/products/constants';
+import { PlaceholderAwareLink } from './PlaceholderAwareLink';
+import { APP_ROUTES } from '@/shared/routes';
 import { Card, CardContent } from '@/shared/ui/atoms/card';
-import { ChevronRight, Timer, Flame, TrendingDown } from 'lucide-react';
-import { cn } from '@/shared/utils';
-import { productApi, isBackendDown } from '@/features/products/api/product-api';
-import { flashDeals as demoDeals } from '@/shared/constants/demoData';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { ChevronRight, Flame, Timer, TrendingDown } from 'lucide-react';
 
-// ============================================================================
-// Constants & Configuration
-// ============================================================================
-
-/**
- * Enterprise Flash Deals Configuration
- */
 const FLASH_DEALS_CONFIG = {
   badge: {
     icon: Flame,
@@ -24,192 +20,190 @@ const FLASH_DEALS_CONFIG = {
     highlight: 'Big Deals',
     suffix: 'End Soon',
   },
-  countdown: {
+  // No backend field tracks a deal's actual expiry, so this deliberately
+  // avoids a fake countdown clock (previously a static "02:45:12" that never
+  // moved) — see FlashDealsSection review notes.
+  subheading: {
     icon: Timer,
-    placeholder: '02:45:12',
-    label: 'Limited quantities available at these prices.',
+    text: 'Limited quantities available at these prices — while supplies last.',
   },
   action: {
     label: 'Explore All Deals',
     href: APP_ROUTES.PRODUCTS,
   },
   card: {
-    soldLabel: 'Sold:',
-    leftLabel: 'Only',
-    leftSuffix: 'Left',
-  }
+    lowStockLabel: 'Only',
+    lowStockSuffix: 'left',
+  },
 };
+
+import { formatMoney, type Cents, getDiscountPercentage } from '@/shared/utils';
 
 interface FlashDeal {
   id: number | string;
   image: string;
   title: string;
   description?: string;
-  price: number;
-  oldPrice?: number;
+  price: number; // in cents
+  oldPrice?: number; // in cents
+  /** Real remaining stock, when known — only sourced from the live API, never
+   * fabricated for demo/fallback items. Drives the low-stock badge below. */
+  stockQuantity?: number;
+  lowStockThreshold?: number;
   isDemo?: boolean;
 }
 
-// ============================================================================
-// Utilities
-// ============================================================================
-
-const formatPrice = (price: number, locale = 'en-IN', currency = 'INR') =>
-  new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(price);
-
-function getDiscountPercentage(price: number, oldPrice?: number): number | null {
-  if (typeof oldPrice !== 'number' || oldPrice <= price) return null;
-  return Math.round((1 - price / oldPrice) * 100);
-}
-
-// ============================================================================
-// Component
-// ============================================================================
+const formatPrice = (priceCents: number) => formatMoney(priceCents as Cents, 'INR');
+const MIN_FLASH_DEALS = 4;
 
 export async function FlashDealsSection() {
-  const { badge, heading, countdown, action, card } = FLASH_DEALS_CONFIG;
+  const { badge, heading, subheading, action, card } = FLASH_DEALS_CONFIG;
   const BadgeIcon = badge.icon;
-  const CountdownIcon = countdown.icon;
+  const SubheadingIcon = subheading.icon;
 
-  let flashDeals: FlashDeal[] = [];
-  try {
-    const response = await productApi.getProducts({ page: 0, size: 4, sort: 'discountPrice,desc' });
-    flashDeals = (response?.content || []).map((p) => ({
+  const fetched = await fetchHomepageSectionData<FlashDeal>('FlashDealsSection', async () => {
+    const response = await productApi.getProducts({
+      page: 0,
+      size: 4,
+      sort: 'discountPrice,desc',
+    });
+    return (response?.content || []).map((p) => ({
       id: p.id,
       image: p.imageUrl || '/images/placeholder.svg',
       title: p.name,
       description: p.description,
-      price: p.discountPrice || p.price,
-      oldPrice: p.discountPrice ? p.price : undefined,
+      price: Math.round((p.discountPrice || p.price) * 100),
+      oldPrice: p.discountPrice ? Math.round(p.price * 100) : undefined,
+      stockQuantity: p.stockQuantity,
+      lowStockThreshold: p.lowStockThreshold,
     }));
-  } catch (error: any) {
-    if (isBackendDown(error)) {
-      console.warn('[FlashDealsSection] Backend unreachable. Using trending demo deals.');
-    } else if (error?.status === 401 || String(error?.message || '').includes('401')) {
-      console.warn('[FlashDealsSection] Unauthorized (401). Using trending demo deals for guests.');
-    } else {
-      // Non-critical homepage section: fall back without surfacing a dev overlay error.
-      console.warn('[FlashDealsSection] Failed to fetch flash deals. Using demo deals.', error?.message || error);
-    }
-  }
+  });
 
-  // Robustness: Ensure we always have at least 4 high-quality items for a full row
-  if (!flashDeals || flashDeals.length < 4) {
-    const existingIds = new Set(flashDeals.map(d => d.id));
-    const placeholders = demoDeals
-      .filter(d => !existingIds.has(d.id))
-      .map(d => ({
-        ...d,
-        image: d.image,
-        isDemo: true
-      }));
-    flashDeals = [...flashDeals, ...placeholders].slice(0, 4);
-  }
+  const flashDeals: FlashDeal[] = padWithDemoData(
+    fetched,
+    demoDeals as unknown as FlashDeal[],
+    MIN_FLASH_DEALS
+  );
 
   return (
-    <section className="py-24 relative overflow-hidden bg-slate-900" aria-labelledby="flash-deals-heading">
-      {/* Cinematic Background Elements */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(239,68,68,0.1),transparent_40%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,rgba(59,130,246,0.1),transparent_40%)]" />
+    <section className="py-12 sm:py-16" aria-labelledby="flash-deals-heading">
+      {/*
+        The dark treatment is a PANEL inside the container, not a full-bleed
+        band on the <section>.
 
-      <div className="container relative z-10 mx-auto px-4 md:px-6">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+        Previously `bg-slate-950` sat on the <section>, so it ran edge to edge
+        while every neighbouring section's content stopped at the container's
+        max-width. Only two sections on the homepage carry a strong background
+        colour — this one and the app-download gradient — so those two read as
+        full-width while everything else read as a centred column, and the page
+        appeared to switch width as you scrolled. Constraining the panel gives
+        every section one visible left and right edge.
+      */}
+      <div className="container mx-auto">
+        <div className="rounded-3xl bg-slate-950 p-6 sm:p-8 lg:p-10">
+        <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-xl">
-            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold uppercase tracking-widest mb-6">
-              <BadgeIcon className="w-3.5 h-3.5" />
+            <div className="mb-4 inline-flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-bold tracking-widest text-red-400 uppercase">
+              <BadgeIcon className="h-3.5 w-3.5" aria-hidden="true" />
               {badge.text}
             </div>
-            <h2 id="flash-deals-heading" className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-4">
-              {heading.main} <br />
-              <span className="text-red-500">{heading.highlight}</span> {heading.suffix}
+            <h2
+              id="flash-deals-heading"
+              className="mb-3 text-2xl font-semibold tracking-normal text-white sm:text-3xl"
+            >
+              {heading.main} <span className="text-red-500">{heading.highlight}</span>{' '}
+              {heading.suffix}
             </h2>
-            <div className="flex items-center gap-4 text-slate-400">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-400">
               <div className="flex items-center gap-2">
-                <CountdownIcon className="w-5 h-5 text-red-500" />
-                <span className="font-mono font-bold text-white">{countdown.placeholder}</span>
+                <SubheadingIcon className="h-5 w-5 text-red-500" aria-hidden="true" />
+                <p>{subheading.text}</p>
               </div>
-              <span className="hidden sm:block">|</span>
-              <p className="hidden sm:block">{countdown.label}</p>
             </div>
           </div>
 
           <Link
             href={action.href}
-            className="group flex items-center gap-3 text-white font-bold hover:text-red-500 transition-colors"
+            className="group flex items-center gap-3 text-sm font-bold text-white transition-colors hover:text-red-400"
           >
             {action.label}
-            <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center group-hover:border-red-500/50 group-hover:bg-red-500/10 transition-all">
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </div>
+            <span className="flex h-10 w-10 items-center justify-center rounded-md border border-white/20 transition-colors group-hover:border-red-500/50 group-hover:bg-red-500/10">
+              <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            </span>
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {flashDeals.slice(0, 4).map((deal) => {
             const discount = getDiscountPercentage(deal.price, deal.oldPrice);
-            
+            const lowStockThreshold =
+              deal.lowStockThreshold ?? PRODUCT_FORM_CONSTANTS.DEFAULT_LOW_STOCK_THRESHOLD;
+            const isLowStock =
+              typeof deal.stockQuantity === 'number' && deal.stockQuantity <= lowStockThreshold;
+
             return (
-              <Link
+              <PlaceholderAwareLink
                 key={deal.id}
+                isPlaceholder={deal.isDemo}
                 href={APP_ROUTES.PRODUCT_DETAIL(deal.id.toString())}
-                className="group relative block h-full focus:outline-none"
+                className="group relative block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
-                <Card className="h-full overflow-hidden border-slate-800 bg-slate-950 transition-all duration-500 hover:border-red-500/50 hover:shadow-2xl hover:shadow-red-500/10">
-                  <CardContent className="p-0 flex flex-col items-center h-full">
-                    {/* Image Area with Zoom & Discount Badge */}
-                    <div className="relative aspect-square w-full bg-slate-900 overflow-hidden">
+                <Card className="h-full overflow-hidden border-slate-800 bg-slate-950 transition-colors duration-200 hover:border-red-500/60 hover:shadow-md">
+                  <CardContent className="flex h-full flex-col items-center p-0">
+                    <div className="relative aspect-square w-full overflow-hidden bg-slate-900">
                       <Image
                         src={deal.image}
-                        alt=""
+                        alt={deal.title}
                         fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-110"
+                        className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         unoptimized={deal.isDemo}
                       />
 
                       {discount && (
-                        <div className="absolute top-4 left-4 z-20">
-                          <div className="bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-sm shadow-xl flex items-center gap-1 uppercase tracking-tighter animate-pulse">
-                            <TrendingDown className="w-3 h-3" />
+                        <div className="absolute top-3 left-3 z-20">
+                          <div className="flex items-center gap-1 rounded-sm bg-red-600 px-2 py-1 text-[10px] font-black tracking-normal text-white uppercase shadow-sm">
+                            <TrendingDown className="h-3 w-3" aria-hidden="true" />
                             {discount}% OFF
                           </div>
                         </div>
                       )}
 
-                      <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-transparent to-transparent opacity-60" />
+                      {deal.isDemo && (
+                        <PreviewBadge className="absolute top-3 right-3 z-20" />
+                      )}
                     </div>
 
-                    {/* Content Area */}
-                    <div className="p-6 w-full flex flex-col flex-grow items-center text-center">
-                      <h3 className="font-bold text-lg text-white mb-2 group-hover:text-red-500 transition-colors line-clamp-1 uppercase tracking-tight">
+                    <div className="flex w-full flex-grow flex-col items-center p-4 text-center">
+                      <h3 className="mb-3 line-clamp-2 min-h-10 text-sm leading-5 font-semibold text-white uppercase transition-colors group-hover:text-red-400 sm:text-base">
                         {deal.title}
                       </h3>
 
-                      <div className="flex items-center gap-3 mb-6">
-                        <span className="text-2xl font-black text-white">
+                      <div className="mb-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+                        <span className="text-lg font-bold text-white sm:text-xl">
                           {formatPrice(deal.price)}
                         </span>
                         {deal.oldPrice && (
-                          <span className="text-sm line-through text-slate-500 font-bold italic">
+                          <span className="text-sm font-semibold text-slate-500 line-through">
                             {formatPrice(deal.oldPrice)}
                           </span>
                         )}
                       </div>
 
-                      <div className="mt-auto w-full">
-                        <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mb-3">
-                          <div className="h-full bg-red-600 w-3/4 animate-shimmer" />
+                      {isLowStock && (
+                        <div className="mt-auto w-full">
+                          <p className="text-center text-[10px] font-black tracking-widest text-red-500 uppercase">
+                            {card.lowStockLabel} {deal.stockQuantity} {card.lowStockSuffix}
+                          </p>
                         </div>
-                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
-                          <span>{card.soldLabel} 142</span>
-                          <span className="text-red-500">{card.leftLabel} 8 {card.leftSuffix}</span>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
+              </PlaceholderAwareLink>
             );
           })}
+        </div>
         </div>
       </div>
     </section>

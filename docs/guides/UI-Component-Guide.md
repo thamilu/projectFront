@@ -1,9 +1,11 @@
 # Button Component - Usage Examples
 
 ## Overview
+
 Enterprise-grade Button component with loading states, accessibility enforcement, and responsive touch targets.
 
 ## Features
+
 - ✅ Default `type="button"` prevents accidental form submissions
 - ✅ WCAG-compliant touch targets (min 44px for icon buttons, 40px for all buttons)
 - ✅ Loading state with spinner and `aria-busy`
@@ -35,7 +37,7 @@ import { Button } from '@/components/ui/button';
 const [isLoading, setIsLoading] = useState(false);
 
 // Async action button
-<Button 
+<Button
   loading={isLoading}
   onClick={async () => {
     setIsLoading(true);
@@ -44,7 +46,7 @@ const [isLoading, setIsLoading] = useState(false);
   }}
 >
   Add to Cart
-</Button>
+</Button>;
 
 // Automatically disables button and shows spinner
 // Sets aria-busy="true" for screen readers
@@ -54,8 +56,8 @@ const [isLoading, setIsLoading] = useState(false);
 
 ```tsx
 // ✅ CORRECT - aria-label required by TypeScript
-<Button 
-  size="icon" 
+<Button
+  size="icon"
   aria-label="Delete item"
 >
   <Trash className="h-5 w-5" />
@@ -102,53 +104,40 @@ const [isLoading, setIsLoading] = useState(false);
 ## E-commerce Examples
 
 ### Add to Cart Button
+
 ```tsx
-<Button
-  loading={isAddingToCart}
-  disabled={!product.inStock}
-  onClick={handleAddToCart}
->
+<Button loading={isAddingToCart} disabled={!product.inStock} onClick={handleAddToCart}>
   <ShoppingCart className="mr-2 h-4 w-4" />
   {product.inStock ? 'Add to Cart' : 'Out of Stock'}
 </Button>
 ```
 
 ### Checkout Button
+
 ```tsx
-<Button 
-  fullWidth 
-  size="lg" 
-  type="submit"
-  loading={isProcessing}
->
+<Button fullWidth size="lg" type="submit" loading={isProcessing}>
   Complete Purchase • ${total.toFixed(2)}
 </Button>
 ```
 
 ### Product Actions Row
+
 ```tsx
 <div className="flex gap-2">
   <Button fullWidth loading={isAddingToCart}>
     Add to Cart
   </Button>
-  <Button 
-    size="icon" 
-    variant="outline"
-    aria-label="Add to wishlist"
-  >
+  <Button size="icon" variant="outline" aria-label="Add to wishlist">
     <Heart />
   </Button>
-  <Button 
-    size="icon" 
-    variant="outline"
-    aria-label="Share product"
-  >
+  <Button size="icon" variant="outline" aria-label="Share product">
     <Share2 />
   </Button>
 </div>
 ```
 
 ### View Mode Toggle
+
 ```tsx
 <div className="flex gap-2">
   <Button
@@ -178,7 +167,7 @@ import Link from 'next/link';
 // Render as Next.js Link
 <Button asChild>
   <Link href="/products">Browse Products</Link>
-</Button>
+</Button>;
 
 // Note: when asChild=true, type is not passed through
 // The child component controls its own type attribute
@@ -211,17 +200,20 @@ import Link from 'next/link';
 ## Migration from Old Version
 
 ### Breaking Changes
+
 1. Icon buttons now require `aria-label` (compile-time error if missing)
 2. Touch targets increased: `sm` is now 40px (was 36px), `icon` is now 44px (was 40px)
 3. Icons now scale per size variant (different from fixed `size-4`)
 
 ### New Features
+
 - `loading` prop with automatic spinner
 - `fullWidth` variant
 - `type="button"` default (prevents form submission bugs)
 - Better mobile active state
 
 ### Example Migration
+
 ```tsx
 // Before
 <Button size="icon">

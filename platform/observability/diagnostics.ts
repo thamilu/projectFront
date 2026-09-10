@@ -21,12 +21,13 @@ export interface SystemDiagnostics {
 
 /**
  * Runtime Diagnostics Telemetry Platform
- * 
+ *
  * Collects and serves unified frontend operational metrics.
  * Exposes a programmatic API and attaches to `window.__diagnostics` for developers and automation.
  */
 class DiagnosticsPlatform {
-  private apiMetrics: Map<string, { calls: number; failures: number; latencyList: number[] }> = new Map();
+  private apiMetrics: Map<string, { calls: number; failures: number; latencyList: number[] }> =
+    new Map();
   private systemMetrics: SystemDiagnostics = {
     hydrationTimeMs: null,
     layoutShiftsExceededCount: 0,
@@ -55,7 +56,7 @@ class DiagnosticsPlatform {
     if (isFailure) {
       metric.failures++;
     }
-    
+
     // Maintain a rolling buffer of the last 100 requests for p95 calculations
     metric.latencyList.push(durationMs);
     if (metric.latencyList.length > 100) {
@@ -115,7 +116,7 @@ class DiagnosticsPlatform {
       const sortedLatencies = [...metric.latencyList].sort((a, b) => a - b);
       const sum = sortedLatencies.reduce((acc, curr) => acc + curr, 0);
       const average = sortedLatencies.length > 0 ? Math.round(sum / sortedLatencies.length) : 0;
-      
+
       // Calculate 95th percentile
       const p95Idx = Math.max(0, Math.floor(sortedLatencies.length * 0.95) - 1);
       const p95 = sortedLatencies.length > 0 ? sortedLatencies[p95Idx] : 0;
@@ -136,15 +137,24 @@ class DiagnosticsPlatform {
       apiPerformance: apiDiagnostics,
       browserPerformance: {
         ...this.systemMetrics,
-        browserContext: typeof window !== 'undefined' ? {
-          url: window.location.href,
-          userAgent: navigator.userAgent,
-          screenResolution: `${window.screen.width}x${window.screen.height}`,
-          memoryUsage: (performance as any).memory ? {
-            usedJSHeapSizeMb: Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024),
-            totalJSHeapSizeMb: Math.round((performance as any).memory.totalJSHeapSize / 1024 / 1024),
-          } : 'Unsupported by browser',
-        } : 'Non-browser scope',
+        browserContext:
+          typeof window !== 'undefined'
+            ? {
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+                screenResolution: `${window.screen.width}x${window.screen.height}`,
+                memoryUsage: (performance as any).memory
+                  ? {
+                      usedJSHeapSizeMb: Math.round(
+                        (performance as any).memory.usedJSHeapSize / 1024 / 1024
+                      ),
+                      totalJSHeapSizeMb: Math.round(
+                        (performance as any).memory.totalJSHeapSize / 1024 / 1024
+                      ),
+                    }
+                  : 'Unsupported by browser',
+              }
+            : 'Non-browser scope',
       },
     };
   }

@@ -1,0 +1,801 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════
+ * ENTERPRISE DESIGN SYSTEM — BASE ELEMENT NORMALIZATION
+ * Version: 4.0.0
+ * Layer: base
+ *
+ * Architecture Principles:
+ *   - All var() calls include typed fallback values
+ *   - Logical properties throughout (RTL/LTR ready)
+ *   - DRY: :is() grouping, no repeated values
+ *   - WCAG 2.1 AA + 2.5.5 touch target compliance
+ *   - 3-tier unified focus system (no duplication)
+ *   - color-scheme declared for native element theming
+ *   - System dark mode complete safety net (14 tokens)
+ *   - CSS nesting unfolded — Safari 16.x compatible
+ *   - No magic numbers — all values tokenized or derived
+ *   - content-visibility used correctly (section-level only)
+ *   - Deprecated properties removed
+ *   - touch-action on all interactive elements
+ *   - @layer order declared — not commented out
+ *
+ * Layer Order (idempotent — first declaration wins):
+ *   reset → base → tokens → components → patterns → utilities → overrides
+ * ═══════════════════════════════════════════════════════════════════
+ */
+
+/* ── 1. Layer Order ────────────────────────────────────── */
+@layer reset, base, tokens, components, patterns, utilities, overrides;
+
+@layer base {
+  /* ── 2. Box Model Reset ─────────────────────────────── */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ── 3. Root / HTML ─────────────────────────────────── */
+  html {
+    /* Prevent font size inflation on mobile */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+
+    /* Layout stability — reserves scrollbar space to prevent CLS */
+    scrollbar-gutter: stable;
+
+    /* Base font size — 1rem = 16px */
+    font-size: 16px;
+
+    /* Font rendering — optimizeSpeed globally, optimizeLegibility for headings */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeSpeed;
+
+    /* Consistent tab display in code blocks */
+    tab-size: 4;
+
+    /*
+     * Compensates for the sticky site header (shared/ui/layout/header.tsx,
+     * position: sticky; top: 0). Without this, any scroll-into-view
+     * triggered by an anchor/hash link or by focus moving to an element
+     * (e.g. the WCAG 2.4.1 skip-link's #main-content target) lands that
+     * content flush with the viewport top — directly underneath the fixed
+     * header — instead of visibly below it. The fallback (before JS runs)
+     * matches the header's typical rendered height; use-header-height-var.ts
+     * overwrites --header-height with the real measured value on mount and
+     * on resize, since the header's actual height varies with the
+     * promo/utility bar's presence.
+     */
+    --header-height: 128px;
+    scroll-padding-top: var(--header-height);
+  }
+
+  /* Smooth scroll — only when user has no motion preference */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  /* ── 4. Color Scheme & Base Behavior ─────────── */
+  :root {
+    /* Firefox scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--color-scrollbar-thumb, 0 0% 70%))
+      hsl(var(--color-scrollbar-track, 0 0% 95%));
+  }
+
+  /* Explicit theme color-schemes */
+  :root.light,
+  [data-theme='light'] {
+    color-scheme: light;
+  }
+
+  :root.dark,
+  [data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  /*
+   * System Color Scheme
+   * Only activates when no explicit .light or .dark class is set.
+   */
+  @media (prefers-color-scheme: dark) {
+    :root:not(.light):not(.dark):not([data-theme]) {
+      color-scheme: dark;
+    }
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not(.light):not(.dark):not([data-theme]) {
+      color-scheme: light;
+    }
+  }
+
+  /* ── 5. Body ─────────────────────────────────────────── */
+  body {
+    background-color: hsl(var(--color-background, 0 0% 100%));
+    color: hsl(var(--color-foreground, 0 0% 9%));
+    font-family: var(
+      --font-sans,
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
+      sans-serif
+    );
+    font-size: var(--text-base, 1rem);
+    font-weight: var(--font-weight-normal, 400);
+    line-height: var(--leading-normal, 1.5);
+    min-height: 100dvh;
+
+    /* Prevent layout shift from scrollbar appearing/disappearing */
+    overflow-y: scroll;
+
+    /* Modern font feature approach — semantic, readable, correct */
+    font-kerning: normal;
+    font-variant-ligatures: common-ligatures contextual;
+    font-optical-sizing: auto;
+  }
+
+  /* ── 6. Skip Navigation (WCAG 2.4.1) ────────────────── */
+  /*
+   * Must be the FIRST focusable element in the DOM.
+   * Example HTML: <a href="#main-content" class="skip-nav">Skip to main content</a>
+   */
+  .skip-nav {
+    position: absolute;
+    top: -100%;
+    inset-inline-start: var(--space-4, 1rem);
+    z-index: 9999;
+    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+    background-color: hsl(var(--color-primary, 221 83% 53%));
+    color: hsl(var(--color-primary-foreground, 0 0% 100%));
+    border-radius: var(--radius-md, 0.375rem);
+    font-weight: var(--font-weight-semibold, 600);
+    font-size: var(--text-base, 1rem);
+    text-decoration: none;
+    transition: top 0.1s ease;
+    /* Eliminate tap delay in webview environments */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Flat selector — no nesting, maximum browser compatibility */
+  .skip-nav:focus,
+  .skip-nav:focus-visible {
+    top: var(--space-4, 1rem);
+  }
+
+  /* ── 7. Headings ─────────────────────────────────────── */
+  /*
+   * Shared properties via :is() — DRY, single edit point.
+   * text-rendering: optimizeLegibility scoped to headings only
+   * for performance (avoids 30% text render slowdown on body text).
+   */
+  :is(h1, h2, h3, h4, h5, h6) {
+    color: hsl(var(--color-foreground, 0 0% 9%));
+    text-wrap: balance;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1 {
+    font-size: var(--typography-h1-size, 2.25rem);
+    font-weight: var(--typography-h1-weight, 800);
+    line-height: var(--typography-h1-leading, 1.1);
+    letter-spacing: var(--tracking-tight, -0.025em);
+  }
+
+  h2 {
+    font-size: var(--typography-h2-size, 1.875rem);
+    font-weight: var(--typography-h2-weight, 700);
+    line-height: var(--typography-h2-leading, 1.2);
+    letter-spacing: var(--tracking-tight, -0.025em);
+  }
+
+  h3 {
+    font-size: var(--typography-h3-size, 1.5rem);
+    font-weight: var(--typography-h3-weight, 700);
+    line-height: var(--typography-h3-leading, 1.25);
+    letter-spacing: var(--tracking-snug, -0.015em);
+  }
+
+  h4 {
+    font-size: var(--typography-h4-size, 1.25rem);
+    font-weight: var(--typography-h4-weight, 600);
+    line-height: var(--typography-h4-leading, 1.3);
+    letter-spacing: var(--tracking-normal, 0em);
+  }
+
+  h5 {
+    font-size: var(--typography-h5-size, 1.125rem);
+    font-weight: var(--typography-h5-weight, 600);
+    line-height: var(--typography-h5-leading, 1.4);
+    letter-spacing: var(--tracking-normal, 0em);
+  }
+
+  h6 {
+    font-size: var(--typography-h6-size, 1rem);
+    font-weight: var(--typography-h6-weight, 600);
+    line-height: var(--typography-h6-leading, 1.5);
+    letter-spacing: var(--tracking-normal, 0em);
+  }
+
+  /* ── 8. Body Text ────────────────────────────────────── */
+  /*
+   * IMPORTANT: max-inline-size intentionally NOT set here.
+   * Prose width constraint belongs in the utilities/prose layer.
+   * Use .prose class on article containers for reading-optimized width.
+   * Setting it here causes conflicts in cards, tables, modals, and notifications.
+   *
+   * See: @layer utilities → .prose
+   */
+  p {
+    line-height: var(--leading-relaxed, 1.625);
+    color: hsl(var(--color-foreground, 0 0% 9%));
+    text-wrap: pretty;
+  }
+
+  /* ── 9. Links ────────────────────────────────────────── */
+  a {
+    color: inherit;
+    text-decoration: none;
+    transition: var(--transition-color, color 150ms ease);
+    /* Eliminate 300ms tap delay — critical for perceived performance */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  a:hover {
+    text-decoration: none;
+  }
+
+  p a,
+  .prose a,
+  .content-link {
+    color: hsl(var(--color-primary, 221 83% 53%));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+
+  p a:hover,
+  .prose a:hover,
+  .content-link:hover {
+    color: hsl(var(--color-primary-hover, 221 83% 43%));
+    text-decoration-thickness: 2px;
+  }
+
+  /* ── 10. Focus System — Unified 3-Tier Architecture ─── */
+  /*
+   * ┌────────────────────────────────────────────────────────┐
+   * │ FOCUS SYSTEM ARCHITECTURE                              │
+   * │                                                        │
+   * │ Tier 1 → :focus-visible                                │
+   * │   All focusable elements                               │
+   * │   Method: outline (works with any border-radius)       │
+   * │                                                        │
+   * │ Tier 2 → Interactive controls                          │
+   * │   a, button, [role="button"], ARIA roles               │
+   * │   Method: box-shadow (border-radius aware)             │
+   * │                                                        │
+   * │ Tier 3 → Form inputs                                   │
+   * │   input, textarea, select                              │
+   * │   Method: box-shadow + border-color change             │
+   * │   Reason: dual feedback (ring + border) aids usability │
+   * └────────────────────────────────────────────────────────┘
+   */
+
+  /* Tier 1 — Universal baseline */
+  :focus-visible {
+    outline: 2px solid hsl(var(--color-ring, 221 83% 53%));
+    outline-offset: 2px;
+  }
+
+  /* Tier 2 — Interactive controls (shadow ring, no outline) */
+  a:focus-visible,
+  button:focus-visible,
+  [role='button']:focus-visible,
+  [role='combobox']:focus-visible,
+  [role='listbox']:focus-visible,
+  [role='option']:focus-visible,
+  [role='menuitem']:focus-visible,
+  [role='menuitemcheckbox']:focus-visible,
+  [role='menuitemradio']:focus-visible,
+  [role='tab']:focus-visible,
+  [role='treeitem']:focus-visible,
+  [role='gridcell']:focus-visible,
+  [tabindex]:not([tabindex='-1']):focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px hsl(var(--color-background, 0 0% 100%)),
+      0 0 0 4px hsl(var(--color-ring, 221 83% 53%));
+  }
+
+  /* Tier 3 — Form inputs (shadow ring + border-color signal) */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+    border-color: hsl(var(--color-input-focus, 221 83% 53%));
+    box-shadow:
+      0 0 0 2px hsl(var(--color-background, 0 0% 100%)),
+      0 0 0 4px hsl(var(--color-ring, 221 83% 53%));
+  }
+
+  /* ── 11. Images & Media ──────────────────────────────── */
+  img,
+  video,
+  canvas,
+  audio {
+    display: block;
+    max-width: 100%;
+  }
+
+  img {
+    height: auto;
+    /*
+     * content-visibility: auto — intentionally NOT set here.
+     * It belongs on section-level layout containers, not replaced elements.
+     * On <img>, it causes layout shift (CLS) by treating image
+     * dimensions as 0×0 until visible — the opposite of our intent.
+     *
+     * Correct usage in component layer:
+     *   .card-list { content-visibility: auto; contain-intrinsic-size: auto 300px; }
+     */
+  }
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+    /*
+     * No global fill. Multi-color SVGs (logos, charts, illustrations)
+     * define their own fill values.
+     *
+     * For icon SVGs, use the .icon class:
+     *   <svg class="icon" ...>
+     */
+  }
+
+  /* Opt-in: icon-mode SVGs that should inherit text color */
+  .icon {
+    fill: currentColor;
+    width: 1em;
+    height: 1em;
+    flex-shrink: 0;
+  }
+
+  /* ── 12. Form Elements ───────────────────────────────── */
+
+  /* Shared reset — ensures forms inherit document typography */
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  /* Base input styles */
+  input,
+  textarea,
+  select {
+    background-color: hsl(var(--color-input, 0 0% 100%));
+    border: 1px solid hsl(var(--color-border, 0 0% 89%));
+    border-radius: var(--radius-input, 0.375rem);
+    color: hsl(var(--color-foreground, 0 0% 9%));
+    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    transition:
+      var(--transition-color, color 150ms ease),
+      var(--transition-shadow, box-shadow 150ms ease),
+      border-color 150ms ease;
+
+    /*
+     * max-width: 100% — overflow protection without forcing full width.
+     * Component layer controls actual width (100%, auto, fixed, etc.).
+     */
+    max-width: 100%;
+    min-height: var(--size-touch-target, 44px); /* WCAG 2.5.5 */
+  }
+
+  /* Placeholder text */
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--color-muted-foreground, 0 0% 45%));
+    opacity: 1; /* Firefox applies 0.54 opacity by default */
+  }
+
+  /* Textarea-specific */
+  textarea {
+    resize: vertical;
+    min-height: calc(var(--size-touch-target, 44px) * 2.5);
+    line-height: var(--leading-relaxed, 1.625);
+  }
+
+  /* ── 13. Buttons ─────────────────────────────────────── */
+  button {
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-button, 0.375rem);
+    min-height: var(--size-touch-target, 44px); /* WCAG 2.5.5 */
+    padding-inline: var(--space-4, 1rem);
+    transition:
+      var(--transition-color, color 150ms ease), var(--transition-shadow, box-shadow 150ms ease),
+      var(--transition-transform, transform 100ms ease);
+
+    /* Prevent text selection on rapid/double clicks */
+    user-select: none;
+
+    /* Eliminate 300ms tap delay in webview/embedded environments */
+    touch-action: manipulation;
+
+    /* Remove iOS tap flash */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── 14. Disabled States ─────────────────────────────── */
+  /*
+   * IMPORTANT DISTINCTION:
+   *
+   * :disabled / [disabled] → Natively disabled (inert to ALL interaction)
+   *   pointer-events: none correct here — element is truly non-functional
+   *
+   * [aria-disabled='true'] → Announced disabled, but MAY still receive
+   *   hover events for tooltip explanations ("Complete required fields first")
+   *   pointer-events: none WRONG here — breaks tooltip UX pattern
+   */
+
+  /* Native disabled — fully inert */
+  :disabled,
+  [disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* ARIA disabled — cursor feedback but hover/focus preserved */
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+    opacity: 0.5;
+    /* pointer-events intentionally NOT set */
+  }
+
+  /* ── 15. Tables ──────────────────────────────────────── */
+  /*
+   * .table-wrapper must wrap <table> in HTML for mobile overflow.
+   * Example: <div class="table-wrapper"><table>...</table></div>
+   */
+  .table-wrapper {
+    overflow-x: auto;
+    /* -webkit-overflow-scrolling: touch — REMOVED (deprecated iOS 13+) */
+    border-radius: var(--radius-lg, 0.5rem);
+
+    /* Prevent table scroll from propagating to page scroll (mobile UX) */
+    overscroll-behavior-x: contain;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    caption-side: bottom;
+  }
+
+  caption {
+    font-size: var(--text-sm, 0.875rem);
+    color: hsl(var(--color-muted-foreground, 0 0% 45%));
+    margin-block-start: var(--space-3, 0.75rem);
+    text-align: start;
+  }
+
+  th,
+  td {
+    text-align: start;
+    padding-block: var(--space-3, 0.75rem);
+    padding-inline: var(--space-4, 1rem);
+  }
+
+  th {
+    font-weight: var(--font-weight-semibold, 600);
+    font-size: var(--text-sm, 0.875rem);
+    color: hsl(var(--color-muted-foreground, 0 0% 45%));
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider, 0.05em);
+    border-bottom: 2px solid hsl(var(--color-border, 0 0% 89%));
+    /* Prevent header text from wrapping in compact tables */
+    white-space: nowrap;
+  }
+
+  td {
+    border-bottom: 1px solid hsl(var(--color-border, 0 0% 89%));
+    vertical-align: top;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* ── 16. Lists ───────────────────────────────────────── */
+  ul,
+  ol {
+    padding-inline-start: var(--space-6, 1.5rem);
+  }
+
+  li {
+    line-height: var(--leading-relaxed, 1.625);
+  }
+
+  /*
+   * Navigation and role="list" elements remove default list styling.
+   * This follows the pattern where list-style removal is semantic intent,
+   * not just visual — preserving proper AT announcement when role="list"
+   * is present (Safari VoiceOver fix).
+   */
+  nav ul,
+  nav ol,
+  [role='list'] {
+    list-style: none;
+    padding-inline-start: 0;
+  }
+
+  /* ── 17. Code & Pre ──────────────────────────────────── */
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(
+      --font-mono,
+      ui-monospace,
+      'Cascadia Code',
+      'Source Code Pro',
+      Menlo,
+      Consolas,
+      monospace
+    );
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  /* Inline code */
+  code {
+    background-color: hsl(var(--color-muted, 0 0% 96%));
+    border-radius: var(--radius-sm, 0.25rem);
+    padding: var(--space-0-5, 0.125rem) var(--space-1, 0.25rem);
+    color: hsl(var(--color-foreground, 0 0% 9%));
+
+    /* Ligatures visually change code meaning — disable for code clarity */
+    font-variant-ligatures: none;
+  }
+
+  /* Code block */
+  pre {
+    background-color: hsl(var(--color-muted, 0 0% 96%));
+    border-radius: var(--radius-lg, 0.5rem);
+    padding: var(--space-4, 1rem);
+    overflow-x: auto;
+    tab-size: 2;
+    line-height: var(--leading-relaxed, 1.625);
+  }
+
+  /* Code inside pre block — reset inline code styles */
+  pre code {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit; /* Prevent var(--text-sm) compounding */
+    color: inherit; /* Inherit from syntax highlighter */
+  }
+
+  /* ── 18. Keyboard Keys ───────────────────────────────── */
+  kbd {
+    background-color: hsl(var(--color-background, 0 0% 100%));
+    border: 1px solid hsl(var(--color-border, 0 0% 89%));
+    border-bottom-width: 2px; /* Physical key depth effect */
+    border-radius: var(--radius-sm, 0.25rem);
+    padding: var(--space-0-5, 0.125rem) var(--space-1-5, 0.375rem);
+    box-shadow: inset 0 -1px 0 hsl(var(--color-border, 0 0% 89%));
+    color: hsl(var(--color-foreground, 0 0% 9%));
+    /*
+     * --text-kbd is a dedicated token slightly smaller than --text-sm.
+     * Fallback: 0.8125rem = 13px (documented, not a magic number).
+     */
+    font-size: var(--text-kbd, 0.8125rem);
+    font-style: normal;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  /* ── 19. Blockquote ──────────────────────────────────── */
+  blockquote {
+    border-inline-start: 4px solid hsl(var(--color-border, 0 0% 89%));
+    padding-inline-start: var(--space-4, 1rem);
+    margin-inline: 0;
+    color: hsl(var(--color-muted-foreground, 0 0% 45%));
+    font-style: italic;
+  }
+
+  blockquote cite {
+    display: block;
+    margin-block-start: var(--space-2, 0.5rem);
+    font-size: var(--text-sm, 0.875rem);
+    font-style: normal;
+    font-weight: var(--font-weight-medium, 500);
+    color: hsl(var(--color-foreground, 0 0% 9%));
+  }
+
+  /* Flat selector — no nesting, Safari 16.x compatible */
+  blockquote cite::before {
+    content: '— ';
+  }
+
+  /* ── 20. Abbreviations ───────────────────────────────── */
+  abbr[title] {
+    text-decoration: underline dotted;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+    cursor: help;
+  }
+
+  /* ── 21. HR ──────────────────────────────────────────── */
+  hr {
+    border: none;
+    border-block-start: 1px solid hsl(var(--color-border, 0 0% 89%));
+    margin-block: var(--space-6, 1.5rem);
+    color: inherit; /* Firefox: prevents inherited color bleeding into border */
+  }
+
+  /* ── 22. Selection ───────────────────────────────────── */
+  /*
+   * Pre-lightened token approach — avoids alpha channel in var() fallbacks
+   * which has inconsistent parsing in Safari 15 / Firefox 113.
+   */
+  ::selection {
+    background-color: hsl(var(--selection-bg-hsl, 221 83% 85%));
+    color: hsl(var(--selection-fg-hsl, 221 83% 20%));
+  }
+
+  /* ── 23. Scrollbars ──────────────────────────────────── */
+
+  /* WebKit (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--color-scrollbar-thumb, 0 0% 70%));
+    border-radius: var(--radius-full, 9999px);
+
+    /* Creates visual padding around thumb without extra DOM */
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  /* Flat selector — no nesting */
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--color-scrollbar-thumb-hover, 0 0% 50%));
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* ── 24. Reduced Motion ──────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* ── 25. High Contrast Mode ──────────────────────────── */
+  @media (forced-colors: active) {
+    * {
+      forced-color-adjust: auto;
+    }
+
+    /* Ensure borders are visible in high contrast */
+    button,
+    input,
+    select,
+    textarea {
+      border: 1px solid ButtonText;
+    }
+
+    /* Override shadow-based focus with outline for forced-colors */
+    :focus-visible {
+      outline: 3px solid Highlight;
+      outline-offset: 2px;
+    }
+
+    a {
+      color: LinkText;
+    }
+    a:visited {
+      color: VisitedText;
+    }
+  }
+
+  /* ── 26. Print Styles ─────────────────────────────────── */
+  @media print {
+    @page {
+      margin: 1.5cm 2cm;
+      size: A4 portrait;
+    }
+
+    @page :first {
+      margin-top: 3cm; /* Physical property — universal @page support */
+    }
+
+    *,
+    *::before,
+    *::after {
+      background: transparent !important;
+      color: black !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+
+    a,
+    a:visited {
+      text-decoration: underline;
+    }
+
+    a[href]:not([href^='#']):not([href^='mailto'])::after {
+      content: ' (' attr(href) ')';
+      font-size: 0.875em;
+    }
+
+    abbr[title]::after {
+      content: ' (' attr(title) ')';
+    }
+
+    /* Avoid broken layouts */
+    section,
+    article,
+    blockquote {
+      break-inside: avoid;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    tr,
+    img {
+      break-inside: avoid;
+    }
+
+    p,
+    h2,
+    h3 {
+      orphans: 3;
+      widows: 3;
+    }
+
+    h2,
+    h3 {
+      break-after: avoid;
+    }
+
+    /* Print utility classes */
+    .print\:hidden {
+      display: none !important;
+    }
+    .print\:block {
+      display: block !important;
+    }
+  }
+} /* end @layer base */

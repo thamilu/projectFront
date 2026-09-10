@@ -60,6 +60,18 @@ describe('LanguageFields Component', () => {
     expect(languageSelectTrigger).toBeDisabled();
   });
 
+  it('shows the language name without a flag emoji prefix (Windows Chromium renders regional-indicator flag emoji as raw letter pairs, e.g. "us English")', () => {
+    render(
+      <FormWrapper>
+        <LanguageFields />
+      </FormWrapper>
+    );
+
+    const languageSelectTrigger = screen.getByRole('combobox', { name: /preferred language/i });
+    expect(languageSelectTrigger).toHaveTextContent('English');
+    expect(languageSelectTrigger.textContent).not.toMatch(/🇺🇸/);
+  });
+
   it('respects extra classNames passed to the container', () => {
     render(
       <FormWrapper>

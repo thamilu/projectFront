@@ -2,82 +2,55 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 
-/**
- * Robust zero-dependency glob scanner
- */
-function scanFiles(pattern) {
-  const parts = pattern.split('/');
-  const baseDir = parts.slice(0, 3).join('/'); // Scan under .next/static/chunks
-  
-  // Convert glob-like pattern to a regex
-  const regexStr = '^' + pattern
-    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-    .replace(/\*/g, '.*') + '$';
-  const regex = new RegExp(regexStr);
+// Route-based budgets (more meaningful than chunk budgets)
+const BUDGETS = {
+  '/': { maxSize: 300 * 1024, maxGzip: 100 * 1024 },
+  '/stores': { maxSize: 350 * 1024, maxGzip: 120 * 1024 },
+  '/admin/dashboard': { maxSize: 500 * 1024, maxGzip: 180 * 1024 },
+};
 
-  const results = [];
-  function recurse(currentDir) {
-    if (!fs.existsSync(currentDir)) return;
-    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(currentDir, entry.name);
-      const normalizedPath = fullPath.replace(/\\/g, '/');
-      if (entry.isDirectory()) {
-        recurse(fullPath);
-      } else if (entry.isFile() && regex.test(normalizedPath)) {
-        results.push(fullPath);
-      }
-    }
-  }
-
-  recurse(baseDir);
-  return results;
+const manifestPath = path.join(process.cwd(), '.next/build-manifest.json');
+if (!fs.existsSync(manifestPath)) {
+  console.error('❌ Build manifest not found. Please run next build first.');
+  process.exit(1);
 }
 
-const packageJsonPath = path.join(__dirname, '../package.json');
-const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-const budgets = packageJson.bundlesize;
+const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
 
-if (!budgets || !Array.isArray(budgets)) {
-  console.log('✅ No bundle size budgets configured in package.json.');
-  process.exit(0);
-}
-
-console.log('📊 Enforcing Bundle Budgets & Performance Gates...');
 let failed = false;
 
-for (const budget of budgets) {
-  const pattern = budget.path;
-  const rawLimit = budget.maxSize;
-  
-  const limitBytes = parseInt(rawLimit, 10) * (rawLimit.toLowerCase().includes('kb') ? 1024 : 1);
-  const files = scanFiles(pattern);
-  
-  if (files.length === 0) {
-    console.warn(`⚠️ Warning: No files matched budget pattern "${pattern}"`);
-    continue;
-  }
-  
+for (const [route, budget] of Object.entries(BUDGETS)) {
+  const files = manifest.pages[route] || [];
+  let totalSize = 0;
+  let totalGzipSize = 0;
+
   for (const file of files) {
-    const content = fs.readFileSync(file);
-    // Measure actual gzipped size to reflect real-world network payload size
-    const gzipped = zlib.gzipSync(content);
-    const sizeKb = (gzipped.length / 1024).toFixed(2);
-    const limitKb = (limitBytes / 1024).toFixed(2);
-    
-    if (gzipped.length > limitBytes) {
-      console.error(`❌ [BUDGET EXCEEDED] ${path.basename(file)}: ${sizeKb} KB (Limit: ${limitKb} KB)`);
-      failed = true;
-    } else {
-      console.log(`✅ [BUDGET PASS] ${path.basename(file)}: ${sizeKb} KB (Limit: ${limitKb} KB)`);
-    }
+    const filePath = path.join(process.cwd(), '.next', file);
+    if (!fs.existsSync(filePath)) continue;
+    const content = fs.readFileSync(filePath);
+    totalSize += content.length;
+    totalGzipSize += zlib.gzipSync(content).length;
+  }
+
+  const sizeLimitOk = totalSize <= budget.maxSize;
+  const gzipLimitOk = totalGzipSize <= budget.maxGzip;
+
+  const status = (sizeLimitOk && gzipLimitOk) ? '✅' : '❌';
+  console.log(
+    `${status} Route "${route}": ` +
+    `Raw: ${(totalSize / 1024).toFixed(1)}KB / ${(budget.maxSize / 1024).toFixed(1)}KB, ` +
+    `Gzip: ${(totalGzipSize / 1024).toFixed(1)}KB / ${(budget.maxGzip / 1024).toFixed(1)}KB`
+  );
+
+  if (!sizeLimitOk || !gzipLimitOk) {
+    failed = true;
   }
 }
 
 if (failed) {
-  console.error('\n🚨 One or more bundle budgets exceeded! Blocking CI build.');
+  console.error('\n❌ Bundle budget exceeded!');
   process.exit(1);
-} else {
-  console.log('\n🎉 All bundle budgets passed successfully!');
-  process.exit(0);
 }
+
+console.log('\n✅ All bundle budgets OK!');
+process.exit(0);

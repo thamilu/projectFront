@@ -14,9 +14,11 @@ type SheetContentProps = React.ComponentPropsWithoutRef<typeof DialogContent> & 
   side?: Side;
 };
 
-const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(({ side: _side, ...props }, ref) => {
-  return <DialogContent ref={ref} {...props} />;
-});
+const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
+  ({ side: _side, ...props }, ref) => {
+    return <DialogContent ref={ref} {...props} />;
+  }
+);
 
 SheetContent.displayName = 'SheetContent';
 

@@ -4,6 +4,8 @@ export interface AppSession extends Session {
   user: {
     id: string;
     roles: string[];
+    firstName: string;
+    lastName: string;
     name?: string | null;
     email?: string | null;
     image?: string | null;

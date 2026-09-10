@@ -1,47 +1,27 @@
 import { useEffect, useCallback } from 'react';
-import { useNotificationStore, notificationHelpers } from '@/features/notifications/store/notification-store';
-import { useAnalyticsStore } from '@/features/analytics/store/analytics-store';
-import { useWishlistStore } from '@/features/wishlist/store/wishlist-store';
+import { useNotificationStore } from '@/features/notifications/store/notification-store';
+import { logger } from '@/core/telemetry/logger';
 
-// Service Worker registration hook
+// Service Worker registration hook.
+// Intentional no-op: re-enable once real PWA assets (sw.js, manifest icons)
+// exist — registering against a missing sw.js throws in the browser console
+// on every page load.
 export function useServiceWorker() {
-  useEffect(() => {
-    // Disabled to prevent PWA errors - re-enable when PWA assets are ready
-    // if ('serviceWorker' in navigator) {
-    //   navigator.serviceWorker.register('/sw.js')
-    //     .then((registration) => {
-    //       console.log('SW registered: ', registration);
-    //     })
-    //     .catch((registrationError) => {
-    //       console.log('SW registration failed: ', registrationError);
-    //     });
-    // }
-  }, []);
+  useEffect(() => {}, []);
 }
 
-// Notification permission hook
+// Notification permission hook.
+// Intentional no-op: requesting the browser Notification permission on
+// first visit is disruptive UX without a real opt-in moment driving it —
+// wire this to an explicit user action (e.g. a "notify me" toggle) instead
+// of firing it unconditionally on mount.
 export function useNotificationPermission() {
-  const addNotification = useNotificationStore(state => state.addNotification);
-
-  useEffect(() => {
-    // Disabled to prevent notification permission errors
-    // Request notification permission on first visit
-    // notificationHelpers.requestPermission().then((granted) => {
-    //   if (granted) {
-    //     addNotification({
-    //       type: 'security',
-    //       title: 'Notifications Enabled',
-    //       message: 'You will now receive important updates and alerts.',
-    //       read: false
-    //     });
-    //   }
-    // });
-  }, [addNotification]);
+  useEffect(() => {}, []);
 }
 
 // Offline detection hook
 export function useOfflineDetection() {
-  const addNotification = useNotificationStore(state => state.addNotification);
+  const addNotification = useNotificationStore((state) => state.addNotification);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -49,7 +29,7 @@ export function useOfflineDetection() {
         type: 'security',
         title: 'Connection Restored',
         message: 'You are back online. Syncing data...',
-        read: false
+        read: false,
       });
     };
 
@@ -58,7 +38,7 @@ export function useOfflineDetection() {
         type: 'security',
         title: 'Connection Lost',
         message: 'You are offline. Some features may be limited.',
-        read: false
+        read: false,
       });
     };
 
@@ -72,36 +52,39 @@ export function useOfflineDetection() {
   }, [addNotification]);
 }
 
-// Price monitoring hook
-export function usePriceMonitoring() {
-  // Select the getter function from the store (stable reference)
-  const getPriceDropItems = useWishlistStore(state => state.getPriceDropItems);
+// Price monitoring hook.
+// Intentional no-op: this previously fabricated random price drops
+// client-side (Math.random() chance + a randomly discounted fake price) and
+// pushed them through the real notification UI, indistinguishable from a
+// genuine price-drop alert. Real price-drop monitoring needs a backend
+// endpoint tracking actual price history — build that as a deliberate
+// feature rather than re-enabling client-side randomization.
+export function usePriceMonitoring() {}
 
-  useEffect(() => {
-    // Simulate price monitoring (in real app, this would be server-side)
-    const interval = setInterval(() => {
-      const wishlistItems = getPriceDropItems();
-      wishlistItems.forEach(item => {
-        // Simulate random price drops
-        if (Math.random() < 0.1) { // 10% chance
-          const newPrice = item.price * (0.8 + Math.random() * 0.15); // 5-20% discount
-          notificationHelpers.sendPriceDropAlert(item.name, item.price, newPrice);
-        }
-      });
-    }, 60000 * 5); // Check every 5 minutes
-
-    return () => clearInterval(interval);
-  }, [getPriceDropItems]);
-}
-
-// Analytics tracking hook
+// Analytics tracking hook.
+//
+// Bridges the legacy/external "trackPurchase" call — see
+// core/providers/app-integrations-initializer.tsx, which exposes this on
+// window.trackPurchase / window.__legacy.trackPurchase for third-party
+// pixel compatibility — into this app's own structured logging.
+//
+// Previously this fed features/analytics/store/analytics-store.ts's
+// spending/budget/category tracking, a persisted Zustand store confirmed
+// (full-codebase search) to have zero UI consumers anywhere — every field
+// it computed was written to localStorage and never read back by any
+// component. That store has been deleted. Logging here is the honest
+// replacement: a real, observable, production-traceable side effect
+// instead of silently accumulating data nothing in this app ever displays.
+// If a genuine customer-facing spending/budget feature is built later, back
+// it with real order history (see features/orders), not client-only
+// accumulation seeded solely by this external bridge.
 export function useAnalyticsTracking() {
-  const addOrder = useAnalyticsStore(state => state.addOrder);
-
-  // This would integrate with actual purchase events
   const trackPurchase = useCallback((amount: number, category: string) => {
-    addOrder(amount, category);
-  }, [addOrder]);
+    logger.info('[Analytics] Purchase tracked via legacy integration bridge', {
+      amount,
+      category,
+    });
+  }, []);
 
   return { trackPurchase };
 }
@@ -112,6 +95,6 @@ export function useAppIntegrations() {
   useNotificationPermission();
   useOfflineDetection();
   usePriceMonitoring();
-  
+
   return useAnalyticsTracking();
 }

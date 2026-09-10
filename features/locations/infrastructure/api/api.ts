@@ -52,7 +52,7 @@ export const locationApi = {
     const { data } = await apiClient.get(LOCATION_ENDPOINTS.GET_BY_PINCODE(code), {
       signal: options.signal,
     });
-    return data.data;  // Fixed unwrapping
+    return data.data; // Fixed unwrapping
   },
 
   searchPincodes: async (query: string, options: RequestOptions = {}) => {

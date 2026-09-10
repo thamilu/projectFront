@@ -1,9 +1,9 @@
 /**
  * Network Status Component
- * 
+ *
  * Displays online/offline status indicator.
  * Automatically detects connectivity changes.
- * 
+ *
  * @module components/common/network-status
  */
 
@@ -16,10 +16,10 @@ import { announce } from './screen-reader-announcer';
 
 /**
  * Network Status Indicator
- * 
+ *
  * Shows banner when user goes offline or comes back online.
  * Automatically hides after 3 seconds when online.
- * 
+ *
  * @example
  * ```tsx
  * <NetworkStatus />
@@ -66,9 +66,7 @@ export function NetworkStatus() {
       className={cn(
         'fixed bottom-4 left-4 z-50 flex items-center gap-2 rounded-lg px-4 py-2',
         'text-sm font-medium shadow-lg transition-all duration-300',
-        isOnline
-          ? 'bg-green-500 text-white'
-          : 'bg-yellow-500 text-yellow-900'
+        isOnline ? 'bg-green-500 text-white' : 'bg-yellow-500 text-yellow-900'
       )}
     >
       {isOnline ? (

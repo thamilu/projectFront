@@ -30,39 +30,41 @@ export function PremiumCard({
   headerAction,
 }: PremiumCardProps) {
   return (
-    <Card className={cn(
-      "border-none shadow-2xl bg-background/50 backdrop-blur-md overflow-hidden animate-in fade-in zoom-in duration-500",
-      className
-    )}>
+    <Card
+      className={cn(
+        'bg-background/50 animate-in fade-in zoom-in overflow-hidden border-none shadow-2xl backdrop-blur-md duration-500',
+        className
+      )}
+    >
       {/* Accent Bar */}
-      <div className={cn("h-2 bg-linear-to-r from-primary to-primary/40", gradientClassName)} />
-      
+      <div className={cn('from-primary to-primary/40 h-2 bg-linear-to-r', gradientClassName)} />
+
       {(title || description || icon) && (
-        <CardHeader className={cn("pb-4", headerClassName)}>
+        <CardHeader className={cn('pb-4', headerClassName)}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               {icon && (
-                <div className="p-2.5 rounded-xl bg-primary/10 text-primary shadow-inner">
+                <div className="bg-primary/10 text-primary rounded-xl p-2.5 shadow-inner">
                   {icon}
                 </div>
               )}
               <div className="space-y-1">
-                {title && <CardTitle className="text-2xl font-bold tracking-tight">{title}</CardTitle>}
-                {description && <CardDescription className="text-base leading-relaxed">{description}</CardDescription>}
+                {title && (
+                  <CardTitle className="text-2xl font-bold tracking-tight">{title}</CardTitle>
+                )}
+                {description && (
+                  <CardDescription className="text-base leading-relaxed">
+                    {description}
+                  </CardDescription>
+                )}
               </div>
             </div>
-            {headerAction && (
-              <div className="flex-shrink-0">
-                {headerAction}
-              </div>
-            )}
+            {headerAction && <div className="flex-shrink-0">{headerAction}</div>}
           </div>
         </CardHeader>
       )}
-      
-      <CardContent className={cn("pt-4", contentClassName)}>
-        {children}
-      </CardContent>
+
+      <CardContent className={cn('pt-4', contentClassName)}>{children}</CardContent>
     </Card>
   );
 }

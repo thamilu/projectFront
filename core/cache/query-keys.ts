@@ -76,8 +76,7 @@ export const queryKeys = {
   },
   // Reviews
   reviews: {
-    product: (productId: string) =>
-      ['reviews', 'product', productId] as const,
+    product: (productId: string) => ['reviews', 'product', productId] as const,
   },
   // Analytics
   analytics: {
@@ -86,9 +85,7 @@ export const queryKeys = {
   // Locations
   locations: {
     countries: ['locations', 'countries'] as const,
-    states: (countryId: string) =>
-      ['locations', 'states', countryId] as const,
-    districts: (stateId: string) =>
-      ['locations', 'districts', stateId] as const,
+    states: (countryId: string) => ['locations', 'states', countryId] as const,
+    districts: (stateId: string) => ['locations', 'districts', stateId] as const,
   },
 } as const;

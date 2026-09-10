@@ -12,12 +12,12 @@ export interface PerformanceBudget {
 
 export const DEFAULT_BUDGET: PerformanceBudget = {
   apiLatencyMs: 1500, // 1.5s degradation threshold
-  clsLimit: 0.1,      // Cumulative Layout Shift budget
-  fcpMs: 1000,        // First Contentful Paint budget
-  lcpMs: 2500,        // Largest Contentful Paint budget
-  hydrationLimitMs: 500,     // React hydration budget (500ms)
-  renderLimitMs: 16,         // Target component render duration (16ms = 1 frame at 60fps)
-  routePayloadLimitKb: 128,  // Max JSON payload size per route transition (128KB)
+  clsLimit: 0.1, // Cumulative Layout Shift budget
+  fcpMs: 1000, // First Contentful Paint budget
+  lcpMs: 2500, // Largest Contentful Paint budget
+  hydrationLimitMs: 500, // React hydration budget (500ms)
+  renderLimitMs: 16, // Target component render duration (16ms = 1 frame at 60fps)
+  routePayloadLimitKb: 128, // Max JSON payload size per route transition (128KB)
 };
 
 class ObservabilityPlatform {
@@ -42,11 +42,13 @@ class ObservabilityPlatform {
    */
   trackApiCall(endpoint: string, durationMs: number, correlationId?: string) {
     const isDegraded = durationMs > this.budget.apiLatencyMs;
-    
+
     // Log diagnostics
-    import('./diagnostics').then(({ diagnostics }) => {
-      diagnostics.recordApiCall(endpoint, durationMs, isDegraded);
-    }).catch(() => {});
+    import('./diagnostics')
+      .then(({ diagnostics }) => {
+        diagnostics.recordApiCall(endpoint, durationMs, isDegraded);
+      })
+      .catch(() => {});
 
     if (isDegraded) {
       logger.warn('⚠️ [Observability] API Degradation Detected!', {
@@ -69,7 +71,8 @@ class ObservabilityPlatform {
    */
   correlateError(error: Error, metadata: Record<string, unknown> = {}) {
     const errorId = `err_${Math.random().toString(36).substring(2, 9)}`;
-    const correlationId = metadata.correlationId || (this.isBrowser ? (window as any).__correlationId : undefined);
+    const correlationId =
+      metadata.correlationId || (this.isBrowser ? (window as any).__correlationId : undefined);
 
     logger.error('🚨 [Observability] Correlated Error:', {
       errorId,
@@ -99,10 +102,12 @@ class ObservabilityPlatform {
             }
           }
           if (clsValue > this.budget.clsLimit) {
-            import('./diagnostics').then(({ diagnostics }) => {
-              diagnostics.recordLayoutShiftExceeded();
-            }).catch(() => {});
-            
+            import('./diagnostics')
+              .then(({ diagnostics }) => {
+                diagnostics.recordLayoutShiftExceeded();
+              })
+              .catch(() => {});
+
             logger.warn('⚠️ [Observability] CLS Budget Exceeded!', {
               clsValue,
               budget: this.budget.clsLimit,
@@ -116,10 +121,12 @@ class ObservabilityPlatform {
           for (const entry of entryList.getEntries()) {
             if (entry.name === 'first-contentful-paint') {
               if (entry.startTime > this.budget.fcpMs) {
-                import('./diagnostics').then(({ diagnostics }) => {
-                  diagnostics.recordFcpExceeded();
-                }).catch(() => {});
-                
+                import('./diagnostics')
+                  .then(({ diagnostics }) => {
+                    diagnostics.recordFcpExceeded();
+                  })
+                  .catch(() => {});
+
                 logger.warn('⚠️ [Observability] FCP Budget Exceeded!', {
                   fcpMs: entry.startTime,
                   budget: this.budget.fcpMs,
@@ -135,9 +142,11 @@ class ObservabilityPlatform {
           const entries = entryList.getEntries();
           const lastEntry = entries[entries.length - 1];
           if (lastEntry.startTime > this.budget.lcpMs) {
-            import('./diagnostics').then(({ diagnostics }) => {
-              diagnostics.recordLcpExceeded();
-            }).catch(() => {});
+            import('./diagnostics')
+              .then(({ diagnostics }) => {
+                diagnostics.recordLcpExceeded();
+              })
+              .catch(() => {});
 
             logger.warn('⚠️ [Observability] LCP Budget Exceeded!', {
               lcpMs: lastEntry.startTime,
@@ -156,65 +165,71 @@ class ObservabilityPlatform {
    * Track hydration time (Hydration Governance)
    */
   trackHydrationTime(durationMs: number) {
-    import('./diagnostics').then(({ diagnostics }) => {
-      diagnostics.recordHydration(durationMs);
-      
-      const isExceeded = durationMs > this.budget.hydrationLimitMs;
-      if (isExceeded) {
-        logger.warn('⚠️ [Observability] Hydration Budget Exceeded!', {
-          durationMs,
-          budget: this.budget.hydrationLimitMs,
-        });
-      } else {
-        logger.info('⚡ [Observability] Hydration Time Measured:', {
-          durationMs,
-        });
-      }
-    }).catch(() => {});
+    import('./diagnostics')
+      .then(({ diagnostics }) => {
+        diagnostics.recordHydration(durationMs);
+
+        const isExceeded = durationMs > this.budget.hydrationLimitMs;
+        if (isExceeded) {
+          logger.warn('⚠️ [Observability] Hydration Budget Exceeded!', {
+            durationMs,
+            budget: this.budget.hydrationLimitMs,
+          });
+        } else {
+          logger.info('⚡ [Observability] Hydration Time Measured:', {
+            durationMs,
+          });
+        }
+      })
+      .catch(() => {});
   }
 
   /**
    * Track component render time (Rendering Governance)
    */
   trackRenderTime(componentName: string, durationMs: number) {
-    import('./diagnostics').then(({ diagnostics }) => {
-      const isExceeded = durationMs > this.budget.renderLimitMs;
-      if (isExceeded) {
-        diagnostics.recordRenderBudgetExceeded();
-        logger.warn('⚠️ [Observability] Component Render Budget Exceeded!', {
-          componentName,
-          durationMs,
-          budget: this.budget.renderLimitMs,
-        });
-      } else {
-        logger.debug('📊 [Observability] Component Render Time:', {
-          componentName,
-          durationMs,
-        });
-      }
-    }).catch(() => {});
+    import('./diagnostics')
+      .then(({ diagnostics }) => {
+        const isExceeded = durationMs > this.budget.renderLimitMs;
+        if (isExceeded) {
+          diagnostics.recordRenderBudgetExceeded();
+          logger.warn('⚠️ [Observability] Component Render Budget Exceeded!', {
+            componentName,
+            durationMs,
+            budget: this.budget.renderLimitMs,
+          });
+        } else {
+          logger.debug('📊 [Observability] Component Render Time:', {
+            componentName,
+            durationMs,
+          });
+        }
+      })
+      .catch(() => {});
   }
 
   /**
    * Track route payload size (Route Payload Budget)
    */
   trackRoutePayload(route: string, payloadSizeKb: number) {
-    import('./diagnostics').then(({ diagnostics }) => {
-      const isExceeded = payloadSizeKb > this.budget.routePayloadLimitKb;
-      if (isExceeded) {
-        diagnostics.recordRoutePayloadBudgetExceeded();
-        logger.warn('⚠️ [Observability] Route Payload Budget Exceeded!', {
-          route,
-          payloadSizeKb,
-          budget: this.budget.routePayloadLimitKb,
-        });
-      } else {
-        logger.info('📊 [Observability] Route Payload Size:', {
-          route,
-          payloadSizeKb,
-        });
-      }
-    }).catch(() => {});
+    import('./diagnostics')
+      .then(({ diagnostics }) => {
+        const isExceeded = payloadSizeKb > this.budget.routePayloadLimitKb;
+        if (isExceeded) {
+          diagnostics.recordRoutePayloadBudgetExceeded();
+          logger.warn('⚠️ [Observability] Route Payload Budget Exceeded!', {
+            route,
+            payloadSizeKb,
+            budget: this.budget.routePayloadLimitKb,
+          });
+        } else {
+          logger.info('📊 [Observability] Route Payload Size:', {
+            route,
+            payloadSizeKb,
+          });
+        }
+      })
+      .catch(() => {});
   }
 }
 

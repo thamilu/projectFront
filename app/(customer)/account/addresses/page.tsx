@@ -1,128 +1,107 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { MapPin, Plus, Pencil, Trash2, CheckCircle2, Home, Briefcase, Loader2 } from 'lucide-react';
 import { Button } from '@/shared/ui/atoms/button';
 import { Card, CardContent } from '@/shared/ui/atoms/card';
 import { Badge } from '@/shared/ui/atoms/badge';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from '@/shared/ui/atoms/dialog';
 import { Input } from '@/shared/ui/atoms/input';
 import { Label } from '@/shared/ui/atoms/label';
-import { toast } from 'sonner';
-import { apiClient } from '@/core/client';
-import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
 import { motion } from 'framer-motion';
+import { useAddresses } from '@/features/addresses/hooks/use-addresses';
+import type { AddressDTO } from '@/features/addresses/api/address-api';
 
-interface Address {
-  id: string;
-  type: 'Home' | 'Work' | 'Other';
-  name: string;
-  line1: string;
-  line2?: string;
-  city: string;
-  state: string;
-  pincode: string;
-  phone: string;
-  isDefault: boolean;
-}
-
-interface ExtendedSession {
-  accessToken?: string;
-}
-
-const TypeIcon = ({ type }: { type: Address['type'] }) =>
-  type === 'Home' ? <Home className="h-4 w-4" /> : type === 'Work' ? <Briefcase className="h-4 w-4" /> : <MapPin className="h-4 w-4" />;
+const TypeIcon = ({ type }: { type: AddressDTO['type'] }) =>
+  type === 'Home' ? (
+    <Home className="h-4 w-4" />
+  ) : type === 'Work' ? (
+    <Briefcase className="h-4 w-4" />
+  ) : (
+    <MapPin className="h-4 w-4" />
+  );
 
 export default function AddressesPage() {
-  const { data: session } = useSession() as { data: ExtendedSession | null };
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: session } = useSession();
+  const { addresses, isLoading, saveAddress, deleteAddress, setDefaultAddress, isSaving } =
+    useAddresses();
+
   const [open, setOpen] = useState(false);
-  
-  const [formData, setFormData] = useState<Partial<Address>>({
+  const [formData, setFormData] = useState<Partial<AddressDTO>>({
     type: 'Home',
-    name: '', line1: '', line2: '', city: '', state: '', pincode: '', phone: '',
+    name: '',
+    line1: '',
+    line2: '',
+    city: '',
+    state: '',
+    pincode: '',
+    phone: '',
   });
-  const [formSaving, setFormSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const fetchAddresses = useCallback(async () => {
-    if (!session?.accessToken) return;
-    try {
-      setLoading(true);
-      const { data } = await apiClient.get(API_ENDPOINTS.USERS.ADDRESSES);
-      setAddresses(Array.isArray(data) ? data : (data?.data && Array.isArray(data.data) ? data.data : []));
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Failed to load addresses');
-    } finally {
-      setLoading(false);
-    }
-  }, [session?.accessToken]);
-
-  useEffect(() => {
-    if (session?.accessToken) fetchAddresses();
-  }, [session?.accessToken, fetchAddresses]);
-
   const handleDelete = async (id: string) => {
-    if (!session?.accessToken) return;
     try {
-      await apiClient.delete(`${API_ENDPOINTS.USERS.ADDRESSES}/${id}`);
-      setAddresses(a => a.filter(addr => addr.id !== id));
-      toast.success('Address deleted');
+      await deleteAddress(id);
     } catch (err) {
-      toast.error('Failed to delete address');
+      console.error(err);
     }
   };
 
   const handleSetDefault = async (id: string) => {
-    if (!session?.accessToken) return;
     try {
-      await apiClient.put(`${API_ENDPOINTS.USERS.ADDRESSES}/${id}/default`);
-      setAddresses(a => a.map(addr => ({ ...addr, isDefault: addr.id === id })));
-      toast.success('Default address updated');
+      await setDefaultAddress(id);
     } catch (err) {
-      toast.error('Failed to set default address');
+      console.error(err);
     }
   };
 
   const handleSave = async () => {
-    if (!session?.accessToken) return;
-    setFormSaving(true);
     try {
-      if (editingId) {
-        await apiClient.put(`${API_ENDPOINTS.USERS.ADDRESSES}/${editingId}`, formData);
-      } else {
-        await apiClient.post(API_ENDPOINTS.USERS.ADDRESSES, formData);
-      }
-      
-      toast.success(editingId ? 'Address updated' : 'Address added');
+      await saveAddress({ id: editingId || undefined, address: formData });
       setOpen(false);
-      fetchAddresses();
     } catch (err) {
-      toast.error('Failed to save address');
-    } finally {
-      setFormSaving(false);
+      console.error(err);
     }
   };
 
   const openAddDialog = () => {
     setEditingId(null);
-    setFormData({ type: 'Home', name: '', line1: '', line2: '', city: '', state: '', pincode: '', phone: '' });
+    setFormData({
+      type: 'Home',
+      name: '',
+      line1: '',
+      line2: '',
+      city: '',
+      state: '',
+      pincode: '',
+      phone: '',
+    });
     setOpen(true);
   };
 
-  const openEditDialog = (addr: Address) => {
+  const openEditDialog = (addr: AddressDTO) => {
     setEditingId(addr.id);
     setFormData(addr);
     setOpen(true);
   };
 
+  if (!session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground">Please sign in to view saved addresses.</p>
+      </div>
+    );
+  }
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
@@ -135,39 +114,63 @@ export default function AddressesPage() {
         </Button>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+        </div>
       ) : (
         <div className="space-y-4">
-          {addresses.map(addr => (
+          {addresses.map((addr) => (
             <Card key={addr.id} className={addr.isDefault ? 'border-primary' : ''}>
               <CardContent className="pt-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="mb-2 flex items-center gap-2">
-                       <Badge variant="outline" className="gap-1 text-xs">
-                          <TypeIcon type={addr.type} /> {addr.type}
+                      <Badge variant="outline" className="gap-1 text-xs">
+                        <TypeIcon type={addr.type} /> {addr.type}
+                      </Badge>
+                      {addr.isDefault && (
+                        <Badge className="gap-1 bg-green-100 text-xs text-green-700 hover:bg-green-100 hover:text-green-700 dark:bg-green-900 dark:text-green-300">
+                          <CheckCircle2 className="h-3 w-3" /> Default
                         </Badge>
-                        {addr.isDefault && (
-                          <Badge className="gap-1 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs hover:bg-green-100 hover:text-green-700">
-                            <CheckCircle2 className="h-3 w-3" /> Default
-                          </Badge>
-                        )}
+                      )}
                     </div>
                     <p className="font-medium">{addr.name}</p>
-                    <p className="text-sm text-muted-foreground">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
-                    <p className="text-sm text-muted-foreground">{addr.city}, {addr.state} — {addr.pincode}</p>
-                    <p className="mt-1 text-sm text-muted-foreground font-medium">📞 {addr.phone}</p>
+                    <p className="text-muted-foreground text-sm">
+                      {addr.line1}
+                      {addr.line2 ? `, ${addr.line2}` : ''}
+                    </p>
+                    <p className="text-muted-foreground text-sm">
+                      {addr.city}, {addr.state} — {addr.pincode}
+                    </p>
+                    <p className="text-muted-foreground mt-1 text-sm font-medium">
+                      📞 {addr.phone}
+                    </p>
                   </div>
                   <div className="flex shrink-0 flex-col gap-2">
-                    <Button variant="outline" size="sm" className="gap-1 bg-background" onClick={() => openEditDialog(addr)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-background gap-1"
+                      onClick={() => openEditDialog(addr)}
+                    >
                       <Pencil className="h-3 w-3" /> Edit
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-1 bg-background text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(addr.id)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-background text-destructive hover:bg-destructive/10 hover:text-destructive gap-1"
+                      onClick={() => handleDelete(addr.id)}
+                    >
                       <Trash2 className="h-3 w-3" /> Delete
                     </Button>
                     {!addr.isDefault && (
-                      <Button variant="outline" size="sm" className="gap-1 text-xs bg-background" onClick={() => handleSetDefault(addr.id)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-background gap-1 text-xs"
+                        onClick={() => handleSetDefault(addr.id)}
+                      >
                         Set Default
                       </Button>
                     )}
@@ -178,10 +181,12 @@ export default function AddressesPage() {
           ))}
 
           {addresses.length === 0 && (
-            <div className="mt-12 text-center text-muted-foreground">
+            <div className="text-muted-foreground mt-12 text-center">
               <MapPin className="mx-auto mb-3 h-10 w-10 opacity-40" />
               <p>No saved addresses yet.</p>
-              <Button className="mt-4" onClick={openAddDialog}>Add your first address</Button>
+              <Button className="mt-4" onClick={openAddDialog}>
+                Add your first address
+              </Button>
             </div>
           )}
         </div>
@@ -195,21 +200,72 @@ export default function AddressesPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5"><Label>Full Name</Label><Input value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Full name" /></div>
-              <div className="space-y-1.5"><Label>Phone</Label><Input value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="Phone number" /></div>
+              <div className="space-y-1.5">
+                <Label>Full Name</Label>
+                <Input
+                  value={formData.name || ''}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Full name"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Phone</Label>
+                <Input
+                  value={formData.phone || ''}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="Phone number"
+                />
+              </div>
             </div>
-            <div className="space-y-1.5"><Label>Address Line 1</Label><Input value={formData.line1 || ''} onChange={e => setFormData({ ...formData, line1: e.target.value })} placeholder="House/Flat, Street" /></div>
-            <div className="space-y-1.5"><Label>Address Line 2</Label><Input value={formData.line2 || ''} onChange={e => setFormData({ ...formData, line2: e.target.value })} placeholder="Area, Landmark (optional)" /></div>
+            <div className="space-y-1.5">
+              <Label>Address Line 1</Label>
+              <Input
+                value={formData.line1 || ''}
+                onChange={(e) => setFormData({ ...formData, line1: e.target.value })}
+                placeholder="House/Flat, Street"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Address Line 2</Label>
+              <Input
+                value={formData.line2 || ''}
+                onChange={(e) => setFormData({ ...formData, line2: e.target.value })}
+                placeholder="Area, Landmark (optional)"
+              />
+            </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="space-y-1.5"><Label>City</Label><Input value={formData.city || ''} onChange={e => setFormData({ ...formData, city: e.target.value })} placeholder="City" /></div>
-              <div className="space-y-1.5"><Label>State</Label><Input value={formData.state || ''} onChange={e => setFormData({ ...formData, state: e.target.value })} placeholder="State" /></div>
-              <div className="space-y-1.5"><Label>Pincode</Label><Input value={formData.pincode || ''} onChange={e => setFormData({ ...formData, pincode: e.target.value })} placeholder="Pincode" /></div>
+              <div className="space-y-1.5">
+                <Label>City</Label>
+                <Input
+                  value={formData.city || ''}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  placeholder="City"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>State</Label>
+                <Input
+                  value={formData.state || ''}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  placeholder="State"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Pincode</Label>
+                <Input
+                  value={formData.pincode || ''}
+                  onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                  placeholder="Pincode"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button disabled={formSaving} onClick={handleSave}>
-              {formSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button disabled={isSaving} onClick={handleSave}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {editingId ? 'Update Address' : 'Save Address'}
             </Button>
           </DialogFooter>

@@ -4,14 +4,14 @@ import { ShieldAlert } from 'lucide-react';
 
 export default function UnauthorizedPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-      <div className="rounded-full bg-destructive/10 p-6 mb-6">
-        <ShieldAlert className="h-12 w-12 text-destructive" />
+    <div className="bg-background flex min-h-screen flex-col items-center justify-center">
+      <div className="bg-destructive/10 mb-6 rounded-full p-6">
+        <ShieldAlert className="text-destructive h-12 w-12" />
       </div>
-      <h1 className="text-3xl font-bold tracking-tight mb-3">Access Denied</h1>
-      <p className="text-muted-foreground text-center max-w-md mb-8">
-        You do not have permission to access this page. 
-        Please contact your administrator if you believe this is a mistake.
+      <h1 className="mb-3 text-3xl font-bold tracking-tight">Access Denied</h1>
+      <p className="text-muted-foreground mb-8 max-w-md text-center">
+        You do not have permission to access this page. Please contact your administrator if you
+        believe this is a mistake.
       </p>
       <div className="flex gap-4">
         <Button asChild variant="default">

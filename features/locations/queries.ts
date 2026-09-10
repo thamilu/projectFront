@@ -8,9 +8,11 @@ export const locationKeys = {
   all: ['locations'] as const,
   countries: () => [...locationKeys.all, 'countries'] as const,
   states: () => [...locationKeys.all, 'states'] as const,
-  districts: (stateId: number | string) => [...locationKeys.all, 'districts', String(stateId)] as const,
-  taluks: (districtId: number | string) => [...locationKeys.all, 'taluks', String(districtId)] as const,
-  pincodes: (parentType: 'district' | 'taluk', parentId: number | string) => 
+  districts: (stateId: number | string) =>
+    [...locationKeys.all, 'districts', String(stateId)] as const,
+  taluks: (districtId: number | string) =>
+    [...locationKeys.all, 'taluks', String(districtId)] as const,
+  pincodes: (parentType: 'district' | 'taluk', parentId: number | string) =>
     [...locationKeys.all, 'pincodes', parentType, String(parentId)] as const,
   pincodeDetail: (code: string) => [...locationKeys.all, 'pincode', 'detail', code] as const,
   pincodeSearch: (query: string) => [...locationKeys.all, 'pincode', 'search', query] as const,
@@ -62,9 +64,10 @@ export const useTaluksQuery = (districtId?: number | string) => {
 export const usePincodesQuery = (parentType: 'district' | 'taluk', parentId?: number | string) => {
   return useQuery({
     queryKey: locationKeys.pincodes(parentType, parentId!),
-    queryFn: ({ signal }) => parentType === 'taluk' 
-      ? locationService.getPincodesByTaluk(String(parentId!), { signal })
-      : locationService.getPincodes(String(parentId!), { signal }),
+    queryFn: ({ signal }) =>
+      parentType === 'taluk'
+        ? locationService.getPincodesByTaluk(String(parentId!), { signal })
+        : locationService.getPincodes(String(parentId!), { signal }),
     enabled: !!parentId,
     staleTime: 1000 * 60 * 60, // 1 hour
     retry: 2,

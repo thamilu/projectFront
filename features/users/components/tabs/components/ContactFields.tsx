@@ -31,7 +31,7 @@ const PHONE_PLACEHOLDER = '+91 98765 43210' as const;
 
 /** Helper text explaining why email is locked */
 const EMAIL_HELPER_TEXT =
-  '🔒 Managed by Keycloak. To change your email, visit Security Settings.' as const;
+  'Managed by Keycloak SSO. To update your email address, visit Settings → Security.' as const;
 
 // ─────────────────────────────────────────────
 // Types
@@ -120,7 +120,6 @@ export const ContactFields = memo(function ContactFields({
         value={userEmail}
         className="bg-muted/50 cursor-not-allowed"
         aria-readonly="true"
-        aria-describedby="email-helper"
         inputMode="email"
         autoComplete="email"
       />
@@ -143,7 +142,6 @@ export const ContactFields = memo(function ContactFields({
         autoComplete="tel"
         helperText="Required. Preferred format: +91 98765 43210."
         aria-required="true"
-        aria-describedby={errors.phone?.message ? 'phone-error' : undefined}
       />
     </div>
   );

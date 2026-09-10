@@ -19,6 +19,7 @@ interface I18nContextProps {
 
 const I18nContext = createContext<I18nContextProps | undefined>(undefined);
 
+// Force Turbopack re-evaluation for nested locale dictionaries (verified.title, setup.title, costs.title)
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('en');
 
@@ -38,9 +39,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   // Type-safe dynamic translator with parameter interpolation
   const t = (keyPath: string, params?: Record<string, string | number>): string => {
-    const dict = dictionaries[locale];
+    // Normalize locale to 2-letter language code and fallback to 'en'
+    const langCode = ((locale || 'en').split('-')[0].toLowerCase() as Locale) === 'hi' ? 'hi' : 'en';
+    const dict = dictionaries[langCode] || dictionaries['en'];
     const keys = keyPath.split('.');
-    
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let current: any = dict;
     for (const key of keys) {
@@ -65,11 +68,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return translated;
   };
 
-  return (
-    <I18nContext.Provider value={{ locale, setLocale, t }}>
-      {children}
-    </I18nContext.Provider>
-  );
+  return <I18nContext.Provider value={{ locale, setLocale, t }}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n() {

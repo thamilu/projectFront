@@ -4,8 +4,6 @@ import type {
   SVGProps,
   CSSProperties,
   Ref,
-  // ComponentType is not used but kept for reference
-  // ComponentType,
 } from 'react';
 
 // Project-level improved typings for `lucide-react` to avoid editing node_modules
@@ -71,7 +69,7 @@ declare module 'lucide-react' {
   export type IconNodeElement = readonly [
     elementName: SVGElementName,
     attributes: Readonly<Record<string, SVGAttributeValue>>,
-    children?: IconNode
+    children?: IconNode,
   ];
 
   // Complete icon node structure
@@ -112,7 +110,8 @@ declare module 'lucide-react' {
   }
 
   export interface LucideProps
-    extends Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>,
+    extends
+      Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>,
       LucideCoreProps,
       LucideA11yProps,
       Partial<LucideAnimationProps> {
@@ -125,9 +124,9 @@ declare module 'lucide-react' {
   // ============================================
   // COMPONENT TYPE
   // ============================================
-  export type LucideIcon = ForwardRefExoticComponent<
-    LucideProps & RefAttributes<SVGSVGElement>
-  > & { displayName?: string };
+  export type LucideIcon = ForwardRefExoticComponent<LucideProps & RefAttributes<SVGSVGElement>> & {
+    displayName?: string;
+  };
 
   export interface IconProps extends LucideProps {
     icon: LucideIcon | keyof typeof icons;
@@ -147,7 +146,9 @@ declare module 'lucide-react' {
   export function getIcon(name: string, fallback?: LucideIcon): LucideIcon | undefined;
 
   // Dynamic loader (optional) — mark as possibly undefined in some runtime builds
-  export const dynamicIconLoader: ((iconName: string) => Promise<LucideIcon | undefined>) | undefined;
+  export const dynamicIconLoader:
+    | ((iconName: string) => Promise<LucideIcon | undefined>)
+    | undefined;
 
   // ============================================
   // COMMON ICON EXPORTS (for DX / autocomplete)

@@ -72,7 +72,7 @@ export function WidgetCustomizer({
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <GripVertical className="h-4.5 w-4.5 text-slate-650 cursor-grab shrink-0" />
+                  <GripVertical className="h-4.5 w-4.5 text-slate-600 cursor-grab shrink-0" />
                   <div className="space-y-0.5">
                     <p className="text-xs font-bold text-white flex items-center gap-1.5">
                       {widget.name}
@@ -93,8 +93,8 @@ export function WidgetCustomizer({
                     onClick={() => onToggleVisibility(widget.id)}
                     className={`h-8 w-8 rounded-lg ${
                       widget.visible
-                        ? 'text-indigo-400 hover:bg-slate-850 hover:text-white'
-                        : 'text-slate-500 hover:bg-slate-850'
+                        ? 'text-indigo-400 hover:bg-slate-800 hover:text-white'
+                        : 'text-slate-500 hover:bg-slate-800'
                     }`}
                     aria-label={widget.visible ? `Hide ${widget.name}` : `Show ${widget.name}`}
                   >
@@ -108,8 +108,8 @@ export function WidgetCustomizer({
                     onClick={() => onTogglePin(widget.id)}
                     className={`h-8 w-8 rounded-lg ${
                       widget.pinned
-                        ? 'text-amber-500 hover:bg-slate-850 hover:text-amber-400'
-                        : 'text-slate-500 hover:bg-slate-850 hover:text-slate-300'
+                        ? 'text-amber-500 hover:bg-slate-800 hover:text-amber-400'
+                        : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'
                     }`}
                     aria-label={widget.pinned ? `Unpin ${widget.name}` : `Pin ${widget.name}`}
                   >
@@ -142,7 +142,7 @@ export function WidgetCustomizer({
         </div>
 
         {/* Reset Action */}
-        <div className="border-t border-slate-850 pt-4 flex justify-between gap-4 mt-3">
+        <div className="border-t border-slate-800 pt-4 flex justify-between gap-4 mt-3">
           <Button
             onClick={onReset}
             variant="ghost"
@@ -155,7 +155,7 @@ export function WidgetCustomizer({
           <Button
             onClick={() => onOpenChange(false)}
             size="sm"
-            className="rounded-xl px-4 text-xs font-bold bg-indigo-650 hover:bg-indigo-700 text-white"
+            className="rounded-xl px-4 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
           >
             Done
           </Button>

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { APP_ROUTES } from '@/shared/routes';
 import { Button } from '@/shared/ui/atoms/button';
 import { Input } from '@/shared/ui/atoms/input';
 import {
@@ -31,18 +33,20 @@ import {
   SearchX
 } from 'lucide-react';
 import { cn } from '@/shared/utils';
+import { toast } from 'sonner';
 
 interface InventoryTableProps {
   products: any[];
   onSync: () => void;
   isSyncing: boolean;
-  syncProgress: number | null;
 }
 
 type SortField = 'name' | 'sku' | 'stock' | 'price';
 type SortOrder = 'asc' | 'desc';
 
-export function InventoryTable({ products, onSync, isSyncing, syncProgress }: InventoryTableProps) {
+export function InventoryTable({ products, onSync, isSyncing }: InventoryTableProps) {
+  const router = useRouter();
+
   // Local state for search, filters, sorting, bulk actions, and pagination
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -171,7 +175,7 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
   };
 
   return (
-    <div className="rounded-2xl border border-slate-850 bg-slate-900/40 p-6 space-y-4">
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 space-y-4">
       {/* Title area and Sync button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-0.5">
@@ -182,15 +186,15 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
         <Button
           onClick={onSync}
           disabled={isSyncing}
-          className="shadow-primary/10 rounded-xl shadow-lg font-black text-xs h-9 px-4 bg-indigo-650 hover:bg-indigo-700 text-white"
+          className="shadow-primary/10 rounded-xl shadow-lg font-black text-xs h-9 px-4 bg-indigo-600 hover:bg-indigo-700 text-white"
         >
           <RefreshCw className={cn("mr-2 h-3.5 w-3.5", isSyncing && "animate-spin")} />
-          {isSyncing ? `Syncing (${syncProgress}%)` : 'Sync Catalog'}
+          {isSyncing ? 'Refreshing...' : 'Refresh Inventory'}
         </Button>
       </div>
 
       {/* Toolbar - Search input and Filters */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-950/20 p-3 rounded-xl border border-slate-850/80">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-950/20 p-3 rounded-xl border border-slate-800/80">
         <div className="flex flex-1 items-center gap-3">
           <div className="relative w-full max-w-xs">
             <Search className="text-slate-500 absolute top-2.5 left-2.5 h-4 w-4" />
@@ -214,7 +218,7 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
                 setCategoryFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="bg-slate-900 border border-slate-800 text-slate-350 text-xs px-2.5 py-1 rounded-lg h-9"
+              className="bg-slate-900 border border-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-lg h-9"
             >
               <option value="all">All Categories</option>
               <option value="Audio">Audio</option>
@@ -233,7 +237,7 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
                 setBrandFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="bg-slate-900 border border-slate-800 text-slate-350 text-xs px-2.5 py-1 rounded-lg h-9"
+              className="bg-slate-900 border border-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-lg h-9"
             >
               <option value="all">All Brands</option>
               <option value="Nike">Nike</option>
@@ -253,7 +257,7 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
                 setStockFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="bg-slate-900 border border-slate-800 text-slate-350 text-xs px-2.5 py-1 rounded-lg h-9"
+              className="bg-slate-900 border border-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-lg h-9"
             >
               <option value="all">All Levels</option>
               <option value="instock">In Stock</option>
@@ -272,7 +276,8 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
             <Button
               variant="outline"
               size="sm"
-              className="h-8 rounded-lg border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-850 hover:text-white text-xs gap-1.5"
+              onClick={() => toast.info('Bulk edit is coming soon.')}
+              className="h-8 rounded-lg border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white text-xs gap-1.5"
             >
               <Edit className="h-3.5 w-3.5 text-indigo-400" />
               <span>Bulk Edit</span>
@@ -280,7 +285,8 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
             <Button
               variant="outline"
               size="sm"
-              className="h-8 rounded-lg border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-850 hover:text-white text-xs gap-1.5"
+              onClick={() => toast.info('Bulk stock updates are coming soon.')}
+              className="h-8 rounded-lg border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white text-xs gap-1.5"
             >
               <Package className="h-3.5 w-3.5 text-emerald-400" />
               <span>Update Stock</span>
@@ -288,7 +294,8 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
             <Button
               variant="outline"
               size="sm"
-              className="h-8 rounded-lg border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-850 hover:text-white text-xs gap-1.5"
+              onClick={() => toast.info('Export is coming soon.')}
+              className="h-8 rounded-lg border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white text-xs gap-1.5"
             >
               <Download className="h-3.5 w-3.5 text-sky-400" />
               <span>Export</span>
@@ -296,7 +303,8 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
             <Button
               variant="outline"
               size="sm"
-              className="h-8 rounded-lg border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-850 hover:text-white text-xs gap-1.5"
+              onClick={() => toast.info('Bulk archive is coming soon.')}
+              className="h-8 rounded-lg border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white text-xs gap-1.5"
             >
               <Archive className="h-3.5 w-3.5 text-amber-400" />
               <span>Archive</span>
@@ -304,6 +312,7 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
             <Button
               variant="outline"
               size="sm"
+              onClick={() => toast.info('Bulk delete is coming soon.')}
               className="h-8 rounded-lg border-slate-800 bg-slate-900 text-rose-400 hover:bg-rose-950/20 hover:text-rose-300 text-xs gap-1.5"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -314,9 +323,9 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
       </div>
 
       {/* Main Table view */}
-      <div className="overflow-x-auto rounded-xl border border-slate-850 bg-slate-950/40">
+      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/40">
         <table className="w-full text-left text-sm text-slate-400">
-          <thead className="bg-slate-950 text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-850 sticky top-0 z-10">
+          <thead className="bg-slate-950 text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-800 sticky top-0 z-10">
             <tr>
               <th className="px-5 py-3.5 w-10">
                 <input
@@ -326,7 +335,7 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
                     paginatedProducts.length > 0 &&
                     paginatedProducts.every((p) => selectedIds.includes(p.id))
                   }
-                  className="rounded border-slate-800 bg-slate-900 text-indigo-650 h-3.5 w-3.5"
+                  className="rounded border-slate-800 bg-slate-900 text-indigo-600 h-3.5 w-3.5"
                   aria-label="Select all products"
                 />
               </th>
@@ -358,12 +367,12 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
               <th className="px-5 py-3.5 font-bold text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-850 text-xs">
+          <tbody className="divide-y divide-slate-800 text-xs">
             {paginatedProducts.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-5 py-16 text-center">
                   <div className="flex flex-col items-center gap-3">
-                    <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-850">
+                    <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800">
                       <SearchX className="h-10 w-10 text-slate-600" />
                     </div>
                     <div className="space-y-1">
@@ -422,7 +431,7 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
                         type="checkbox"
                         checked={isChecked}
                         onChange={(e) => handleSelectOne(product.id, e.target.checked)}
-                        className="rounded border-slate-800 bg-slate-900 text-indigo-650 h-3.5 w-3.5"
+                        className="rounded border-slate-800 bg-slate-900 text-indigo-600 h-3.5 w-3.5"
                         aria-label={`Select ${product.name}`}
                       />
                     </td>
@@ -430,7 +439,7 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
                     {/* Name */}
                     <td className="px-5 py-3.5 font-semibold text-white">
                       <div className="flex items-center gap-3">
-                        <div className="bg-slate-900 rounded-lg p-2 border border-slate-850 shrink-0 select-none">
+                        <div className="bg-slate-900 rounded-lg p-2 border border-slate-800 shrink-0 select-none">
                           <Package className="h-4 w-4 text-slate-400" />
                         </div>
                         <div className="space-y-0.5">
@@ -446,8 +455,8 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
                     </td>
 
                     {/* Warehouse details */}
-                    <td className="px-5 py-3.5 hidden md:table-cell text-slate-450 leading-tight">
-                      <span className="block font-medium text-slate-350">{product.brand}</span>
+                    <td className="px-5 py-3.5 hidden md:table-cell text-slate-400 leading-tight">
+                      <span className="block font-medium text-slate-300">{product.brand}</span>
                       <span className="block text-[10px]">{product.warehouse}</span>
                     </td>
                     
@@ -478,17 +487,33 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
                         <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-300">
                           <DropdownMenuLabel className="text-slate-500 text-[10px] uppercase font-bold">Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator className="bg-slate-800" />
-                          <DropdownMenuItem className="hover:bg-slate-800 cursor-pointer text-xs gap-2">
+                          <DropdownMenuItem
+                            className="hover:bg-slate-800 cursor-pointer text-xs gap-2"
+                            onClick={() =>
+                              window.open(APP_ROUTES.PRODUCT_DETAIL(String(product.id)), '_blank', 'noopener,noreferrer')
+                            }
+                          >
                             <Eye className="h-3.5 w-3.5 text-indigo-400" /> View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="hover:bg-slate-800 cursor-pointer text-xs gap-2">
+                          <DropdownMenuItem
+                            className="hover:bg-slate-800 cursor-pointer text-xs gap-2"
+                            onClick={() => router.push(APP_ROUTES.SELLER.EDIT_PRODUCT(String(product.id)))}
+                          >
                             <Edit className="h-3.5 w-3.5 text-indigo-400" /> Edit Product
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="hover:bg-slate-800 cursor-pointer text-xs gap-2">
+                          <DropdownMenuItem
+                            className="hover:bg-slate-800 cursor-pointer text-xs gap-2"
+                            onClick={() => toast.info('Stock history is coming soon.')}
+                          >
                             <History className="h-3.5 w-3.5 text-indigo-400" /> View Stock History
                           </DropdownMenuItem>
                           <DropdownMenuSeparator className="bg-slate-800" />
-                          <DropdownMenuItem className="hover:bg-rose-950/30 hover:text-rose-300 cursor-pointer text-xs gap-2 text-rose-450">
+                          <DropdownMenuItem
+                            className="hover:bg-rose-950/30 hover:text-rose-300 cursor-pointer text-xs gap-2 text-rose-400"
+                            onClick={() =>
+                              toast.info('Delete from this view is coming soon — use the Products page to delete for now.')
+                            }
+                          >
                             <Trash2 className="h-3.5 w-3.5" /> Delete Product
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -503,10 +528,10 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
       </div>
 
       {/* Pagination Footer */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-3.5 border-t border-slate-850/80">
-        <div className="flex items-center gap-2.5 text-xs text-slate-450">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-3.5 border-t border-slate-800/80">
+        <div className="flex items-center gap-2.5 text-xs text-slate-400">
           {filteredProducts.length <= 5 ? (
-            <span>Showing all <span className="font-mono text-slate-350">{filteredProducts.length} items</span></span>
+            <span>Showing all <span className="font-mono text-slate-300">{filteredProducts.length} items</span></span>
           ) : (
             <>
               <span>Show</span>
@@ -516,13 +541,13 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
                   setItemsPerPage(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="bg-slate-900 border border-slate-800 text-slate-350 text-xs px-2 py-0.5 rounded-lg"
+                className="bg-slate-900 border border-slate-800 text-slate-300 text-xs px-2 py-0.5 rounded-lg"
               >
                 {[5, 10, 20].filter(n => n <= filteredProducts.length || n === 5).map(n => (
                   <option key={n} value={n}>{n} items</option>
                 ))}
               </select>
-              <span>of <span className="font-mono text-slate-350">{filteredProducts.length} items</span></span>
+              <span>of <span className="font-mono text-slate-300">{filteredProducts.length} items</span></span>
             </>
           )}
         </div>
@@ -533,7 +558,7 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
             size="sm"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(currentPage - 1)}
-            className="h-8 rounded-lg border-slate-800 bg-slate-900 text-slate-350 hover:bg-slate-850 hover:text-white text-xs disabled:opacity-40"
+            className="h-8 rounded-lg border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white text-xs disabled:opacity-40"
           >
             <ChevronLeft className="h-4 w-4 mr-0.5" />
             Prev
@@ -548,8 +573,8 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
                 className={cn(
                   "h-8 w-8 text-xs font-bold rounded-lg transition-colors border",
                   currentPage === i + 1
-                    ? "bg-indigo-650 text-white border-transparent"
-                    : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-850 hover:text-white"
+                    ? "bg-indigo-600 text-white border-transparent"
+                    : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white"
                 )}
               >
                 {i + 1}
@@ -562,7 +587,7 @@ export function InventoryTable({ products, onSync, isSyncing, syncProgress }: In
             size="sm"
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage(currentPage + 1)}
-            className="h-8 rounded-lg border-slate-800 bg-slate-900 text-slate-350 hover:bg-slate-850 hover:text-white text-xs disabled:opacity-40"
+            className="h-8 rounded-lg border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white text-xs disabled:opacity-40"
           >
             Next
             <ChevronRight className="h-4 w-4 ml-0.5" />

@@ -1,33 +1,50 @@
-'use client';
+import { Metadata } from 'next';
+import { ReactNode } from 'react';
+import { SellerLayoutClient } from './SellerLayoutClient';
+import { SellerGuard } from '@/features/seller/components/SellerGuard';
 
-import { usePathname } from 'next/navigation';
-import { SellerHeader, SellerSidebar, SellerGuard } from '@/features/seller';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+/**
+ * Metadata for seller dashboard pages
+ */
+export const metadata: Metadata = {
+  title: {
+    template: '%s | Seller Dashboard',
+    default: 'Seller Dashboard',
+  },
+  description: 'Manage your products, orders, and customers on eShop',
+  robots: {
+    index: false, // Don't index seller dashboard
+    follow: false,
+  },
+};
 
-export default function SellerLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  console.log('[SellerLayout] Rendering layout');
-  const pathname = usePathname();
-  const isOnboarding = pathname === APP_ROUTES.SELLER.REGISTER;
+interface SellerLayoutProps {
+  children: ReactNode;
+}
 
+/**
+ * Seller Layout (Server Component)
+ *
+ * Root layout for all seller dashboard pages.
+ * - Renders static HTML shell on server for better performance
+ * - Delegates client-side interactivity to SellerLayoutClient
+ * - Protects all routes with SellerGuard authentication
+ * - Provides consistent header, sidebar, and navigation
+ *
+ * @param {ReactNode} children - Child pages/components to render
+ * @returns {JSX.Element} Seller layout wrapper
+ *
+ * @example
+ * // Automatically wraps all pages in app/seller/*
+ * // app/seller/dashboard/page.tsx
+ * export default function DashboardPage() {
+ *   return <div>Dashboard Content</div>;
+ * }
+ */
+export default function SellerLayout({ children }: SellerLayoutProps) {
   return (
-    <div className="min-h-screen bg-muted/40">
-      <SellerHeader />
-      <div className="flex pt-16">
-        {!isOnboarding && <SellerSidebar />}
-        <main 
-          className={`flex-1 p-6 md:p-8 transition-all duration-300 ${
-            isOnboarding ? 'ml-0' : 'ml-0 md:ml-64'
-          }`}
-        >
-          <SellerGuard>
-            {children}
-          </SellerGuard>
-        </main>
-      </div>
-    </div>
+    <SellerLayoutClient>
+      <SellerGuard>{children}</SellerGuard>
+    </SellerLayoutClient>
   );
 }

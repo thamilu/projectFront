@@ -44,14 +44,16 @@ class EventBus {
    */
   publish<K extends EventKey>(event: K, payload: AppEvents[K]): void {
     logger.info(`📢 [EventBus] Publishing event "${event}"`, { payload });
-    
+
     const callbacks = this.listeners[event];
     if (callbacks) {
       callbacks.forEach((callback) => {
         try {
           callback(payload);
         } catch (error) {
-          logger.error(`❌ [EventBus] Error in subscriber callback for "${event}"`, { error: String(error) });
+          logger.error(`❌ [EventBus] Error in subscriber callback for "${event}"`, {
+            error: String(error),
+          });
         }
       });
     }

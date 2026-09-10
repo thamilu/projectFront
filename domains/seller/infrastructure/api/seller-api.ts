@@ -13,6 +13,7 @@ export interface Store {
   logoUrl?: string;
   bannerUrl?: string;
   status: string;
+  currencyCode?: string;
 }
 
 export interface StoreCreateRequest {
@@ -26,6 +27,7 @@ export interface StoreCreateRequest {
   state: string;
   pincode: string;
   country: string;
+  currencyCode?: string;
 }
 
 export interface StoreUpdateRequest extends StoreCreateRequest {
@@ -90,7 +92,7 @@ export const sellerApi = {
   },
 
   getDashboardStats: async (options: RequestOptions = {}): Promise<any> => {
-    const { data } = await apiClient.get('/api/v1/sellers/dashboard/stats', {
+    const { data } = await apiClient.get(API_ENDPOINTS.DASHBOARD.SELLER, {
       signal: options.signal,
     });
     return data;
@@ -106,14 +108,20 @@ export const sellerApi = {
     return resp?.data ?? resp;
   },
 
-  getMyProfile: async (): Promise<SellerProfile | null> => {
+  getMyProfile: async (options?: RequestOptions): Promise<SellerProfile | null> => {
     try {
       const { data: resp } = await apiClient.get<any>(API_ENDPOINTS.SELLER.PROFILE, {
-        headers: { 'X-Bypass-Toast': 'true' }
+        headers: {
+          'X-Bypass-Toast': 'true',
+          ...options?.headers,
+        },
+        signal: options?.signal,
       });
       return resp?.data ?? resp;
     } catch (error: any) {
-      if (error?.statusCode === 404) return null;
+      // 404 = profile not found; 403/428 = not yet a seller — all mean "no profile yet"
+      const NO_PROFILE_CODES = [403, 404, 412, 428];
+      if (NO_PROFILE_CODES.includes(error?.statusCode)) return null;
       throw error;
     }
   },
@@ -121,12 +129,12 @@ export const sellerApi = {
   profileExists: async (): Promise<boolean> => {
     try {
       const { data: resp } = await apiClient.get<any>(API_ENDPOINTS.SELLER.PROFILE_EXISTS, {
-        headers: { 'X-Bypass-Toast': 'true' }
+        headers: { 'X-Bypass-Toast': 'true' },
       });
       const data = resp?.data ?? resp;
       return typeof data === 'boolean' ? data : Boolean(data);
-    } catch (error: any) {
-      if (error?.statusCode === 404) return false;
+    } catch {
+      // Any error means we cannot confirm the profile exists — treat as false
       return false;
     }
   },
@@ -138,11 +146,15 @@ export const sellerApi = {
   getMyStore: async (): Promise<Store | null> => {
     try {
       const { data: resp } = await apiClient.get<any>(API_ENDPOINTS.SELLER.STORE, {
-        headers: { 'X-Bypass-Toast': 'true' }
+        headers: { 'X-Bypass-Toast': 'true' },
       });
       return resp?.data ?? resp;
     } catch (error: any) {
-      if (error?.statusCode === 404) return null;
+      // 404 = store not created yet
+      // 403 = seller not approved (cannot have a store yet)
+      // 412 / 428 = precondition: seller profile incomplete
+      const NO_STORE_CODES = [403, 404, 412, 428];
+      if (NO_STORE_CODES.includes(error?.statusCode)) return null;
       throw error;
     }
   },
@@ -150,7 +162,7 @@ export const sellerApi = {
   checkStoreExists: async (): Promise<boolean> => {
     try {
       const { data: resp } = await apiClient.get<any>(`${API_ENDPOINTS.SELLER.STORE}/exists`, {
-        headers: { 'X-Bypass-Toast': 'true' }
+        headers: { 'X-Bypass-Toast': 'true' },
       });
       const data = resp?.data ?? resp;
       return Boolean(data);
@@ -163,10 +175,7 @@ export const sellerApi = {
   },
 
   createStore: async (storeData: StoreCreateRequest): Promise<Store> => {
-    const { data: resp } = await apiClient.post<any>(
-      API_ENDPOINTS.SELLER.STORE,
-      storeData
-    );
+    const { data: resp } = await apiClient.post<any>(API_ENDPOINTS.SELLER.STORE, storeData);
     return resp?.data ?? resp;
   },
 
@@ -180,18 +189,15 @@ export const sellerApi = {
   // ============================================================================
 
   getMyProducts: async (params: PageRequest): Promise<PageResponse<ProductDTO>> => {
-    const { data: resp } = await apiClient.get<any>(
-      API_ENDPOINTS.SELLER.PRODUCTS,
-      { params }
-    );
+    const { data: resp } = await apiClient.get<any>(API_ENDPOINTS.SELLER.PRODUCTS, {
+      params,
+      headers: { 'X-Bypass-Toast': 'true' },
+    });
     return resp?.data ?? resp;
   },
 
   createProduct: async (productData: Partial<ProductDTO>): Promise<ProductDTO> => {
-    const { data: resp } = await apiClient.post<any>(
-      API_ENDPOINTS.SELLER.PRODUCTS,
-      productData
-    );
+    const { data: resp } = await apiClient.post<any>(API_ENDPOINTS.SELLER.PRODUCTS, productData);
     return resp?.data ?? resp;
   },
 
@@ -213,7 +219,45 @@ export const sellerApi = {
     );
     return resp?.data ?? resp;
   },
-};
 
-export const sellersApi = sellerApi;
-export default sellerApi;
+  // SECURITY: these three functions previously fell back to a pure
+  // client-side regex format check — presented to the UI as `verified: true`
+  // — whenever the real verification endpoint returned 404. A PAN/GSTIN/
+  // Aadhaar number merely LOOKING correctly formatted is not the same as it
+  // being verified against the government registry, which is the entire
+  // point of a KYC gate on a marketplace seller. That fallback also added an
+  // artificial 800ms delay specifically to make the fake check look like a
+  // real network verification call. If the backend verification route is
+  // unavailable for any reason, this MUST fail closed (report "could not
+  // verify," never a fabricated pass) rather than silently downgrading a
+  // compliance control to a format check.
+  verifyPan: async (panNumber: string, options: RequestOptions = {}): Promise<{ verified: boolean; message?: string }> => {
+    const { data } = await apiClient.post('/api/v1/sellers/verify/pan', { panNumber }, {
+      signal: options.signal,
+      headers: {
+        'X-Bypass-Toast': 'true',
+      },
+    });
+    return data?.data ?? data;
+  },
+
+  verifyGstin: async (gstin: string, options: RequestOptions = {}): Promise<{ verified: boolean; message?: string }> => {
+    const { data } = await apiClient.post('/api/v1/sellers/verify/gstin', { gstin }, {
+      signal: options.signal,
+      headers: {
+        'X-Bypass-Toast': 'true',
+      },
+    });
+    return data?.data ?? data;
+  },
+
+  verifyAadhar: async (aadhar: string, options: RequestOptions = {}): Promise<{ verified: boolean; message?: string }> => {
+    const { data } = await apiClient.post('/api/v1/sellers/verify/aadhar', { aadhar }, {
+      signal: options.signal,
+      headers: {
+        'X-Bypass-Toast': 'true',
+      },
+    });
+    return data?.data ?? data;
+  },
+};

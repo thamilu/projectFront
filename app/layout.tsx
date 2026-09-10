@@ -3,33 +3,45 @@
  *
  * Enterprise-grade root layout with:
  * - Proper metadata configuration (Next.js 14+ standards)
- * - Performance-optimized font loading
- * - Accessibility features (skip-to-content, screen reader announcements)
+ * - Performance-optimized font loading (with preconnect)
+ * - Accessibility features (main landmark, skip-to-content, screen reader alerts)
  * - Security headers and CSP preparation
  * - SEO optimization (Open Graph, Twitter Cards, structured data)
  * - PWA support with manifest
  * - Theme support with no flash
+ * - localized error boundaries
  *
  * @module app/layout
  */
 
 import type { Metadata, Viewport } from 'next';
-import { headers } from 'next/headers';
-import { fontClassNames } from '@/shared/fonts';
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
+import { auth } from '@/auth';
+import { env } from '@/env';
+import { getCSPNonce } from '@/core/security/csp';
+import { fontClassNames, validateFonts } from '@/shared/fonts';
 import { siteConfig } from '@/core/config/site';
 import { Providers } from './providers';
 import { SkipToContent } from '@/shared/ui/layout/skip-to-content';
-import Header from '@/shared/ui/layout/header-wrapper';
+import { AppErrorBoundary } from '@/shared/ui/error-boundary';
+import { HeaderSkeleton } from '@/shared/ui/layout/header-skeleton';
 import HydrationTracker from '@/core/providers/hydration-tracker';
+import StructuredData from '@/shared/ui/layout/Seo/StructuredData';
+import { WebVitals } from './web-vitals';
 import { cn } from '@/shared/utils';
+import { NoScriptFallback, DomainHints } from '@/shared/ui/layout';
+import { THEME_BOOTSTRAP_SCRIPT } from '@/shared/theme/theme-bootstrap';
 import './globals.css'; // Global Tailwind CSS styles
 
-/**
- * Viewport Configuration (Next.js 14+ requirement)
- *
- * CRITICAL FIX: Separated from metadata to comply with Next.js 14+ API.
- * maximumScale=5 allows zoom for accessibility (WCAG 2.1 - Reflow 1.4.10).
- */
+const Header = dynamic(() => import('@/shared/ui/layout/header-wrapper'), {
+  loading: () => <HeaderSkeleton />,
+});
+
+// ============================================================
+// 1. VIEWPORT — Device adaptation
+// ============================================================
+
 export const viewport: Viewport = {
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
@@ -37,23 +49,21 @@ export const viewport: Viewport = {
   ],
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5, // Allow zoom for accessibility
+  maximumScale: 5, // Allow zoom for accessibility (WCAG 1.4.10)
   userScalable: true,
   viewportFit: 'cover',
   colorScheme: 'light dark',
 };
 
-/**
- * Base Metadata Configuration
- *
- * Comprehensive SEO setup with:
- * - Dynamic title templating
- * - Open Graph for social sharing
- * - Twitter Cards for Twitter sharing
- * - Robots configuration for search engines
- * - Verification tokens for search console
- * - PWA manifest
- */
+// ============================================================
+// 2. METADATA — SEO, Social, PWA
+// ============================================================
+
+const verificationTokens = {
+  ...(env.GOOGLE_SITE_VERIFICATION && { google: env.GOOGLE_SITE_VERIFICATION }),
+  ...(env.YANDEX_VERIFICATION && { yandex: env.YANDEX_VERIFICATION }),
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
 
@@ -68,7 +78,7 @@ export const metadata: Metadata = {
   // Author and creator
   authors: [{ name: siteConfig.author.name, url: siteConfig.author.url }],
   creator: siteConfig.author.name,
-  publisher: siteConfig.author.name,
+  publisher: siteConfig.name,
 
   // Robots configuration for search engines
   robots: {
@@ -85,53 +95,63 @@ export const metadata: Metadata = {
     },
   },
 
-  // Icons configuration for multiple platforms
-  icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512x512.png', sizes: '512x512', type: 'image/png' },
-    ],
-    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
-    shortcut: '/favicon.ico',
-  },
+  /*
+   * No `icons` block: Next.js generates the icon links from the file
+   * conventions `app/icon.png` and `app/apple-icon.png`.
+   *
+   * This previously declared `/favicon.ico`, `/apple-touch-icon.png` and a
+   * `shortcut` — none of which existed in `public/`, all verified live as 404s.
+   * Declaring an icon that is not there is worse than declaring none: the
+   * browser requests it on every page load, fails, and falls back anyway.
+   * Sourcing them from the file convention means the declaration and the asset
+   * cannot disagree, because Next derives one from the other.
+   */
 
   // PWA manifest
   manifest: '/manifest.json',
 
-  // Open Graph for social media sharing
+  // Open Graph for social media sharing (descriptive text & sizes)
   openGraph: {
     type: 'website',
     locale: siteConfig.locale,
     url: siteConfig.url,
     siteName: siteConfig.name,
-    title: siteConfig.name,
-    description: siteConfig.description,
-    images: [
-      {
-        url: `${siteConfig.url}/og-image.png`,
-        width: 1200,
-        height: 630,
-        alt: siteConfig.name,
-      },
-    ],
+    /*
+     * Deliberately no `title` or `description` here.
+     *
+     * Setting them pinned every page's social preview to the site defaults:
+     * a shared link to /products announced "eShop", not "Products | eShop",
+     * because a layout's openGraph fields are inherited by every child route
+     * and override what Next would otherwise derive from each page's own
+     * `title`/`description`. Omitting them lets that derivation happen, so each
+     * page's preview describes that page.
+     *
+     * This also removes the reason a page would declare its own `openGraph`
+     * block — which matters, because a page-level `openGraph` object replaces
+     * the inherited one wholesale and, with it, the generated share image from
+     * `app/opengraph-image.tsx`.
+     */
+    /*
+     * No `images` here: `app/opengraph-image.tsx` generates it and Next injects
+     * the tag. Both this and the Twitter block below pointed at
+     * `${siteConfig.url}/og-image.png`, which 404s — so every shared link
+     * rendered with a blank preview.
+     */
   },
 
-  // Twitter Card configuration
+  // Twitter Card configuration — image supplied by app/twitter-image.tsx
   twitter: {
     card: 'summary_large_image',
     title: siteConfig.name,
     description: siteConfig.description,
-    images: [`${siteConfig.url}/og-image.png`],
     creator: siteConfig.twitterHandle,
     site: siteConfig.twitterHandle,
   },
 
   // Search engine verification tokens
-  verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
-    yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION,
-  },
+  ...(Object.keys(verificationTokens).length > 0 && {
+    verification: verificationTokens,
+  }),
 
   // App-specific metadata for mobile
   applicationName: siteConfig.name,
@@ -141,7 +161,7 @@ export const metadata: Metadata = {
     title: siteConfig.name,
   },
 
-  // Format detection - disable auto-linking
+  // Format detection - disable auto-linking (prevents dynamic layout shifts)
   formatDetection: {
     telephone: false,
     email: false,
@@ -152,14 +172,6 @@ export const metadata: Metadata = {
   category: 'ecommerce',
   classification: 'Shopping',
 
-  // Alternate languages for internationalization
-  alternates: {
-    canonical: siteConfig.url,
-    languages: {
-      'en-US': `${siteConfig.url}/en`,
-    },
-  },
-
   // Additional metadata for Windows tiles
   other: {
     'msapplication-TileColor': '#0a0a0a',
@@ -167,75 +179,110 @@ export const metadata: Metadata = {
   },
 };
 
+// ============================================================
+// 3. ROOT LAYOUT
+// ============================================================
+
 interface RootLayoutProps {
   children: React.ReactNode;
 }
 
-/**
- * Root Layout Component
- *
- * Server Component that provides:
- * - HTML document structure
- * - Font loading with CSS variables
- * - Provider hierarchy
- * - Accessibility features
- * - Performance optimizations
- */
 export default async function RootLayout({ children }: RootLayoutProps) {
-  // Read per-request headers to expose the CSP nonce to client code via meta tag
-  const h = await headers();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nonce = (h as any).get?.('x-csp-nonce') ?? undefined;
+  if (process.env.NODE_ENV === 'development') {
+    validateFonts();
+  }
+
+  const nonce = await getCSPNonce();
+  // Seeds NextAuthProvider (see core/providers/NextAuthProvider.tsx) so
+  // useSession() resolves synchronously on both server and client, instead
+  // of the client updating it after mount — which is unsafe while a
+  // Suspense boundary further down is still hydrating.
+  const session = await auth();
+
   return (
     <html
-      lang="en"
-      dir="ltr"
-      suppressHydrationWarning // Required for next-themes to prevent hydration mismatch
-      className={cn(fontClassNames, 'antialiased')}
+      lang="en" // TODO: Make dynamic when dynamic i18n routing layout is integrated
+      dir="ltr" // TODO: Make dynamic for RTL languages
+      suppressHydrationWarning // Required for next-themes to prevent hydration mismatch on html
+      className={fontClassNames} // Set custom font variables
     >
       <head>
-        {/* Preconnect to critical origins for faster resource loading */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/*
+          Blocking theme script — prevents the light-then-dark flash.
 
-        {/* DNS prefetch for third-party domains */}
-        {process.env.BACKEND_API_URL && (
-          <link rel="dns-prefetch" href={new URL(process.env.BACKEND_API_URL).origin} />
-        )}
-        {nonce && <meta name="csp-nonce" content={nonce} />}
+          Allowed by CSP two ways: the per-request `nonce` below, and a
+          SHA-256 hash pinned in shared/config/security-headers.ts. The hash is
+          what covers statically-generated pages, where `nonce` is undefined
+          because there are no request headers to read. See
+          shared/theme/theme-bootstrap.ts for the full rationale.
+
+          `suppressHydrationWarning` is REQUIRED here and must not be removed.
+          Browsers implement "nonce hiding" (HTML spec, §nonce attributes): once
+          the parser reads a `nonce` content attribute it moves the value to an
+          internal slot and sets the attribute itself to the empty string, so
+          that a same-origin script cannot exfiltrate the nonce by reading the
+          DOM. React's hydration pass then compares the value it expects from
+          the server payload against the empty string the DOM now reports, and
+          flags a mismatch on every single page load.
+
+          Nothing is actually wrong: the script ran, the CSP allowed it, and the
+          real nonce is still in the element's internal slot. There is also
+          nothing React can do about it — hence its own message, "This won't be
+          patched up". Suppressing is the intended escape hatch for an attribute
+          that legitimately differs between server and client, and it is the
+          same approach shared/ui/layout/Seo/SafeJsonLd.tsx already takes for
+          its own nonced <script>.
+
+          Note this suppresses only THIS element, one level deep — it does not
+          mask a genuine mismatch anywhere else in the tree.
+        */}
+        <script
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }}
+        />
+        <DomainHints />
+        <StructuredData nonce={nonce} />
       </head>
       <body
         className={cn(
-          'bg-background text-foreground font-sans',
-          'selection:bg-primary selection:text-primary-foreground'
+          'bg-background text-foreground font-sans antialiased',
+          'flex min-h-dvh flex-col',
+          'overflow-x-hidden'
         )}
-        suppressHydrationWarning
       >
+        <NoScriptFallback />
+
         {/* Skip to main content for keyboard navigation (WCAG 2.4.1) */}
         <SkipToContent />
 
         {/* Provider hierarchy with error boundaries and state management */}
-        <Providers>
-          <HydrationTracker />
-          {/* Header persists across all routes */}
-          <Header />
+        <Providers session={session}>
+          {/* HydrationTracker uses dynamic({ssr:false}) which requires a Suspense boundary */}
+          <Suspense fallback={null}>
+            <HydrationTracker />
+            <WebVitals />
+          </Suspense>
 
-          {/* Page content */}
-          {children}
+          {/* Header sits outside main content, isolated in an error boundary */}
+          <AppErrorBoundary variant="header">
+            <Suspense fallback={<HeaderSkeleton />}>
+              <Header />
+            </Suspense>
+          </AppErrorBoundary>
+
+          {/* Main content landmark — tabIndex={-1} is the SkipToContent target */}
+          <AppErrorBoundary variant="page">
+            <main
+              id="main-content"
+              tabIndex={-1}
+              aria-label="Main content"
+              className={cn('flex flex-1 flex-col', 'focus:outline-none')}
+            >
+              {children}
+            </main>
+          </AppErrorBoundary>
         </Providers>
-
-        {/* Noscript fallback for users without JavaScript */}
-        <noscript>
-          <div className="bg-background fixed inset-0 z-100 flex items-center justify-center p-4">
-            <div className="bg-card max-w-md rounded-lg border p-6 text-center shadow-lg">
-              <h1 className="text-foreground text-xl font-bold">JavaScript Required</h1>
-              <p className="text-muted-foreground mt-2">
-                This application requires JavaScript to function properly. Please enable JavaScript
-                in your browser settings and reload the page.
-              </p>
-            </div>
-          </div>
-        </noscript>
       </body>
     </html>
   );

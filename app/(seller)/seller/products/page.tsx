@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/shared/ui/atoms/button';
 import { useCategories } from '@/features/products/hooks/use-products';
@@ -9,8 +9,20 @@ import { toast } from 'sonner';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { productApi } from '@/features/products/api/product-api';
 import type { ProductDTO } from '@/shared/types';
-import { apiClient } from '@/core/client';
 import { APP_ROUTES } from '@/shared/routes';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/atoms/dialog';
+import {
+  removeProductsFromCaches,
+  restoreProductCaches,
+  invalidateProductCaches,
+} from '@/features/seller/utils/product-cache';
 import { Store, CheckCircle2, HelpCircle, BookOpen, MessageSquare, Search } from 'lucide-react';
 
 export default function SellerProductsPage() {
@@ -27,90 +39,109 @@ export default function SellerProductsPage() {
   const categoriesQuery = useCategories();
   const qc = useQueryClient();
 
-  const queryError = productsQuery.error as any;
-  const isMissingStore =
-    productsQuery.isError &&
-    (queryError?.statusCode === 404 ||
-      queryError?.message?.includes('Store not found') ||
-      queryError?.message?.includes('JIT creation failed'));
+  /**
+   * Whether the failure means "this seller has no store yet" rather than a
+   * genuine error.
+   *
+   * Detected by status code. The previous check also matched on the literal
+   * strings 'Store not found' and 'JIT creation failed' inside the error
+   * message — which breaks the moment backend copy is reworded or localised,
+   * and would then show a seller a generic error instead of the
+   * create-your-store prompt they need. A 404 on the seller's own product list
+   * has exactly one meaning here.
+   */
+  const queryError = productsQuery.error as { statusCode?: number; status?: number } | null;
+  const errorStatus = queryError?.statusCode ?? queryError?.status;
+  const isMissingStore = productsQuery.isError && errorStatus === 404;
 
   const products = productsQuery.data?.content ?? [];
   const totalPages = productsQuery.data?.totalPages ?? 1;
 
-  const [_selected, _setSelected] = useState<Record<number, boolean>>({});
+  /**
+   * Ids selected for a bulk action.
+   *
+   * A Set rather than the previous `Record<number, boolean>`: membership is the
+   * only question ever asked, and a record accumulates `false` entries that
+   * then have to be filtered out at every read.
+   */
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<number>>(new Set());
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
+  /** Clear the selection whenever the visible page changes. */
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page, query, category]);
+
+  const toggleSelection = useCallback((id: number) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const allVisibleSelected = products.length > 0 && products.every((p) => selectedIds.has(p.id));
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((current) => {
+      const everySelected = products.length > 0 && products.every((p) => current.has(p.id));
+      // Select-all applies to the visible page only. Silently selecting rows
+      // the seller cannot see, then deleting them, is not a defensible default.
+      return everySelected ? new Set<number>() : new Set(products.map((p) => p.id));
+    });
+  }, [products]);
+
+  /**
+   * Delete one or many products.
+   *
+   * Single and bulk share one mutation deliberately. They were previously two
+   * implementations — an optimistic `deleteMut` and an unwired `_bulkDelete`
+   * that duplicated its cache logic and called a different, unversioned
+   * endpoint (`/api/products/:id` instead of `productApi.delete`), so it would
+   * have 404'd had anything ever invoked it.
+   */
   const deleteMut = useMutation({
-    mutationFn: (id: number) => productApi.delete(id),
-    onMutate: async (id: number) => {
-      await qc.cancelQueries({ queryKey: ['products'] });
-      await qc.cancelQueries({ queryKey: ['seller', 'products'] });
+    mutationFn: async (ids: readonly number[]) => {
+      // `allSettled`, not `all`: one rejection must not hide which of the
+      // others succeeded, or the rollback below would revert deletions that
+      // actually happened.
+      const results = await Promise.allSettled(ids.map((id) => productApi.delete(id)));
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      return { requested: ids.length, failed };
+    },
 
-      const qdataProducts = qc.getQueriesData({ queryKey: ['products'] });
-      const qdataSeller = qc.getQueriesData({ queryKey: ['seller', 'products'] });
-      const qdata = [...qdataProducts, ...qdataSeller];
+    onMutate: async (ids) => ({ snapshot: await removeProductsFromCaches(qc, ids) }),
 
-      const snapshot = qdata.map(([k, d]) => [k, d]);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      qdata.forEach(([key, data]: any) => {
-        if (!data || !data.content) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        qc.setQueryData(key, (old: any) => ({
-          ...old,
-          content: old.content.filter((p: any) => p.id !== id),
-          totalElements: Math.max(0, (old.totalElements ?? 0) - 1),
-        }));
+    onError: (error, _ids, context) => {
+      restoreProductCaches(qc, context?.snapshot);
+      toast.error('Could not delete', {
+        description:
+          error instanceof Error ? error.message : 'Nothing was removed. Please try again.',
       });
-      return { snapshot };
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (_err, id, context: any) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      context?.snapshot?.forEach(([key, data]: any) => qc.setQueryData(key, data));
-      toast.error('Delete failed');
+
+    onSuccess: ({ requested, failed }) => {
+      setSelectedIds(new Set());
+
+      if (failed === 0) {
+        toast.success(requested === 1 ? 'Product deleted' : `${requested} products deleted`);
+        return;
+      }
+
+      // A partial failure is reported honestly rather than as a flat success —
+      // the seller needs to know some rows are still live.
+      toast.warning(`Deleted ${requested - failed} of ${requested}`, {
+        description: 'Some products could not be removed. The list has been refreshed.',
+      });
     },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ['products'] });
-      qc.invalidateQueries({ queryKey: ['seller', 'products'] });
-    },
-    onSuccess: () => toast.success('Product deleted'),
+
+    onSettled: () => invalidateProductCaches(qc),
   });
-
-  const _bulkDelete = async (ids: number[]) => {
-    if (ids.length === 0) return toast('No products selected');
-
-    await qc.cancelQueries({ queryKey: ['products'] });
-    await qc.cancelQueries({ queryKey: ['seller', 'products'] });
-
-    const qdataProducts = qc.getQueriesData({ queryKey: ['products'] });
-    const qdataSeller = qc.getQueriesData({ queryKey: ['seller', 'products'] });
-    const qdata = [...qdataProducts, ...qdataSeller];
-
-    const snapshot = qdata.map(([k, d]) => [k, d]);
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      qdata.forEach(([key, data]: any) => {
-        if (!data || !data.content) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        qc.setQueryData(key, (old: any) => ({
-          ...old,
-          content: old.content.filter((p: any) => !ids.includes(p.id)),
-          totalElements: Math.max(0, (old.totalElements ?? 0) - ids.length),
-        }));
-      });
-      await Promise.all(ids.map((id) => apiClient.delete(`/api/products/${id}`)));
-      toast.success(`Deleted ${ids.length} products`);
-      _setSelected({});
-    } catch (err) {
-      console.error('[SellerProducts] Bulk delete failed', err);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      snapshot.forEach(([key, data]: any) => qc.setQueryData(key, data));
-      toast.error('Bulk delete failed');
-    } finally {
-      qc.invalidateQueries({ queryKey: ['products'] });
-      qc.invalidateQueries({ queryKey: ['seller', 'products'] });
-    }
-  };
 
   return (
     <div className="p-6 md:p-8 space-y-6">
@@ -119,7 +150,7 @@ export default function SellerProductsPage() {
         <nav className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500" aria-label="Breadcrumb">
           <span>Seller Center</span>
           <span className="text-slate-700">/</span>
-          <span className="text-slate-350">Products</span>
+          <span className="text-slate-300">Products</span>
         </nav>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -129,12 +160,17 @@ export default function SellerProductsPage() {
             </p>
           </div>
           
-          {/* Header Action Shortcuts (Import/Export/Sync/Drafts) - disabled when store profile is required */}
+          {/* Header Action Shortcuts (Import/Export/Sync/Drafts) - disabled when store profile is required.
+              [NOT WIRED UP] No real backend exists yet for bulk CSV import,
+              catalog export, or an external catalog sync — these previously
+              had no onClick at all, so clicking them (once a store existed)
+              silently did nothing with no feedback. */}
           <div className="flex items-center gap-2.5 flex-wrap" aria-label="Product Page Actions">
             <Button
               variant="outline"
               disabled={isMissingStore}
               aria-disabled={isMissingStore ? "true" : undefined}
+              onClick={() => toast.info('Bulk CSV import is coming soon.')}
               className="h-8 rounded-lg border-slate-200 dark:border-slate-800 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Import CSV
@@ -143,6 +179,7 @@ export default function SellerProductsPage() {
               variant="outline"
               disabled={isMissingStore}
               aria-disabled={isMissingStore ? "true" : undefined}
+              onClick={() => toast.info('Catalog export is coming soon.')}
               className="h-8 rounded-lg border-slate-200 dark:border-slate-800 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Export
@@ -151,6 +188,7 @@ export default function SellerProductsPage() {
               variant="outline"
               disabled={isMissingStore}
               aria-disabled={isMissingStore ? "true" : undefined}
+              onClick={() => toast.info('Catalog sync is coming soon.')}
               className="h-8 rounded-lg border-slate-200 dark:border-slate-800 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Sync Catalog
@@ -159,6 +197,7 @@ export default function SellerProductsPage() {
               variant="outline"
               disabled={isMissingStore}
               aria-disabled={isMissingStore ? "true" : undefined}
+              onClick={() => toast.info('Draft products are coming soon.')}
               className="h-8 rounded-lg border-slate-200 dark:border-slate-800 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               View Drafts
@@ -168,10 +207,10 @@ export default function SellerProductsPage() {
       </div>
 
       {/* Main product management toolbar controls */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 dark:bg-slate-900/20 p-3.5 rounded-xl border border-gray-200/60 dark:border-slate-850/80">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 dark:bg-slate-900/20 p-3.5 rounded-xl border border-gray-200/60 dark:border-slate-800/80">
         <div className="flex flex-wrap flex-1 items-center gap-3">
           <div className="relative w-full max-w-sm">
-            <Search className="text-slate-550 absolute top-2.5 left-2.5 h-4 w-4" />
+            <Search className="text-slate-500 absolute top-2.5 left-2.5 h-4 w-4" />
             <input
               aria-label="Search products"
               value={query}
@@ -183,7 +222,7 @@ export default function SellerProductsPage() {
               placeholder={isMissingStore ? "Search products (disabled) - Complete Store Profile first" : "Search products..."}
               disabled={isMissingStore}
               aria-disabled={isMissingStore ? "true" : undefined}
-              className="w-full rounded-lg border border-gray-200 dark:border-slate-850 bg-white dark:bg-slate-900 px-3 py-2 pl-8 text-xs text-slate-700 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
+              className="w-full rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 pl-8 text-xs text-slate-700 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
             />
           </div>
 
@@ -198,7 +237,7 @@ export default function SellerProductsPage() {
               }}
               disabled={isMissingStore}
               aria-disabled={isMissingStore ? "true" : undefined}
-              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-850 text-slate-700 dark:text-slate-355 text-xs px-2.5 py-1.5 rounded-lg h-9 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
+              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-slate-700 dark:text-slate-355 text-xs px-2.5 py-1.5 rounded-lg h-9 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
             >
               <option value="">{isMissingStore ? "All Categories (Disabled)" : "All categories"}</option>
               {!isMissingStore && (Array.isArray(categoriesQuery.data)
@@ -221,7 +260,7 @@ export default function SellerProductsPage() {
               variant="outline"
               disabled
               aria-disabled="true"
-              className="border-slate-200 dark:border-slate-850 text-slate-400 dark:text-slate-650 opacity-50 cursor-not-allowed text-xs font-semibold h-9 rounded-xl"
+              className="border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 opacity-50 cursor-not-allowed text-xs font-semibold h-9 rounded-xl"
             >
               🌐 Browse Shared Catalog
             </Button>
@@ -229,7 +268,7 @@ export default function SellerProductsPage() {
             <Link href="/seller/catalog" passHref>
               <Button
                 variant="outline"
-                className="border-blue-200 font-semibold text-blue-750 shadow-sm hover:bg-blue-50 hover:text-blue-800 text-xs h-9 rounded-xl focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="border-blue-200 font-semibold text-blue-700 shadow-sm hover:bg-blue-50 hover:text-blue-800 text-xs h-9 rounded-xl focus-visible:ring-2 focus-visible:ring-indigo-500"
               >
                 🌐 Browse Shared Catalog
               </Button>
@@ -268,7 +307,7 @@ export default function SellerProductsPage() {
               
               {/* Top Intro Section */}
               <div className="flex flex-col md:flex-row items-center gap-6 border-b border-gray-100 dark:border-slate-800/80 pb-6">
-                <div className="rounded-2xl bg-indigo-100 dark:bg-indigo-950 p-4 text-indigo-650 dark:text-indigo-400 shrink-0">
+                <div className="rounded-2xl bg-indigo-100 dark:bg-indigo-950 p-4 text-indigo-600 dark:text-indigo-400 shrink-0">
                   <Store className="h-12 w-12" />
                 </div>
                 <div className="space-y-2 text-center md:text-left flex-1">
@@ -278,8 +317,8 @@ export default function SellerProductsPage() {
                       Step 3 of 5
                     </span>
                   </h3>
-                  <p className="text-sm text-slate-650 dark:text-slate-400 leading-relaxed max-w-2xl">
-                    You need to set up your store profile before you can list, manage, or view products in your catalog. Setting up your profile takes approximately <span className="font-semibold text-slate-850 dark:text-slate-200">4–6 minutes</span>.
+                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
+                    You need to set up your store profile before you can list, manage, or view products in your catalog. Setting up your profile takes approximately <span className="font-semibold text-slate-800 dark:text-slate-200">4–6 minutes</span>.
                   </p>
                 </div>
                 
@@ -287,7 +326,7 @@ export default function SellerProductsPage() {
                 <div className="shrink-0 bg-slate-100 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-800/60 p-4 rounded-xl text-center space-y-1 w-44">
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Store Profile</p>
                   <p className="text-xs font-black text-amber-500">Not Started</p>
-                  <p className="text-[10px] text-slate-450">Est. Time: 4 mins</p>
+                  <p className="text-[10px] text-slate-400">Est. Time: 4 mins</p>
                 </div>
               </div>
 
@@ -312,24 +351,24 @@ export default function SellerProductsPage() {
                   <div className="space-y-3">
                     <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Setup Checklist</h4>
                     <div className="space-y-2.5 bg-slate-100/40 dark:bg-slate-950/20 p-4 rounded-xl border border-gray-200 dark:border-slate-800/80">
-                      <div className="flex items-center gap-2.5 text-xs text-slate-450">
+                      <div className="flex items-center gap-2.5 text-xs text-slate-400">
                         <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                         <span className="line-through">Verify Seller Identity</span>
                       </div>
-                      <div className="flex items-center gap-2.5 text-xs text-slate-450">
+                      <div className="flex items-center gap-2.5 text-xs text-slate-400">
                         <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                         <span className="line-through">KYC Verification Audit</span>
                       </div>
-                      <div className="flex items-center gap-2.5 text-xs text-slate-850 dark:text-slate-200 font-bold">
+                      <div className="flex items-center gap-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold">
                         <span className="h-4 w-4 rounded-full border border-indigo-500 bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-[9px] font-black shrink-0">3</span>
                         <span>Setup Store Profile (GSTIN, Business Address)</span>
                       </div>
-                      <div className="flex items-center gap-2.5 text-xs text-slate-400 dark:text-slate-550">
-                        <span className="h-4 w-4 rounded-full border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-950 text-slate-450 dark:text-slate-650 flex items-center justify-center text-[9px] font-black shrink-0">4</span>
+                      <div className="flex items-center gap-2.5 text-xs text-slate-400 dark:text-slate-500">
+                        <span className="h-4 w-4 rounded-full border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-950 text-slate-400 dark:text-slate-600 flex items-center justify-center text-[9px] font-black shrink-0">4</span>
                         <span>Upload Catalog & List Products (Locked)</span>
                       </div>
-                      <div className="flex items-center gap-2.5 text-xs text-slate-400 dark:text-slate-550">
-                        <span className="h-4 w-4 rounded-full border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-950 text-slate-450 dark:text-slate-650 flex items-center justify-center text-[9px] font-black shrink-0">5</span>
+                      <div className="flex items-center gap-2.5 text-xs text-slate-400 dark:text-slate-500">
+                        <span className="h-4 w-4 rounded-full border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-950 text-slate-400 dark:text-slate-600 flex items-center justify-center text-[9px] font-black shrink-0">5</span>
                         <span>Activate Storefront & Go Live (Locked)</span>
                       </div>
                     </div>
@@ -360,7 +399,7 @@ export default function SellerProductsPage() {
                   {/* Benefits Checklist */}
                   <div className="space-y-3">
                     <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Why complete Store Profile?</h4>
-                    <div className="space-y-2.5 bg-slate-100/40 dark:bg-slate-950/20 p-4 rounded-xl border border-gray-200 dark:border-slate-800/80 text-xs text-slate-600 dark:text-slate-350">
+                    <div className="space-y-2.5 bg-slate-100/40 dark:bg-slate-950/20 p-4 rounded-xl border border-gray-200 dark:border-slate-800/80 text-xs text-slate-600 dark:text-slate-300">
                       <div className="flex items-start gap-2">
                         <CheckCircle2 className="h-4 w-4 text-indigo-500 shrink-0 mt-0.5" />
                         <div>
@@ -411,11 +450,11 @@ export default function SellerProductsPage() {
               </div>
 
               {/* Bottom Action buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-end gap-3.5 border-t border-gray-200 dark:border-slate-850/80 pt-6">
+              <div className="flex flex-col sm:flex-row items-center justify-end gap-3.5 border-t border-gray-200 dark:border-slate-800/80 pt-6">
                 <Link href="/seller/support" passHref>
                   <Button
                     variant="outline"
-                    className="w-full sm:w-auto h-10 px-5 rounded-xl border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs text-slate-350 focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="w-full sm:w-auto h-10 px-5 rounded-xl border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs text-slate-300 focus-visible:ring-2 focus-visible:ring-indigo-500"
                   >
                     Learn More
                   </Button>
@@ -423,7 +462,7 @@ export default function SellerProductsPage() {
                 <Link href={APP_ROUTES.SELLER.STORE_CREATE} passHref>
                   <Button
                     autoFocus={isMissingStore}
-                    className="w-full sm:w-auto h-10 px-6 rounded-xl bg-blue-600 hover:bg-blue-750 text-white font-black uppercase tracking-wider text-xs shadow-lg shadow-blue-500/20 focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="w-full sm:w-auto h-10 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-wider text-xs shadow-lg shadow-blue-500/20 focus-visible:ring-2 focus-visible:ring-indigo-500"
                   >
                     ⚡ Setup Store Profile Now
                   </Button>
@@ -454,10 +493,66 @@ export default function SellerProductsPage() {
 
       {!productsQuery.isLoading && !productsQuery.isError && products.length > 0 && (
         <div className="overflow-x-auto rounded-md border">
+          {/*
+            Bulk action bar. The delete logic for this existed but was never
+            rendered — `_bulkDelete` sat unreachable behind an underscore
+            prefix that silenced the unused-variable lint. Bulk actions were
+            also the highest-ranked missing productivity feature in the seller
+            console; wiring the existing implementation delivers it.
+          */}
+          {selectedIds.size > 0 && (
+            <div
+              className="bg-primary/5 border-primary/20 mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="text-sm font-medium">
+                {selectedIds.size} product{selectedIds.size === 1 ? '' : 's'} selected
+              </span>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+                  Clear
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setConfirmBulkDelete(true)}
+                  disabled={deleteMut.isPending}
+                >
+                  Delete selected
+                </Button>
+              </div>
+            </div>
+          )}
+
           <table className="w-full table-auto border-collapse">
             <thead className="bg-muted/50">
               <tr className="border-b text-left">
-                <th className="px-4 py-3 font-medium">#</th>
+                <th scope="col" className="w-10 px-4 py-3">
+                  {/*
+                    Select-all for the visible page. `indeterminate` is set via
+                    ref because React has no prop for it — without it a partial
+                    selection renders as unchecked, which reads as "nothing
+                    selected" while a bulk action is armed.
+                  */}
+                  <input
+                    type="checkbox"
+                    className="border-input h-4 w-4 rounded"
+                    checked={allVisibleSelected}
+                    ref={(node) => {
+                      if (node) {
+                        node.indeterminate = selectedIds.size > 0 && !allVisibleSelected;
+                      }
+                    }}
+                    onChange={toggleSelectAll}
+                    aria-label={
+                      allVisibleSelected
+                        ? 'Clear selection'
+                        : 'Select all products on this page'
+                    }
+                  />
+                </th>
+                <th scope="col" className="px-4 py-3 font-medium">#</th>
                 <th className="px-4 py-3 font-medium">Title</th>
                 <th className="px-4 py-3 font-medium">Price</th>
                 <th className="px-4 py-3 font-medium">Stock</th>
@@ -467,7 +562,26 @@ export default function SellerProductsPage() {
             </thead>
             <tbody>
               {products.map((p: ProductDTO, idx: number) => (
-                <tr key={p.id} className="hover:bg-muted/20 border-b transition-colors">
+                <tr
+                  key={p.id}
+                  className={`hover:bg-muted/20 border-b transition-colors ${
+                    selectedIds.has(p.id) ? 'bg-primary/5' : ''
+                  }`}
+                  // Conveys selection to assistive technology, which a
+                  // background colour alone does not.
+                  aria-selected={selectedIds.has(p.id)}
+                >
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      className="border-input h-4 w-4 rounded"
+                      checked={selectedIds.has(p.id)}
+                      onChange={() => toggleSelection(p.id)}
+                      // Names the specific product, so a screen-reader user
+                      // knows which row each checkbox belongs to.
+                      aria-label={`Select ${p.name}`}
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     {((productsQuery.data?.number ?? 1) - 1) * size + idx + 1}
                   </td>
@@ -519,14 +633,14 @@ export default function SellerProductsPage() {
             </div>
             <div className="flex gap-2">
               <button
-                className="rounded border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1 text-xs text-slate-700 dark:text-slate-350 disabled:opacity-45 disabled:cursor-not-allowed"
+                className="rounded border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1 text-xs text-slate-700 dark:text-slate-300 disabled:opacity-45 disabled:cursor-not-allowed"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
                 Prev
               </button>
               <button
-                className="rounded border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1 text-xs text-slate-700 dark:text-slate-350 disabled:opacity-45 disabled:cursor-not-allowed"
+                className="rounded border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1 text-xs text-slate-700 dark:text-slate-300 disabled:opacity-45 disabled:cursor-not-allowed"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               >
@@ -537,28 +651,70 @@ export default function SellerProductsPage() {
 
         </div>
       )}
-      {confirmDeleteId !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-96 rounded bg-white p-6 shadow-lg">
-            <h3 className="mb-4 text-lg font-semibold">Confirm delete</h3>
-            <p className="mb-4">Are you sure you want to delete this product?</p>
-            <div className="flex justify-end gap-2">
-              <button className="rounded border px-3 py-1" onClick={() => setConfirmDeleteId(null)}>
-                Cancel
-              </button>
-              <button
-                className="rounded bg-red-600 px-3 py-1 text-white"
-                onClick={() => {
-                  if (confirmDeleteId !== null) deleteMut.mutate(confirmDeleteId);
-                  setConfirmDeleteId(null);
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/*
+        One confirmation dialog for both single and bulk delete.
+
+        Replaces a hand-rolled modal that hardcoded `bg-white` (so its text was
+        invisible in dark mode) and `bg-red-600` instead of the destructive
+        token, and which had no focus trap, no Escape handling and no
+        `role="dialog"` — a keyboard user could tab straight out of it into the
+        page behind. The design-system Dialog supplies all of that.
+      */}
+      <Dialog
+        open={confirmDeleteId !== null || confirmBulkDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmDeleteId(null);
+            setConfirmBulkDelete(false);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {confirmBulkDelete
+                ? `Delete ${selectedIds.size} product${selectedIds.size === 1 ? '' : 's'}?`
+                : 'Delete this product?'}
+            </DialogTitle>
+            <DialogDescription>
+              {confirmBulkDelete
+                ? 'These products will be removed from your storefront and can no longer be ordered. This cannot be undone.'
+                : 'This product will be removed from your storefront and can no longer be ordered. This cannot be undone.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setConfirmDeleteId(null);
+                setConfirmBulkDelete(false);
+              }}
+              disabled={deleteMut.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMut.isPending}
+              onClick={() => {
+                const ids = confirmBulkDelete
+                  ? Array.from(selectedIds)
+                  : confirmDeleteId !== null
+                    ? [confirmDeleteId]
+                    : [];
+
+                if (ids.length > 0) deleteMut.mutate(ids);
+
+                setConfirmDeleteId(null);
+                setConfirmBulkDelete(false);
+              }}
+            >
+              {deleteMut.isPending ? 'Deleting…' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

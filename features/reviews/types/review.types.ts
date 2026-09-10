@@ -29,14 +29,18 @@ export interface UpdateReviewDto {
   comment?: string;
 }
 
-export interface ReviewStats {
-  averageRating: number;
-  totalReviews: number;
-  ratingDistribution: {
-    1: number;
-    2: number;
-    3: number;
-    4: number;
-    5: number;
+/**
+ * A review as shown on the customer's own "My reviews" page.
+ *
+ * Carries a product summary because that page lists reviews *by* a user across
+ * many products, and would otherwise need an N+1 fetch to render each title
+ * and link.
+ */
+export interface MyReview extends Review {
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    imageUrl?: string;
   };
 }

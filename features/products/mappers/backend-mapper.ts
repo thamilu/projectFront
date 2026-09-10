@@ -4,39 +4,6 @@ import {
   type ProductFormData,
 } from '@/domains/catalog/contracts/product-form.schema';
 import type { BackendProductRequest, Category } from '@/shared/types/product';
-import { z } from 'zod';
-
-export const createProductRequestSchema = z.object({
-  name: z.string().min(3).max(200),
-  description: z.string().max(2000).optional(),
-  sku: z.string().regex(/^[A-Z0-9][A-Z0-9-]{1,48}[A-Z0-9]$/),
-  friendlyUrl: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/).optional(),
-  price: z.number().min(0.01),
-  discountPrice: z.number().min(0).optional(),
-  stockQuantity: z.number().int().min(0),
-  imageUrl: z.string().url().max(500).optional(),
-  categoryId: z.number().int().positive(),
-  brandId: z.number().int().optional(),
-  storeId: z.number().int().optional(),
-  tags: z.array(z.string()).optional(),
-  featured: z.boolean().optional(),
-});
-
-export class ProductPayloadValidationError extends Error {
-  constructor(public readonly issues: z.ZodIssue[]) {
-    super('Create product payload validation failed');
-    this.name = 'ProductPayloadValidationError';
-  }
-}
-
-export function validateCreateProductPayload(payload: unknown): BackendProductRequest {
-  const parsed = createProductRequestSchema.safeParse(payload);
-  if (!parsed.success) {
-    throw new ProductPayloadValidationError(parsed.error.issues);
-  }
-
-  return parsed.data as unknown as BackendProductRequest;
-}
 
 /**
  * Map form data to backend API request format
@@ -50,17 +17,18 @@ export function mapFormToBackendRequest(
   fourthLevelCategory: Category | undefined,
   brandName: string | undefined,
   shopId: number | undefined
-): Record<string, any> {
+): BackendProductRequest {
   const sellingPrice = Number(formData.sellingPrice) || 0;
-  const discountAmount = formData.discountType !== 'NONE'
-    ? Number(calculateFinalPrice(sellingPrice, formData.discountType, formData.discountValue))
-    : undefined;
+  const discountAmount =
+    formData.discountType !== 'NONE'
+      ? Number(calculateFinalPrice(sellingPrice, formData.discountType, formData.discountValue))
+      : undefined;
 
   // Use a strictly typed object to match ProductCreateRequest.java
   const payload: BackendProductRequest = {
     name: formData.name.trim(),
     description: formData.description?.trim() || undefined,
-    sku: formData.sku.trim().toUpperCase(),
+    sku: (formData.sku || '').trim().toUpperCase(),
     price: Number(sellingPrice.toFixed(2)),
     stockQuantity: Math.floor(Number(formData.stockQuantity) || 0),
     categoryId: Math.floor(Number(formData.categoryId)),
@@ -69,7 +37,6 @@ export function mapFormToBackendRequest(
 
   // Map category details for backend persistence/validation
   if (category) {
-    // @ts-ignore - mapping logic from the helper
     payload.categoryType = determineCategoryType(category.name);
   }
 
@@ -78,13 +45,8 @@ export function mapFormToBackendRequest(
   }
 
   // Map dynamic attributes
-  const dynamicAttributes = buildCategoryAttributes(
-    formData,
-    category?.name || '',
-    brandName
-  );
+  const dynamicAttributes = buildCategoryAttributes(formData, category?.name || '', brandName);
   if (Object.keys(dynamicAttributes).length > 0) {
-    // @ts-ignore - attributes is Map<String, String> on backend
     payload.attributes = dynamicAttributes;
   }
 
@@ -183,33 +145,4 @@ function buildCategoryAttributes(
   }
 
   return attributes;
-}
-
-/**
- * Extract tags from product name and description
- */
-export function extractTags(name: string, description: string, categoryName: string): string[] {
-  const text = `${name} ${description} ${categoryName}`.toLowerCase();
-
-  // Remove common words
-  const stopWords = new Set([
-    'the',
-    'and',
-    'for',
-    'with',
-    'from',
-    'this',
-    'that',
-    'are',
-    'was',
-    'were',
-  ]);
-
-  const words = text
-    .replace(/[^a-z0-9\s]/g, '')
-    .split(/\s+/)
-    .filter((word) => word.length > 3 && !stopWords.has(word));
-
-  // Return unique tags, limited to 10
-  return [...new Set(words)].slice(0, 10);
 }

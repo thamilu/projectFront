@@ -1,3 +1,19 @@
 node_modules
 .next/
 *.log
+
+# Testing
+coverage/
+test-results/
+playwright-report/
+
+# Personal scratch/debugging workspace — never meant to be committed
+scratch/
+
+# next-pwa build output — regenerated with a new content hash on every
+# production build; committing it just accumulates stale orphaned copies
+public/sw.js
+public/workbox-*.js
+public/fallback-*.js
+public/swe-worker-*.js
+public/worker-*.js

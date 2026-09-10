@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/shared/ui/atoms/button';
-import { useCartStore, selectCartItems, selectCartTotal } from '@/features/cart/store/cart-store';
+import { useCart } from '@/features/cart/hooks/use-cart';
 import { formatCurrency } from '@/shared/utils';
 import { ShoppingBag } from 'lucide-react';
 
@@ -12,8 +12,8 @@ import { ShoppingBag } from 'lucide-react';
  * Enterprise standard: Hover preview of cart contents
  */
 export default function CartPreview() {
-  const items = useCartStore(selectCartItems);
-  const total = useCartStore(selectCartTotal);
+  const { cart, total } = useCart();
+  const items = cart?.items ?? [];
 
   if (!items.length) {
     return (
@@ -28,7 +28,7 @@ export default function CartPreview() {
   }
 
   return (
-    <div className="w-95">
+    <div className="w-full max-w-[calc(100vw-2rem)] sm:w-95">
       {/* Cart Items */}
       <div className="max-h-100 overflow-y-auto">
         {items.slice(0, 3).map((item) => (

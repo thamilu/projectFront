@@ -1,9 +1,9 @@
 /**
  * Theme Provider
- * 
+ *
  * Wrapper around next-themes for dark mode support.
  * Provides theme switching with no flash on page load.
- * 
+ *
  * @module components/providers/theme-provider
  */
 
@@ -15,13 +15,13 @@ import type { ThemeProviderProps } from 'next-themes';
 
 /**
  * Theme Provider Component
- * 
+ *
  * Features:
  * - System theme detection
  * - Persistent theme preference
  * - No flash on page load
  * - Smooth transitions
- * 
+ *
  * @example
  * ```tsx
  * <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

@@ -1,9 +1,9 @@
 /**
  * Screen Reader Announcer
- * 
+ *
  * Provides live region announcements for screen readers (WCAG 4.1.3).
  * Supports polite and assertive announcements.
- * 
+ *
  * @module components/common/screen-reader-announcer
  */
 
@@ -18,22 +18,21 @@ interface Announcement {
 }
 
 // Global announcement callback
-let announceCallback: ((message: string, priority?: 'polite' | 'assertive') => void) | null =
-  null;
+let announceCallback: ((message: string, priority?: 'polite' | 'assertive') => void) | null = null;
 
 /**
  * Announce message to screen readers
- * 
+ *
  * @param message - Message to announce
  * @param priority - 'polite' (default) or 'assertive' for urgent messages
- * 
+ *
  * @example
  * ```tsx
  * import { announce } from '@/shared/ui/common/screen-reader-announcer';
- * 
+ *
  * // Polite announcement
  * announce('Item added to cart');
- * 
+ *
  * // Urgent announcement
  * announce('Error: Payment failed', 'assertive');
  * ```
@@ -44,10 +43,10 @@ export function announce(message: string, priority: 'polite' | 'assertive' = 'po
 
 /**
  * Screen Reader Announcer Component
- * 
+ *
  * Renders live regions for screen reader announcements.
  * Messages are automatically cleared after 1 second.
- * 
+ *
  * @example
  * ```tsx
  * // In root layout
@@ -80,12 +79,7 @@ export function ScreenReaderAnnouncer() {
   return (
     <>
       {/* Polite announcements - don't interrupt */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {announcements
           .filter((a) => a.priority === 'polite')
           .map((a) => (
@@ -94,12 +88,7 @@ export function ScreenReaderAnnouncer() {
       </div>
 
       {/* Assertive announcements - interrupt immediately */}
-      <div
-        role="alert"
-        aria-live="assertive"
-        aria-atomic="true"
-        className="sr-only"
-      >
+      <div role="alert" aria-live="assertive" aria-atomic="true" className="sr-only">
         {announcements
           .filter((a) => a.priority === 'assertive')
           .map((a) => (

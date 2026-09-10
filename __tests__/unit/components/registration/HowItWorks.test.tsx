@@ -12,10 +12,10 @@ jest.mock('@/core/i18n', () => ({
         'sellerOnboarding.howItWorks.subtitle': 'Start selling on our marketplace in three simple and secure steps.',
         'sellerOnboarding.howItWorks.step1.title': 'Register Profile',
         'sellerOnboarding.howItWorks.step1.desc': 'Enter your personal information, address, and store settings in our secure form.',
-        'sellerOnboarding.howItWorks.step2.title': 'Verification & Audit',
-        'sellerOnboarding.howItWorks.step2.desc': 'Our compliance team audits your KYC documents and tax details within 24 business hours.',
+        'sellerOnboarding.howItWorks.step2.title': 'Verification',
+        'sellerOnboarding.howItWorks.step2.desc': 'Our team securely reviews your KYC documents and tax details, typically within 24 business hours.',
         'sellerOnboarding.howItWorks.step3.title': 'Launch Store',
-        'sellerOnboarding.howItWorks.step3.desc': 'Set up your inventory catalog and instantly start selling to customers across the country.',
+        'sellerOnboarding.howItWorks.step3.desc': 'Set up your inventory catalog and start accepting orders once your store is approved.',
       };
       return translations[key] || key;
     },
@@ -65,11 +65,11 @@ describe('HowItWorks Component', () => {
     expect(screen.getByText('Register Profile')).toBeInTheDocument();
     expect(screen.getByText('Enter your personal information, address, and store settings in our secure form.')).toBeInTheDocument();
     
-    expect(screen.getByText('Verification & Audit')).toBeInTheDocument();
-    expect(screen.getByText('Our compliance team audits your KYC documents and tax details within 24 business hours.')).toBeInTheDocument();
-    
+    expect(screen.getByText('Verification')).toBeInTheDocument();
+    expect(screen.getByText('Our team securely reviews your KYC documents and tax details, typically within 24 business hours.')).toBeInTheDocument();
+
     expect(screen.getByText('Launch Store')).toBeInTheDocument();
-    expect(screen.getByText('Set up your inventory catalog and instantly start selling to customers across the country.')).toBeInTheDocument();
+    expect(screen.getByText('Set up your inventory catalog and start accepting orders once your store is approved.')).toBeInTheDocument();
   });
 
   it('does not contain false hover indicators to prevent confusing static card elements', () => {

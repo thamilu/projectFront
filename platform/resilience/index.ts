@@ -60,7 +60,7 @@ export async function retryWithBackoff<T>(
 
       // Calculate exponential delay: base * 2^(attempt - 1)
       const expDelay = Math.min(maxDelayMs, baseDelayMs * Math.pow(2, attempt - 1));
-      
+
       // Full Jitter formula: random between 0 and expDelay
       const delay = useJitter ? Math.random() * expDelay : expDelay;
 
@@ -76,7 +76,7 @@ export async function retryWithBackoff<T>(
 
 /**
  * Resilience Orchestrator
- * 
+ *
  * Combines Retry Governance with Circuit Breaker protection.
  * Runs retry backoffs inside the circuit boundaries, failing fast if the circuit trips.
  */

@@ -39,7 +39,7 @@ export const locationMapper = {
     stateCode: dto.stateCode ?? '',
     district: dto.district ?? '',
     taluk: dto.taluk ?? '',
-    localities: dto.localities.map(l => ({
+    localities: dto.localities.map((l) => ({
       locality: l.locality,
       postOffice: l.postOffice,
     })),

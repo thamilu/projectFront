@@ -1,41 +1,27 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { AlertCircle } from 'lucide-react';
 
-import { apiClient } from '@/core/client';
-import { API_ENDPOINTS } from '@/shared/constants/api/endpoints';
-import type { ApiResponse } from '@/shared/types/api';
-import type { PageResponse, StoreDTO } from '@/shared/types';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
+import { publicStoreApi } from '@/domains/seller/infrastructure/api/public-store-api';
+import type { StoreDTO } from '@/shared/types';
+import { APP_ROUTES } from '@/shared/routes';
 import {
   getStoreDisplayName,
   getStoreInitials,
   getStoreAvatarColor,
 } from '@/shared/store/store-helpers';
 import { siteConfig } from '@/core/config/site';
+import { logger } from '@/core/telemetry/logger';
 
 export const metadata: Metadata = {
-  title: `Stores | ${siteConfig.name}`,
+  // Title only — the surrounding layout's `title.template` appends the
+  // site/section suffix. Hardcoding it here produced a doubled tab title
+  // ("Products | eShop | eShop") and a doubled og:title.
+  title: 'Stores',
   description:
     'Browse trusted sellers on our marketplace and shop directly from their storefronts.',
 };
-
-interface StoresApiResponse extends ApiResponse<PageResponse<StoreDTO>> {}
-
-async function loadStores(): Promise<StoreDTO[]> {
-  try {
-    const { data: response } = await apiClient.get<StoresApiResponse>(
-      `${API_ENDPOINTS.STORES.LIST}?page=0&size=24`
-    );
-    return response?.data?.content ?? [];
-  } catch (error) {
-    const err = error as { statusCode?: number };
-    if (err?.statusCode === 404) {
-      return [];
-    }
-    throw error;
-  }
-}
 
 function StoreGridCard({ store }: { store: StoreDTO }) {
   const name = getStoreDisplayName(store);
@@ -82,7 +68,22 @@ function StoreGridCard({ store }: { store: StoreDTO }) {
 }
 
 export default async function StoresPage() {
-  const stores = await loadStores();
+  // Distinguish "fetch succeeded, zero stores" from "fetch failed" — these
+  // must never render the same UI, or a real outage looks identical to an
+  // empty marketplace with no way for the user (or telemetry) to tell.
+  let stores: StoreDTO[] = [];
+  let loadFailed = false;
+
+  try {
+    const response = await publicStoreApi.list(0, 24);
+    stores = response.content;
+  } catch (error) {
+    logger.error('[StoresPage] Failed to load stores', {
+      component: 'app/(public)/stores',
+      error: error instanceof Error ? error.message : String(error),
+    });
+    loadFailed = true;
+  }
 
   return (
     <div className="container mx-auto px-4 py-10 lg:px-8">
@@ -96,7 +97,24 @@ export default async function StoresPage() {
         </p>
       </header>
 
-      {stores.length === 0 ? (
+      {loadFailed ? (
+        <div
+          className="border-destructive/20 bg-destructive/5 mx-auto max-w-md rounded-3xl border p-10 text-center shadow-sm"
+          role="alert"
+        >
+          <AlertCircle className="text-destructive mx-auto mb-4 h-10 w-10" aria-hidden="true" />
+          <p className="text-foreground text-lg font-semibold">Couldn&apos;t load stores</p>
+          <p className="text-muted-foreground mt-2 text-sm">
+            Something went wrong on our end. Please try again in a moment.
+          </p>
+          <a
+            href={APP_ROUTES.STORES.LIST}
+            className="text-primary mt-4 inline-block text-sm font-medium underline-offset-4 hover:underline"
+          >
+            Reload page
+          </a>
+        </div>
+      ) : stores.length === 0 ? (
         <div className="bg-card/60 rounded-3xl border p-10 text-center shadow-sm">
           <p className="text-foreground text-lg font-semibold">No stores available yet</p>
           <p className="text-muted-foreground mt-2 text-sm">

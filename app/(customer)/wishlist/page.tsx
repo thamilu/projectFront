@@ -1,214 +1,267 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { logger } from '@/core/telemetry/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/atoms/card';
 import { Button } from '@/shared/ui/atoms/button';
 import { Input } from '@/shared/ui/atoms/input';
 import { Badge } from '@/shared/ui/atoms/badge';
-import { 
-  Heart, 
-  ShoppingCart, 
-  Search, 
-  Filter, 
-  Share2, 
+import { CheckboxField } from '@/shared/ui/atoms/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/atoms/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/atoms/select';
+import { ConfirmDialog } from '@/shared/ui/molecules/ConfirmDialog';
+import { useWishlist } from '@/features/wishlist/hooks/use-wishlist';
+import { useCart } from '@/features/cart/hooks/use-cart';
+import { shareUrl } from '@/shared/utils/share';
+import { APP_ROUTES } from '@/shared/routes';
+import { toast } from 'sonner';
+import {
+  Heart,
+  ShoppingCart,
+  Search,
+  Filter,
+  Share2,
   Trash2,
-  Star,
-  TrendingUp,
   Bell,
   Grid,
   List,
-  Plus,
-  MoreVertical
+  Loader2,
 } from 'lucide-react';
 
-// Mock wishlist data
-const mockWishlists = [
-  {
-    id: 1,
-    name: 'Electronics Wishlist',
-    items: [
-      {
-        id: 1,
-        name: 'Wireless Headphones Pro',
-        price: 299.99,
-        originalPrice: 349.99,
-        discount: 14,
-        rating: 4.8,
-        reviews: 2341,
-        inStock: true,
-        priceDropAlert: true,
-        image: '/placeholder-1.jpg',
-        category: 'Electronics'
-      },
-      {
-        id: 2,
-        name: 'Smart Watch Series 7',
-        price: 399.99,
-        originalPrice: 399.99,
-        discount: 0,
-        rating: 4.9,
-        reviews: 1876,
-        inStock: false,
-        priceDropAlert: false,
-        image: '/placeholder-2.jpg',
-        category: 'Electronics'
-      }
-    ],
-    isPublic: false,
-    createdAt: '2024-11-15'
-  },
-  {
-    id: 2,
-    name: 'Home & Garden',
-    items: [
-      {
-        id: 3,
-        name: 'Smart Garden System',
-        price: 149.99,
-        originalPrice: 179.99,
-        discount: 17,
-        rating: 4.6,
-        reviews: 543,
-        inStock: true,
-        priceDropAlert: true,
-        image: '/placeholder-3.jpg',
-        category: 'Home'
-      }
-    ],
-    isPublic: true,
-    createdAt: '2024-10-20'
-  }
-];
+interface LocalWishlistItem {
+  id: number;
+  wishlistItemId: number;
+  name: string;
+  price: number;
+  originalPrice: number;
+  discount: number;
+  inStock: boolean;
+  image: string;
+  category: string;
+  urlSlug: string;
+}
+
+const ALL_CATEGORIES = 'all';
 
 export default function WishlistPage() {
-  const [wishlists, setWishlists] = useState(mockWishlists);
-  const [selectedWishlist, setSelectedWishlist] = useState(1);
+  const {
+    wishlist,
+    isLoading,
+    removeFromWishlist: triggerRemove,
+    removeFromWishlistAsync,
+  } = useWishlist();
+  const { addToCart, addToCartAsync } = useCart();
+
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newWishlistName, setNewWishlistName] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>(ALL_CATEGORIES);
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [isBulkMoving, setIsBulkMoving] = useState(false);
+  const [isBulkClearing, setIsBulkClearing] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  const currentWishlist = wishlists.find(w => w.id === selectedWishlist);
-  const filteredItems = currentWishlist?.items.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const items: LocalWishlistItem[] = useMemo(
+    () =>
+      wishlist?.data?.content?.map((item) => {
+        const product = item.product;
+        // Regression fix: price/originalPrice were previously swapped — the
+        // bold "current price" showed the pre-discount price and the
+        // strikethrough showed the actual (lower) sale price, exactly
+        // backwards from what "20% OFF, was $X, now $Y" is supposed to mean.
+        const currentPrice = product?.discountPrice ?? product?.price ?? 0;
+        const wasPrice = product?.price ?? 0;
+        const discount =
+          product?.discountPrice && product.price > 0
+            ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
+            : 0;
+        return {
+          id: Number(item.productId),
+          wishlistItemId: item.id,
+          name: product?.name || 'Unknown Product',
+          price: currentPrice,
+          originalPrice: wasPrice,
+          discount,
+          // ProductDTO has no `inStock` field — stockQuantity is the real
+          // source of truth. The previous `item.product?.inStock ?? true`
+          // read a field that doesn't exist on the type, so it was always
+          // `undefined ?? true` — every item showed as in-stock regardless
+          // of actual inventory.
+          inStock: (product?.stockQuantity ?? 0) > 0,
+          image: product?.imageUrl || '/placeholder-1.jpg',
+          category: product?.categoryName || 'General',
+          urlSlug: (product as { urlSlug?: string } | undefined)?.urlSlug || String(item.productId),
+        };
+      }) ?? [],
+    [wishlist]
+  );
 
-  const totalItems = wishlists.reduce((sum, wishlist) => sum + wishlist.items.length, 0);
-  const priceDropItems = wishlists.flatMap(w => w.items).filter(item => item.priceDropAlert).length;
+  const categories = useMemo(
+    () => Array.from(new Set(items.map((item) => item.category))).sort(),
+    [items]
+  );
+
+  const filteredItems = useMemo(
+    () =>
+      items.filter((item) => {
+        const matchesSearch =
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.category.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = filterCategory === ALL_CATEGORIES || item.category === filterCategory;
+        const matchesStock = !inStockOnly || item.inStock;
+        return matchesSearch && matchesCategory && matchesStock;
+      }),
+    [items, searchQuery, filterCategory, inStockOnly]
+  );
+
+  const activeFilterCount = (filterCategory !== ALL_CATEGORIES ? 1 : 0) + (inStockOnly ? 1 : 0);
+
+  const totalItems = items.length;
+  const avgPrice =
+    // Regression fix: previously divided by items.length unconditionally —
+    // an empty wishlist (items.length === 0) produced 0/0 = NaN, displaying
+    // "$NaN".
+    items.length > 0 ? items.reduce((sum, item) => sum + item.price, 0) / items.length : 0;
+  const potentialSavings = items.reduce(
+    (sum, item) => sum + (item.originalPrice - item.price),
+    0
+  );
 
   const moveToCart = (itemId: number) => {
     logger.info('Moving item to cart', { itemId });
-    // Implementation for moving to cart
+    addToCart(
+      { productId: itemId, quantity: 1 },
+      {
+        onSuccess: () => {
+          toast.success('Product moved to cart successfully!');
+          triggerRemove(itemId);
+        },
+        onError: (err: unknown) => {
+          toast.error(err instanceof Error ? err.message : 'Failed to add product to cart.');
+        },
+      }
+    );
   };
 
   const removeFromWishlist = (itemId: number) => {
-    setWishlists(prev => prev.map(wishlist => 
-      wishlist.id === selectedWishlist 
-        ? { ...wishlist, items: wishlist.items.filter(item => item.id !== itemId) }
-        : wishlist
-    ));
+    triggerRemove(itemId, {
+      onSuccess: () => {
+        toast.success('Product removed from wishlist.');
+      },
+      onError: (err: unknown) => {
+        toast.error(err instanceof Error ? err.message : 'Failed to remove product.');
+      },
+    });
   };
 
-  const createWishlist = () => {
-    if (newWishlistName.trim()) {
-      const newWishlist = {
-        id: Date.now(),
-        name: newWishlistName,
-        items: [],
-        isPublic: false,
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      setWishlists(prev => [...prev, newWishlist]);
-      setNewWishlistName('');
-      setShowCreateModal(false);
-      setSelectedWishlist(newWishlist.id);
+  const shareProduct = async (item: LocalWishlistItem) => {
+    const url =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}${APP_ROUTES.PRODUCT_DETAIL(item.urlSlug)}`
+        : APP_ROUTES.PRODUCT_DETAIL(item.urlSlug);
+    const result = await shareUrl(item.name, url);
+    if (result === 'copied') toast.success('Product link copied to clipboard');
+    if (result === 'failed') toast.error('Unable to share this product');
+  };
+
+  // There is no backend endpoint for a public/shareable wishlist view (only
+  // the owner can ever fetch their own wishlist) — sharing the current
+  // page's URL would be useless to a recipient with no access, and a
+  // previous version of this page copied a link to a /wishlist/shared/[id]
+  // route that doesn't exist and would 404. Honest "not built yet" instead
+  // of a broken or meaningless link.
+  const shareWishlist = () => {
+    toast.info('Wishlist sharing is coming soon!');
+  };
+
+  const notifyWhenAvailable = (itemName: string) => {
+    toast.info(`We'll notify you when "${itemName}" is back in stock — this feature is coming soon.`);
+  };
+
+  const bulkMoveToCart = async () => {
+    const inStockItems = filteredItems.filter((item) => item.inStock);
+    if (inStockItems.length === 0) {
+      toast.info('No in-stock items to move.');
+      return;
+    }
+
+    setIsBulkMoving(true);
+    const results = await Promise.allSettled(
+      inStockItems.map((item) =>
+        addToCartAsync({ productId: item.id, quantity: 1, silent: true }).then(() => item)
+      )
+    );
+
+    const moved = results.filter(
+      (r): r is PromiseFulfilledResult<LocalWishlistItem> => r.status === 'fulfilled'
+    );
+    const failedCount = results.length - moved.length;
+
+    await Promise.allSettled(moved.map((r) => removeFromWishlistAsync(r.value.id)));
+
+    setIsBulkMoving(false);
+
+    if (moved.length > 0) {
+      toast.success(
+        `Moved ${moved.length} item${moved.length === 1 ? '' : 's'} to your cart` +
+          (failedCount > 0 ? ` — ${failedCount} failed.` : '.')
+      );
+    } else {
+      toast.error('Failed to move items to cart.');
     }
   };
 
-  const shareWishlist = (wishlistId: number) => {
-    const wishlist = wishlists.find(w => w.id === wishlistId);
-    if (wishlist) {
-      const shareUrl = `${window.location.origin}/wishlist/shared/${wishlistId}`;
-      navigator.clipboard.writeText(shareUrl);
-      // Show toast notification
-      logger.info('Wishlist shared', { shareUrl });
+  const confirmClearWishlist = async () => {
+    setIsBulkClearing(true);
+    const results = await Promise.allSettled(
+      filteredItems.map((item) => removeFromWishlistAsync(item.id))
+    );
+    const clearedCount = results.filter((r) => r.status === 'fulfilled').length;
+    const failedCount = results.length - clearedCount;
+
+    setIsBulkClearing(false);
+    setShowClearConfirm(false);
+
+    if (clearedCount > 0) {
+      toast.success(
+        `Removed ${clearedCount} item${clearedCount === 1 ? '' : 's'} from your wishlist` +
+          (failedCount > 0 ? ` — ${failedCount} failed.` : '.')
+      );
+    } else {
+      toast.error('Failed to clear wishlist.');
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <div className="container mx-auto px-4 py-8">
         {/* Header Section */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Heart className="h-6 w-6 text-red-500" />
-            <h1 className="text-3xl font-bold">My Wishlists</h1>
+            <h1 className="text-3xl font-bold">My Wishlist</h1>
             <Badge variant="secondary">{totalItems} items</Badge>
-            {priceDropItems > 0 && (
-              <Badge className="bg-green-100 text-green-800 border-green-200">
-                <TrendingUp className="w-3 h-3 mr-1" />
-                {priceDropItems} price drops
-              </Badge>
-            )}
           </div>
-          
-          <Button onClick={() => setShowCreateModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Wishlist
-          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          
-          {/* Wishlist Sidebar */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+          {/* Analytics Sidebar */}
           <div className="lg:col-span-1">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Your Wishlists</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="space-y-1">
-                  {wishlists.map((wishlist) => (
-                    <div
-                      key={wishlist.id}
-                      className={`p-3 cursor-pointer transition-colors hover:bg-muted/50 ${
-                        selectedWishlist === wishlist.id ? 'bg-muted' : ''
-                      }`}
-                      onClick={() => setSelectedWishlist(wishlist.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">{wishlist.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {wishlist.items.length} items
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {wishlist.isPublic && (
-                            <Share2 className="w-4 h-4 text-blue-500" />
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              shareWishlist(wishlist.id);
-                            }}
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Wishlist Analytics */}
-            <Card className="mt-4">
               <CardHeader>
                 <CardTitle className="text-lg">Analytics</CardTitle>
               </CardHeader>
@@ -218,25 +271,13 @@ export default function WishlistPage() {
                   <Badge variant="outline">{totalItems}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Price Drops</span>
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
-                    {priceDropItems}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
                   <span className="text-sm">Avg. Price</span>
-                  <span className="font-medium">
-                    ${currentWishlist ? 
-                      (currentWishlist.items.reduce((sum, item) => sum + item.price, 0) / currentWishlist.items.length).toFixed(2) 
-                      : '0.00'}
-                  </span>
+                  <span className="font-medium">${avgPrice.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Potential Savings</span>
                   <span className="font-medium text-green-600">
-                    ${currentWishlist ? 
-                      currentWishlist.items.reduce((sum, item) => sum + (item.originalPrice - item.price), 0).toFixed(2) 
-                      : '0.00'}
+                    ${potentialSavings.toFixed(2)}
                   </span>
                 </div>
               </CardContent>
@@ -245,184 +286,251 @@ export default function WishlistPage() {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            {currentWishlist && (
-              <>
-                {/* Filters and Controls */}
-                <Card className="mb-6">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="relative flex-1 max-w-md">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                          <Input
-                            placeholder="Search items..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10"
-                          />
-                        </div>
-                        <Button variant="outline" size="sm">
-                          <Filter className="w-4 h-4 mr-2" />
-                          Filter
-                        </Button>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant={viewMode === 'grid' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setViewMode('grid')}
-                        >
-                          <Grid className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant={viewMode === 'list' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setViewMode('list')}
-                        >
-                          <List className="w-4 h-4" />
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => shareWishlist(currentWishlist.id)}
-                        >
-                          <Share2 className="w-4 h-4 mr-2" />
-                          Share
-                        </Button>
-                      </div>
+            {/* Filters and Controls */}
+            <Card className="mb-6">
+              <CardContent className="p-6">
+                <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+                  <div className="flex flex-1 items-center gap-4">
+                    <div className="relative max-w-md flex-1">
+                      <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
+                      <Input
+                        placeholder="Search items..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
-                  </CardContent>
-                </Card>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="relative">
+                          <Filter className="mr-2 h-4 w-4" />
+                          Filter
+                          {activeFilterCount > 0 && (
+                            <Badge
+                              variant="default"
+                              className="ml-2 h-5 min-w-5 rounded-full px-1 text-[10px]"
+                            >
+                              {activeFilterCount}
+                            </Badge>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="text-sm font-medium" htmlFor="wishlist-category-filter">
+                            Category
+                          </label>
+                          <Select value={filterCategory} onValueChange={setFilterCategory}>
+                            <SelectTrigger id="wishlist-category-filter">
+                              <SelectValue placeholder="All Categories" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={ALL_CATEGORIES}>All Categories</SelectItem>
+                              {categories.map((category) => (
+                                <SelectItem key={category} value={category}>
+                                  {category}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                {/* Items Grid/List */}
-                {filteredItems.length === 0 ? (
-                  <Card>
-                    <CardContent className="p-12 text-center">
-                      <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                      <h2 className="text-xl font-semibold mb-2">
-                        {searchQuery ? 'No items found' : 'Your wishlist is empty'}
-                      </h2>
-                      <p className="text-muted-foreground mb-6">
-                        {searchQuery 
-                          ? 'Try adjusting your search terms.'
-                          : 'Start adding items you love to your wishlist.'}
-                      </p>
-                      {!searchQuery && (
-                        <Button>Browse Products</Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className={`grid gap-6 ${
-                    viewMode === 'grid' 
-                      ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' 
-                      : 'grid-cols-1'
-                  }`}>
-                    {filteredItems.map((item) => (
-                      <Card key={item.id} className="group hover:shadow-lg transition-all">
-                        <CardContent className="p-0">
-                          <div className="relative">
-                            {/* Product Image */}
-                            <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 relative">
-                              {item.priceDropAlert && (
-                                <Badge className="absolute top-3 left-3 bg-red-100 text-red-800 border-red-200">
-                                  <Bell className="w-3 h-3 mr-1" />
-                                  Price Drop!
+                        <CheckboxField
+                          label="In stock only"
+                          checked={inStockOnly}
+                          onCheckedChange={(checked) => setInStockOnly(checked === true)}
+                        />
+
+                        {activeFilterCount > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => {
+                              setFilterCategory(ALL_CATEGORIES);
+                              setInStockOnly(false);
+                            }}
+                          >
+                            Clear filters
+                          </Button>
+                        )}
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={viewMode === 'grid' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('grid')}
+                      aria-label="Grid view"
+                      aria-pressed={viewMode === 'grid'}
+                    >
+                      <Grid className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      aria-label="List view"
+                      aria-pressed={viewMode === 'list'}
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+
+                    <Button variant="outline" size="sm" onClick={shareWishlist}>
+                      <Share2 className="mr-2 h-4 w-4" />
+                      Share
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Items Grid/List */}
+            {filteredItems.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Heart className="text-muted-foreground mx-auto mb-4 h-16 w-16" />
+                  <h2 className="mb-2 text-xl font-semibold">
+                    {searchQuery || activeFilterCount > 0 ? 'No items found' : 'Your wishlist is empty'}
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    {searchQuery || activeFilterCount > 0
+                      ? 'Try adjusting your search or filters.'
+                      : 'Start adding items you love to your wishlist.'}
+                  </p>
+                  {!searchQuery && activeFilterCount === 0 && (
+                    <Button asChild>
+                      <Link href="/products">Browse Products</Link>
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <div
+                className={`grid gap-6 ${
+                  viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'
+                }`}
+              >
+                {filteredItems.map((item) => (
+                  <Card key={item.id} className="group transition-all hover:shadow-lg">
+                    <CardContent className="p-0">
+                      <div className="relative">
+                        {/* Product Image */}
+                        <div className="relative aspect-square bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                          {item.image && (
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label={`Remove ${item.name} from wishlist`}
+                            className="absolute top-3 right-3 text-red-500 hover:text-red-600 bg-white/80 backdrop-blur-sm rounded-full p-1.5 h-auto"
+                            onClick={() => removeFromWishlist(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        {/* Product Info */}
+                        <div className="p-4">
+                          <div className="mb-2">
+                            <h3 className="line-clamp-2 text-lg font-semibold">{item.name}</h3>
+                            <div className="mt-1 flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                {item.category}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="mb-3 flex items-center gap-2">
+                            <span className="text-2xl font-bold">${item.price.toFixed(2)}</span>
+                            {item.discount > 0 && (
+                              <>
+                                <span className="text-muted-foreground text-sm line-through">
+                                  ${item.originalPrice.toFixed(2)}
+                                </span>
+                                <Badge className="border-green-200 bg-green-100 text-green-800">
+                                  {item.discount}% OFF
                                 </Badge>
-                              )}
+                              </>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              className="flex-1"
+                              onClick={() => moveToCart(item.id)}
+                              disabled={!item.inStock}
+                            >
+                              <ShoppingCart className="mr-2 h-4 w-4" />
+                              {item.inStock ? 'Add to Cart' : 'Out of Stock'}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              aria-label={`Share ${item.name}`}
+                              onClick={() => shareProduct(item)}
+                            >
+                              <Share2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          {!item.inStock && (
+                            <div className="mt-2 text-center">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="absolute top-3 right-3 text-red-500 hover:text-red-600"
-                                onClick={() => removeFromWishlist(item.id)}
+                                className="text-blue-600"
+                                onClick={() => notifyWhenAvailable(item.name)}
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Bell className="mr-1 h-4 w-4" />
+                                Notify when available
                               </Button>
                             </div>
-                            
-                            {/* Product Info */}
-                            <div className="p-4">
-                              <div className="mb-2">
-                                <h3 className="font-semibold text-lg line-clamp-2">{item.name}</h3>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <div className="flex items-center">
-                                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                                    <span className="ml-1 text-sm text-muted-foreground">
-                                      {item.rating} ({item.reviews})
-                                    </span>
-                                  </div>
-                                  <Badge variant="outline" className="text-xs">
-                                    {item.category}
-                                  </Badge>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center gap-2 mb-3">
-                                <span className="text-2xl font-bold">${item.price.toFixed(2)}</span>
-                                {item.discount > 0 && (
-                                  <>
-                                    <span className="text-sm text-muted-foreground line-through">
-                                      ${item.originalPrice.toFixed(2)}
-                                    </span>
-                                    <Badge className="bg-green-100 text-green-800 border-green-200">
-                                      {item.discount}% OFF
-                                    </Badge>
-                                  </>
-                                )}
-                              </div>
-                              
-                              <div className="flex gap-2">
-                                <Button 
-                                  className="flex-1" 
-                                  onClick={() => moveToCart(item.id)}
-                                  disabled={!item.inStock}
-                                >
-                                  <ShoppingCart className="w-4 h-4 mr-2" />
-                                  {item.inStock ? 'Add to Cart' : 'Out of Stock'}
-                                </Button>
-                                <Button variant="outline" size="icon" aria-label="Share product">
-                                  <Share2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                              
-                              {!item.inStock && (
-                                <div className="mt-2 text-center">
-                                  <Button variant="ghost" size="sm" className="text-blue-600">
-                                    <Bell className="w-4 h-4 mr-1" />
-                                    Notify when available
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </div>
         </div>
 
         {/* Bulk Actions */}
-        {currentWishlist && currentWishlist.items.length > 0 && (
+        {filteredItems.length > 0 && (
           <Card className="mt-6">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
-                  {filteredItems.length} items selected
+                <span className="text-muted-foreground text-sm">
+                  {filteredItems.length} item{filteredItems.length === 1 ? '' : 's'} shown
                 </span>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={bulkMoveToCart}
+                    disabled={isBulkMoving || !filteredItems.some((item) => item.inStock)}
+                  >
+                    {isBulkMoving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                     Move All to Cart
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={shareWishlist}>
                     Share Wishlist
                   </Button>
-                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => setShowClearConfirm(true)}
+                  >
                     Clear Wishlist
                   </Button>
                 </div>
@@ -432,37 +540,20 @@ export default function WishlistPage() {
         )}
       </div>
 
-      {/* Create Wishlist Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>Create New Wishlist</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Input
-                placeholder="Enter wishlist name..."
-                value={newWishlistName}
-                onChange={(e) => setNewWishlistName(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && createWishlist()}
-                className="mb-4"
-              />
-              <div className="flex gap-2">
-                <Button onClick={createWishlist} className="flex-1">
-                  Create
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <ConfirmDialog
+        open={showClearConfirm}
+        onOpenChange={setShowClearConfirm}
+        title="Clear wishlist?"
+        description={
+          filteredItems.length === items.length
+            ? `This removes all ${items.length} item${items.length === 1 ? '' : 's'} from your wishlist. This cannot be undone.`
+            : `This removes the ${filteredItems.length} item${filteredItems.length === 1 ? '' : 's'} currently shown (matching your search/filters) from your wishlist. This cannot be undone.`
+        }
+        confirmLabel="Clear Wishlist"
+        destructive
+        isLoading={isBulkClearing}
+        onConfirm={confirmClearWishlist}
+      />
     </div>
   );
 }

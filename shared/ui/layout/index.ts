@@ -4,6 +4,10 @@
  */
 
 export { default as Header } from './header';
-export { default as Sidebar } from './sidebar';
-// export { default as Footer } from './footer';
+export { SiteFooter } from './site-footer';
 export * from './skip-to-content';
+export * from './page-container';
+export * from './page-view-tracker';
+export * from './NoScriptFallback';
+export * from './DomainHints';
+export * from './header-boundary';

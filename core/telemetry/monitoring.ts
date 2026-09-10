@@ -12,6 +12,7 @@
  */
 
 import { logger } from '@/core/telemetry/logger';
+import * as Sentry from '@sentry/nextjs';
 
 // ============================================================================
 // Types
@@ -448,3 +449,53 @@ export function reportAllPerformanceData(): void {
 // ============================================================================
 
 export type { PerformanceMetric, ComponentRenderMetric, ApiCallMetric };
+
+/**
+ * Enterprise Performance and Error Monitoring Wrapper
+ *
+ * Wraps any asynchronous action to automatically record metrics,
+ * send errors to Sentry, and generate structured logger records.
+ *
+ * Safe for both Client and Server Component execution contexts.
+ */
+export async function monitoredAction<T>(actionName: string, action: () => Promise<T>): Promise<T> {
+  const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+
+  try {
+    const result = await action();
+    const durationMs =
+      (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startTime;
+
+    // Log success with structured performance metrics
+    logger.info(`Action success: ${actionName}`, {
+      action: actionName,
+      durationMs,
+    });
+
+    return result;
+  } catch (error) {
+    const durationMs =
+      (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startTime;
+    const err = error instanceof Error ? error : new Error(String(error));
+
+    // Capture to Sentry
+    Sentry.captureException(err, {
+      tags: { action: actionName },
+      contexts: {
+        performance: {
+          durationMs,
+        },
+      },
+    });
+
+    // Log structured failure
+    logger.error(`Action failure: ${actionName}`, {
+      action: actionName,
+      durationMs,
+      error: err.message,
+      stack: err.stack,
+    });
+
+    throw error;
+  }
+}

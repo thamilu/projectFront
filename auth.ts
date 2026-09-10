@@ -1,94 +1,57 @@
-import NextAuth from 'next-auth'
-import Keycloak from 'next-auth/providers/keycloak'
-import { env } from '@/env'
+/**
+ * Auth barrel re-export.
+ *
+ * `@/auth` is the permanent, canonical public entry point for the NextAuth
+ * config — not a temporary migration shim. The NextAuth configuration has
+ * been decomposed into focused modules under `lib/auth/` for maintainability,
+ * but those modules are an internal implementation detail: nothing outside
+ * this barrel should import `@/lib/auth/*` directly (enforced by the
+ * no-restricted-imports pattern in eslint.config.js). Keeping every consumer
+ * on one stable import path means lib/auth/'s internal structure can keep
+ * changing without ever being a breaking change for the rest of the app.
+ *
+ * Exceptions: lib/auth/constants.ts (NEXT_AUTH_ERROR_MESSAGES,
+ * DEFAULT_AUTH_ERROR_MESSAGE, NextAuthErrorCode) and lib/auth/types.ts
+ * (AuthErrorCode and friends) are deliberately NOT required to route through
+ * here — see the no-restricted-imports pattern in eslint.config.js. Both
+ * have zero next-auth/jose runtime dependencies, but this barrel's very
+ * first export line pulls in the real NextAuth() initialization from
+ * lib/auth/index.ts, which (a) ships pure ESM Jest's default transform
+ * cannot parse — routing the login page's error-message catalog through
+ * @/auth previously broke every test that transitively imported it (5
+ * suites) — and (b) throws at runtime in any browser context (see the
+ * server guard in lib/auth/index.ts), which matters specifically for
+ * AuthErrorCode: it's a real value (not just a type) that client components
+ * legitimately need for comparisons (e.g. `session.error ===
+ * AuthErrorCode.REFRESH_TOKEN_ERROR`). This barrel still re-exports
+ * AuthErrorCode below for server-side convenience, but any 'use client'
+ * file MUST import it from '@/lib/auth/types' directly instead — importing
+ * it from here in client code will crash in the browser.
+ *
+ * @see lib/auth/index.ts    — NextAuth config, callbacks, events
+ * @see lib/auth/types.ts    — Type contracts, module augmentations — import directly from client code, see exception above
+ * @see lib/auth/config.ts   — Configuration constants
+ * @see lib/auth/utils.ts    — Utility functions
+ * @see lib/auth/token-refresh.ts — Token refresh with retry + lock
+ * @see lib/auth/backend-role.ts  — Backend role fetching
+ * @see lib/auth/constants.ts     — User-facing error message catalog (/login page) — import directly, see exception above
+ */
+import { cache } from 'react';
+import { handlers, signIn, signOut, auth as authUncached } from '@/lib/auth';
+
+export { handlers, signIn, signOut };
+export { AuthErrorCode } from '@/lib/auth/types';
+export type { ExtendedJWT } from '@/lib/auth/types';
 
 /**
- * Standard Keycloak Token Refresh flow [HARDEN]
- * Renews the access token in the background using the Keycloak refresh token.
+ * React `cache()`-memoized per-request. Neither next-auth 5.0.0-beta.31 nor
+ * this app's own lib/auth/ wrapper deduplicates auth() internally (verified
+ * directly against the installed package — no `cache(` call anywhere in its
+ * core files), so any Server Component route calling auth() more than once
+ * per request (e.g. both generateMetadata() and the page body, a real,
+ * common pattern in this app) would otherwise re-validate the session's JWT
+ * signature from scratch on every call. cache() scopes the memoization to a
+ * single request's render pass — it does not persist across requests or
+ * users, so this cannot leak one user's session into another's response.
  */
-async function refreshAccessToken(token: any) {
-  try {
-    const url = `${env.KEYCLOAK_ISSUER}/protocol/openid-connect/token`
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: env.KEYCLOAK_CLIENT_ID,
-        client_secret: env.KEYCLOAK_CLIENT_SECRET,
-        grant_type: 'refresh_token',
-        refresh_token: token.refreshToken,
-      }),
-    })
-
-    const refreshedTokens = await response.json()
-
-    if (!response.ok) {
-      throw refreshedTokens
-    }
-
-    return {
-      ...token,
-      accessToken: refreshedTokens.access_token,
-      expiresAt: Math.floor(Date.now() / 1000) + refreshedTokens.expires_in,
-      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fallback to old refresh token if a new one isn't returned
-    }
-  } catch (error) {
-    console.error('Error refreshing access token from Keycloak:', error)
-    return {
-      ...token,
-      error: 'RefreshAccessTokenError',
-    }
-  }
-}
-
-export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [
-    Keycloak({
-      clientId: env.KEYCLOAK_CLIENT_ID,
-      clientSecret: env.KEYCLOAK_CLIENT_SECRET,
-      issuer: env.KEYCLOAK_ISSUER,
-    })
-  ],
-  callbacks: {
-    async jwt({ token, account }) {
-      // First-time sign-in initialization
-      if (account) {
-        token.accessToken = account.access_token
-        token.refreshToken = account.refresh_token
-        token.idToken = account.id_token
-        token.expiresAt = account.expires_at
-        return token
-      }
-
-      // Return the cached token if it has not expired yet
-      if (token.expiresAt && Date.now() < (token.expiresAt as number) * 1000) {
-        return token
-      }
-
-      // If token is expired or close to expiration, request a refreshed token
-      return refreshAccessToken(token)
-    },
-    async session({ session, token }) {
-      // Expose accessToken and any refresh errors to the client-side session context
-      session.accessToken = token.accessToken as string
-      session.error = token.error as string | undefined
-      return session
-    }
-  },
-  pages: {
-    signIn: '/login',
-    error: '/auth/error',
-  },
-  trustHost: true,
-})
-
-// Extend session type for TypeScript
-declare module 'next-auth' {
-  interface Session {
-    accessToken?: string
-    error?: string
-  }
-}
+export const auth = cache(authUncached);

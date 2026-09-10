@@ -3,6 +3,7 @@
 This guide documents the enterprise Service Worker implementation for offline resilience, background synchronization, and push notifications.
 
 ## 🏗️ Architecture
+
 The service worker is authored in TypeScript to ensure type safety for IndexedDB operations and push events.
 
 - **Source**: `sw/service-worker.ts`
@@ -10,6 +11,7 @@ The service worker is authored in TypeScript to ensure type safety for IndexedDB
 - **Output**: `public/service-worker.js` (Compiled artifact, Gitignored)
 
 ## 🛠️ Build Workflow
+
 **DO NOT edit `/public/service-worker.js` directly!** Changes must be made in the TypeScript source.
 
 ```bash
@@ -21,6 +23,7 @@ npm run build
 ```
 
 ## 🔐 Registration Logic
+
 The service worker is registered at the application root (`app/providers.tsx` or similar):
 
 ```typescript
@@ -32,8 +35,9 @@ if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
 ```
 
 ## ✨ Hardened Features
+
 - **IndexedDB Orchestration**: Uses `idb-keyval` for resilient offline data storage.
-- **Caching Strategy**: 
+- **Caching Strategy**:
   - **Network-First**: For HTML/Content to ensure data freshness.
   - **Cache-First**: For static assets (images, fonts) to maximize performance.
 - **Background Sync**: Automated retry logic for failed mutations during offline periods.

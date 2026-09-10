@@ -1,149 +1,194 @@
-import Link from 'next/link';
 import Image from 'next/image';
-import { Card, CardContent } from '@/shared/ui/atoms/card';
-import { Button } from '@/shared/ui/atoms/button';
-import { ChevronRight, Star } from 'lucide-react';
-import { cn, isValidImageUrl } from '@/shared/utils';
-import { productApi, isBackendDown } from '@/features/products/api/product-api';
+import Link from 'next/link';
 import { AddToCartButton } from '@/features/cart';
-import { featuredProducts as demoProducts } from '@/shared/constants/demoData';
-import { APP_ROUTES } from '@/shared/constants/routes/app-routes';
-
-// ============================================================================
-// Constants & Configuration
-// ============================================================================
+import { productApi } from '@/features/products/api/product-api';
+import { fetchHomepageSectionData, padWithDemoData } from '@/features/products/utils/fetch-with-fallback';
+import { PreviewBadge } from '@/features/products/components/PreviewBadge';
+import { FEATURED_PRODUCTS_PLACEHOLDERS as demoProducts } from '@/features/products/constants/placeholders';
+import { APP_ROUTES } from '@/shared/routes';
+import { Button } from '@/shared/ui/atoms/button';
+import { Card, CardContent } from '@/shared/ui/atoms/card';
+import { cn, isValidImageUrl } from '@/shared/utils';
+import { ChevronRight, Star } from 'lucide-react';
 
 const FEATURED_PRODUCTS_CONFIG = {
   heading: 'Featured Products',
-  subheading: 'Our most popular enterprise-grade solutions, handpicked for quality and performance.',
+  subheading:
+    'Our most popular enterprise-grade solutions, handpicked for quality and performance.',
   action: {
     label: 'View Collection',
     mobileLabel: 'Explore Featured Collection',
     href: APP_ROUTES.PRODUCTS,
   },
   card: {
-    badgeText: 'Top Rated',
     detailsLabel: 'Details',
-  }
+  },
 };
 
-// ============================================================================
-// Component
-// ============================================================================
+import { formatMoney, type Cents } from '@/shared/utils';
+
+const formatPrice = (priceCents: number) => formatMoney(priceCents as Cents, 'INR');
+
+interface FeaturedProductItem {
+  id: number;
+  image: string;
+  title: string;
+  description?: string;
+  price: number; // in cents
+  oldPrice?: number; // in cents
+  /** Real aggregate rating, when known — only sourced from the live API,
+   * never fabricated for demo items. The star row below renders nothing
+   * (rather than a fake perfect score) when this is undefined. */
+  averageRating?: number;
+  reviewCount?: number;
+  isDemo?: boolean;
+}
+
+const MIN_FEATURED_PRODUCTS = 4;
 
 export async function FeaturedProductsSection() {
   const { heading, subheading, action, card } = FEATURED_PRODUCTS_CONFIG;
 
-  let featuredProducts: any[] = [];
-  try {
+  const fetched = await fetchHomepageSectionData<FeaturedProductItem>('FeaturedProductsSection', async () => {
     const response = await productApi.getProducts({ page: 0, size: 8, featured: true });
-    featuredProducts = (response?.content || []).map((p) => ({
-      ...p,
-      image: isValidImageUrl(p.imageUrl) ? p.imageUrl : '/images/placeholder.svg',
+    return (response?.content || []).map((p) => ({
+      id: p.id,
+      image: isValidImageUrl(p.imageUrl) ? (p.imageUrl as string) : '/images/placeholder.svg',
       title: p.name,
       description: p.description,
-      price: p.discountPrice || p.price,
-      oldPrice: p.discountPrice ? p.price : undefined,
+      price: Math.round((p.discountPrice || p.price) * 100),
+      oldPrice: p.discountPrice ? Math.round(p.price * 100) : undefined,
+      averageRating: p.averageRating,
+      reviewCount: p.reviewCount,
     }));
-  } catch (error: any) {
-    if (isBackendDown(error)) {
-      console.warn('[FeaturedProductsSection] Backend unreachable. Using curated demo products.');
-    } else if (error?.status === 401 || String(error?.message || '').includes('401')) {
-      console.warn('[FeaturedProductsSection] Unauthorized (401). Using curated demo products for guests.');
-    } else {
-      // Non-critical homepage section: fall back without surfacing a dev overlay error.
-      console.warn('[FeaturedProductsSection] Failed to fetch featured products. Using demo products.', error?.message || error);
-    }
-  }
+  });
 
-  // Robustness: Ensure we always have at least 4 high-quality items for a full row
-  if (!featuredProducts || featuredProducts.length < 4) {
-    const existingIds = new Set(featuredProducts.map(p => p.id));
-    const placeholders = demoProducts
-      .filter(p => !existingIds.has(p.id))
-      .map(p => ({
-        ...p,
-        image: p.image,
-        isDemo: true
-      }));
-    featuredProducts = [...featuredProducts, ...placeholders].slice(0, 4);
-  }
+  const featuredProducts: FeaturedProductItem[] = padWithDemoData(
+    fetched,
+    demoProducts as unknown as FeaturedProductItem[],
+    MIN_FEATURED_PRODUCTS
+  );
 
   return (
-    <section className="py-20 bg-white dark:bg-slate-900" aria-labelledby="featured-products-heading">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+    <section className="bg-background py-12 sm:py-16" aria-labelledby="featured-products-heading">
+      <div className="container mx-auto">
+        <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div className="max-w-xl">
-            <h2 id="featured-products-heading" className="text-3xl md:text-5xl font-bold tracking-tight mb-4 text-slate-900 dark:text-white">
+            <h2
+              id="featured-products-heading"
+              className="text-foreground mb-3 text-2xl font-semibold tracking-normal sm:text-3xl"
+            >
               {heading}
             </h2>
-            <p className="text-lg text-slate-600 dark:text-slate-400">
-              {subheading}
-            </p>
+            <p className="text-muted-foreground text-sm leading-6 sm:text-base">{subheading}</p>
           </div>
 
-          <Button variant="outline" asChild size="lg" className="hidden md:inline-flex group border-slate-200 dark:border-slate-800">
+          <Button variant="outline" asChild size="lg" className="group hidden md:inline-flex">
             <Link href={action.href}>
               {action.label}
-              <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {featuredProducts.slice(0, 4).map((product) => (
-            <Card key={product.id} className="group relative border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/10">
-              <CardContent className="p-0 flex flex-col items-start h-full">
-                {/* Image Container with Cinematic Zoom */}
-                <div className="relative aspect-square w-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <Card
+              key={product.id}
+              className="group border-border/80 bg-card hover:border-primary/40 relative h-full overflow-hidden transition-colors duration-200 hover:shadow-md"
+            >
+              <CardContent className="flex h-full flex-col items-start p-0">
+                <div className="bg-muted relative aspect-square w-full overflow-hidden">
                   <Image
                     src={product.image}
                     alt={product.title}
                     fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    sizes="(max-width: 768px) 100vw, 25vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     unoptimized={product.isDemo}
                   />
-                  {/* Overlay for "Clean" look */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500" />
 
-                  {/* Action Bar on Hover */}
-                  <div className="absolute bottom-4 left-4 right-4 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-                    <AddToCartButton product={product} />
-                  </div>
+                  {product.isDemo && (
+                    <PreviewBadge className="absolute top-2 right-2 z-10" />
+                  )}
+
+                  {/*
+                    No Add to Cart on placeholder content.
+
+                    Placeholders are static filler used when the catalogue holds
+                    fewer products than this section shows — they have no
+                    backing record, and their ids collide with real ones (see
+                    PlaceholderAwareLink). Offering to add one to the cart is
+                    the most damaging affordance on the card: it either fails,
+                    or adds an unrelated real product at a price the shopper
+                    never saw.
+                  */}
+                  {!product.isDemo && (
+                    <div className="absolute inset-x-3 bottom-3 translate-y-10 opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
+                      <AddToCartButton product={product} />
+                    </div>
+                  )}
                 </div>
 
-                <div className="p-6 w-full flex-grow flex flex-col">
-                  {/* Rating Badge */}
-                  <div className="flex items-center gap-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                    ))}
-                    <span className="text-[10px] ml-1 font-bold text-slate-400 uppercase tracking-widest">{card.badgeText}</span>
-                  </div>
+                <div className="flex w-full flex-grow flex-col p-4">
+                  {/* Real aggregate rating only — no rating row at all (rather
+                      than a fabricated perfect score) when the product has
+                      none yet, e.g. demo items or genuinely unrated products. */}
+                  {typeof product.averageRating === 'number' && (
+                    <div className="mb-3 flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          aria-hidden="true"
+                          className={cn(
+                            'h-3 w-3',
+                            i < Math.round(product.averageRating!)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-muted-foreground/30'
+                          )}
+                        />
+                      ))}
+                      <span className="text-muted-foreground ml-1 text-[10px] font-bold tracking-widest">
+                        {product.averageRating.toFixed(1)}
+                        {typeof product.reviewCount === 'number' && ` (${product.reviewCount})`}
+                      </span>
+                    </div>
+                  )}
 
-                  <h3 className="font-bold text-lg mb-2 text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-1">
+                  <h3 className="text-card-foreground group-hover:text-primary mb-2 line-clamp-2 min-h-10 text-sm leading-5 font-semibold transition-colors sm:text-base">
                     {product.title}
                   </h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 line-clamp-2">
+                  <p className="text-muted-foreground mb-4 line-clamp-2 min-h-10 text-sm leading-5">
                     {product.description}
                   </p>
 
-                  <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                  <div className="border-border/70 mt-auto flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-col">
-                      <span className="text-xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        â‚¹{product.price}
+                      <span className="text-primary text-lg font-bold">
+                        {formatPrice(product.price)}
                       </span>
                       {product.oldPrice && (
-                        <span className="text-xs line-through text-slate-400 font-medium">
-                          â‚¹{product.oldPrice}
+                        <span className="text-muted-foreground text-xs font-medium line-through">
+                          {formatPrice(product.oldPrice)}
                         </span>
                       )}
                     </div>
-                    <Link href={APP_ROUTES.PRODUCT_DETAIL(product.id.toString())} className="text-xs font-bold text-blue-600 hover:text-blue-500 flex items-center gap-1 uppercase tracking-wider">
-                      {card.detailsLabel}
-                      <ChevronRight className="h-3 w-3" />
-                    </Link>
+                    {/*
+                      "Details" is hidden entirely on a placeholder rather than
+                      rendered inert: unlike a whole card, a lone call-to-action
+                      that does nothing reads as broken. See
+                      PlaceholderAwareLink for why placeholder ids cannot be
+                      navigated to.
+                    */}
+                    {!product.isDemo && (
+                      <Link
+                        href={APP_ROUTES.PRODUCT_DETAIL(product.id.toString())}
+                        className="text-primary hover:text-primary/80 flex items-center gap-1 text-xs font-bold tracking-wider uppercase"
+                      >
+                        {card.detailsLabel}
+                        <ChevronRight className="h-3 w-3" />
+                      </Link>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -151,9 +196,8 @@ export async function FeaturedProductsSection() {
           ))}
         </div>
 
-        {/* Mobile View All */}
-        <div className="mt-12 md:hidden">
-          <Button variant="outline" asChild className="w-full h-12 border-slate-200">
+        <div className="mt-8 md:hidden">
+          <Button variant="outline" asChild className="h-11 w-full">
             <Link href={action.href} className="flex items-center justify-center gap-2">
               {action.mobileLabel}
               <ChevronRight className="h-4 w-4" />

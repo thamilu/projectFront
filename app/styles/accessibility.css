@@ -1,0 +1,805 @@
+/**
+ * Enterprise Design System — Accessibility & Environmental Override Layer
+ *
+ * CASCADE POSITION: @layer overrides (highest priority — see globals.css)
+ *
+ * COVERAGE MATRIX:
+ * ┌──────────────────────────────────┬─────────────┬───────────────────────┐
+ * │ Feature                          │ Standard    │ Implementation        │
+ * ├──────────────────────────────────┼─────────────┼───────────────────────┤
+ * │ Skip Navigation                  │ WCAG 2.4.1  │ .skip-to-content      │
+ * │ Focus Visibility                 │ WCAG 2.4.7  │ :focus-visible        │
+ * │ Focus Enhanced (WCAG 2.2)        │ WCAG 2.4.11 │ Enhanced ring system  │
+ * │ Reduced Motion (CSS)             │ WCAG 2.3.3  │ prefers-reduced-motion│
+ * │ Reduced Motion (JS)              │ WCAG 2.3.3  │ /docs/motion-guide    │
+ * │ High Contrast                    │ WCAG 1.4.6  │ forced-colors         │
+ * │ Increased Contrast               │ WCAG 1.4.11 │ prefers-contrast: more│
+ * │ Reduced Contrast                 │ UX          │ prefers-contrast: less│
+ * │ Reduced Transparency             │ MQ Level 5  │ prefers-reduced-      │
+ * │                                  │             │ transparency          │
+ * │ Data Saver                       │ Performance │ prefers-reduced-data  │
+ * │ Print Optimization               │ CSS Print   │ @media print          │
+ * │ Print Layout                     │ CSS Paged   │ @page (top-level)     │
+ * │ Scroll Timeline                  │ WCAG 2.3.3  │ animation-timeline    │
+ * │ ARIA Role Colors                 │ WCAG 1.4.1  │ forced-colors roles   │
+ * └──────────────────────────────────┴─────────────┴───────────────────────┘
+ *
+ * TOKEN CONTRACT:
+ * This file requires these tokens defined in tokens.css:
+ * • --color-border-base:        Raw HSL components (e.g., "220 13% 80%")
+ * • --color-border-less:        Reduced opacity border (e.g., hsl(.../ 0.4))
+ * • --color-border-base-reduced: Alternative fallback token
+ * Validation: npm run tokens:validate | CI: token-validation.yml
+ *
+ * ⚠️  MOTION: CSS overrides ≠ JS library compliance.
+ *     Framer Motion → useReducedMotion()
+ *     GSAP → gsap.globalTimeline.timeScale(0)
+ *     Web Animations API → check matchMedia at runtime
+ *     Mandatory: /docs/accessibility/motion-guidelines.md
+ *
+ * ⚠️  FORCED COLORS: hsl(var(--x)) chains are invisible to forced-colors.
+ *     Use system color keywords directly on color properties.
+ *     Audit: /docs/accessibility/forced-colors-audit.md
+ *
+ * ⚠️  SCROLL CONTAINERS: Add data-scroll-container to all scrollable
+ *     elements. Tailwind overflow classes are NOT targeted (framework coupling).
+ *     Migration: SCROLL-MIGRATE-001
+ *
+ * ⚠️  PRINT SECURITY: URL printing is allowlist-only (data-print-url="true").
+ *     Review: /docs/security/print-url-policy.md
+ *
+ * @wcag        2.1 Level AA + Selected WCAG 2.2 Level AA
+ * @legal       ADA Title III, Section 508, EN 301 549, EAA 2025
+ * @layer       overrides (see globals.css for full layer stack)
+ * @maintainers Accessibility Guild <a11y@company.com>
+ * @tested      NVDA+Chrome, JAWS+Edge, VoiceOver+Safari, Orca+Firefox,
+ *              Windows 11 HC Black/White, macOS Increase Contrast,
+ *              Firefox print preview, Chrome print preview
+ * @audit-cycle Quarterly | Next: Q1 2025
+ * @tokens      /design-tokens/schema.json
+ */
+
+/* ==========================================================================
+   @page RULES — CSS Paged Media Module Level 3
+   MUST be at top level — cannot be nested inside @media or @layer.
+   Per spec: https://www.w3.org/TR/css-page-3/#at-page-rule
+   Firefox strict parsing rejects @page inside @media.
+   ========================================================================== */
+
+@page {
+  /*
+   * Standard business margins (ISO 216 / ANSI recommendations).
+   * Top/bottom 1.5cm: accommodates header/footer content.
+   * Left/right 2cm: standard business letter margin.
+   */
+  margin: 1.5cm 2cm;
+  size: auto; /* Respect user printer page size selection */
+}
+
+@page :first {
+  margin-top: 2.5cm; /* Extra space for document title / cover page */
+}
+
+/* Duplex printing: mirror margins for binding gutter */
+@page :left {
+  margin-left: 2.5cm; /* Wider for binding */
+  margin-right: 1.5cm;
+}
+
+@page :right {
+  margin-left: 1.5cm;
+  margin-right: 2.5cm; /* Wider for binding */
+}
+
+/*
+ * Named page for formal reports.
+ * Components opt in with CSS: page: report;
+ * Running headers/footers via CSS Generated Content.
+ * Browser support: Chrome/Edge full, Firefox partial, Safari partial.
+ */
+@page report {
+  margin: 2cm;
+
+  @top-center {
+    content: string(document-title); /* Set via CSS string-set on <h1> */
+    font-size: 9pt;
+    color: #666;
+  }
+
+  @bottom-center {
+    content: 'Page ' counter(page) ' of ' counter(pages);
+    font-size: 9pt;
+    color: #555;
+  }
+
+  @bottom-left {
+    content: var(--print-org-name, ''); /* Token — empty if unset */
+    font-size: 9pt;
+    color: #666;
+  }
+}
+
+/* ==========================================================================
+   @layer overrides — All remaining rules
+   Highest priority cascade layer — see globals.css for full layer order.
+   ========================================================================== */
+
+@layer overrides {
+  /* ========================================================================
+     SECTION 1: SKIP NAVIGATION
+     WCAG 2.4.1 — Bypass Blocks (Level A)
+
+     Pattern: position:fixed + transform off-screen placement.
+
+     Rationale:
+     • position:fixed — unaffected by scroll; percentage top is unreliable
+     • transform — always relative to self; avoids layout shift
+     • white-space:nowrap — prevents wrapping at narrow viewports
+
+     Test protocol:
+     1. Tab → skip link appears top-left
+     2. Enter → focus moves to <main id="main-content">
+     3. Shift+Tab → returns to skip link
+     4. Mouse click → no :focus-visible, link stays hidden
+     5. Screen readers: NVDA, JAWS, VoiceOver, Orca
+     ======================================================================== */
+
+  .skip-to-content {
+    position: fixed;
+    top: var(--space-4);
+    inset-inline-start: var(--space-4); /* RTL-safe logical property */
+
+    /*
+     * z-index 9999 is intentional supremacy — NOT a magic number.
+     * Skip nav must appear above modals (400), toasts (500), tooltips (600).
+     * z-index scale: /design-tokens/z-index.md
+     */
+    z-index: var(--z-skip-nav, 9999);
+
+    /*
+     * Off-screen via transform.
+     * Fully above viewport: own height (100%) + top gap (--space-4).
+     */
+    transform: translateY(calc(-100% - var(--space-4)));
+
+    /* Appearance: WCAG 1.4.3 requires ≥ 4.5:1 contrast ratio */
+    padding: 0.75rem 1.25rem;
+    background: hsl(var(--color-primary));
+    color: hsl(var(--color-primary-foreground));
+    border: 2px solid transparent; /* Invisible normally; visible in forced-colors */
+    border-radius: var(--radius-md, 0.375rem);
+    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    text-decoration: none;
+    white-space: nowrap;
+
+    /* Transition: only when user permits motion */
+    @media (prefers-reduced-motion: no-preference) {
+      transition: transform var(--duration-fast, 150ms)
+        var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+    }
+
+    /* Focus: slide into view + explicit ring */
+    &:focus-visible {
+      transform: translateY(0);
+      outline: 3px solid hsl(var(--color-primary-foreground));
+      outline-offset: 2px;
+    }
+
+    /* Forced colors: manually assign system keywords */
+    @media (forced-colors: active) {
+      forced-color-adjust: none;
+      border-color: ButtonBorder;
+      background: ButtonFace;
+      color: ButtonText;
+
+      &:focus-visible {
+        outline: 3px solid Highlight;
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  /* ========================================================================
+     SECTION 2: GLOBAL FOCUS SYSTEM
+     WCAG 2.4.7 — Focus Visible (Level AA)
+     WCAG 2.4.11 — Focus Appearance (Level AA, WCAG 2.2)
+
+     Design decisions:
+     • :focus-visible — no ring on mouse/touch (UX improvement)
+     • outline over box-shadow — persists in forced-colors mode
+     • CSS custom properties — per-component override without !important
+     • @supports guard — progressive enhancement for legacy browsers
+     • border-radius @supports guard — Chrome 94+, FF 88+, Safari 16.4+
+
+     WCAG 2.4.11 compliance:
+     • Focus indicator area ≥ perimeter × 1px ✓ (outline satisfies)
+     • Contrast ≥ 3:1 focused vs unfocused ✓ (--color-ring on background)
+     ======================================================================== */
+
+  /* Progressive enhancement: hide :focus only when :focus-visible supported */
+  @supports selector(:focus-visible) {
+    :focus:not(:focus-visible) {
+      outline: none;
+    }
+  }
+
+  /* Universal focus ring */
+  :focus-visible {
+    outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, hsl(var(--color-ring)));
+    outline-offset: var(--focus-ring-offset, 2px);
+
+    /*
+     * border-radius on outline: Chrome 94+, Firefox 88+, Safari 16.4+.
+     * Square outline on older browsers is acceptable degradation.
+     * Enterprise browser matrix: /docs/browser-support-matrix.md
+     */
+    @supports (outline-style: solid) and (border-radius: 2px) {
+      border-radius: var(--focus-ring-radius, var(--radius-sm, 2px));
+    }
+  }
+
+  /*
+   * Shadow-based focus rings — for rounded/pill components where outline
+   * conflicts visually (overlaps sibling elements).
+   * transparent outline: stripped normally; becomes Highlight in forced-colors.
+   */
+  [data-focus-ring='shadow']:focus-visible {
+    outline: 3px solid transparent;
+    box-shadow: 0 0 0 var(--focus-ring-width, 3px) var(--focus-ring-color, hsl(var(--color-ring)));
+  }
+
+  /* ========================================================================
+     SECTION 3: REDUCED MOTION
+     WCAG 2.3.3 — Animation from Interactions (Level AAA)
+
+     CSS SCOPE ONLY. Cannot affect:
+     • Framer Motion → useReducedMotion() hook required
+     • GSAP → gsap.globalTimeline.timeScale(0) required
+     • Web Animations API → matchMedia check required
+     • Lottie → AnimationConfig.autoplay + speed control required
+
+     See: /docs/accessibility/motion-guidelines.md
+
+     Properties reset and rationale:
+     • animation-duration: 0.01ms — effectively instant
+     • animation-delay: 0.01ms — prevents deferred trigger
+     • animation-iteration-count: 1 — stops infinite loops
+     • animation-fill-mode: none — prevents snap-to-final-state on load
+     • transition-duration/delay: 0.01ms — kills all easing
+     • scroll-behavior: auto — disables smooth scroll
+     • animation-timeline: auto — kills CSS Scroll Timeline
+     ======================================================================== */
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      animation-fill-mode: none !important;
+      transition-duration: 0.01ms !important;
+      transition-delay: 0.01ms !important;
+    }
+
+    /*
+     * Scroll containers: semantic data attributes only.
+     * Framework utility classes (.overflow-auto etc.) are NOT targeted
+     * to avoid coupling to Tailwind/utility library internals.
+     *
+     * REQUIREMENT: All scrollable containers must have data-scroll-container.
+     * See: /docs/components/scroll-container-requirements.md
+     * Migration ticket: SCROLL-MIGRATE-001
+     */
+    html,
+    body,
+    [data-scroll-container],
+    [data-radix-scroll-area-viewport] {
+      /* Remove after SCROLL-MIGRATE-001 */
+      scroll-behavior: auto !important;
+    }
+
+    /* Component library state transitions (Radix, Headless, Ark UI) */
+    [data-state='open'],
+    [data-state='closed'],
+    [data-state='active'],
+    [data-state='inactive'],
+    [data-motion],
+    [data-enter],
+    [data-leave] {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    /* CSS Scroll Timeline API guard (progressive enhancement) */
+    @supports (animation-timeline: scroll()) {
+      * {
+        animation-timeline: auto !important;
+        animation-range: normal !important;
+      }
+    }
+  }
+
+  /* ========================================================================
+     SECTION 4: REDUCED TRANSPARENCY
+     CSS Media Queries Level 5
+
+     Security note: [style*="backdrop-filter"] selectors are PROHIBITED.
+     Reason: CSP violation risk + XSS UI-redressing attack surface.
+     Policy: All blur/glass effects must use semantic class or data attribute.
+     See: /docs/security/csp-policy.md
+     ======================================================================== */
+
+  @media (prefers-reduced-transparency: reduce) {
+    [class*='glass'],
+    [data-variant*='glass'],
+    [data-effect='blur'],
+    [data-effect='frosted'] {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: hsl(var(--color-background)) !important;
+      border-color: hsl(var(--color-border)) !important;
+    }
+
+    [data-overlay],
+    .overlay,
+    .modal-backdrop {
+      opacity: 1 !important;
+      background: hsl(var(--color-background) / 0.97) !important;
+    }
+
+    /*
+     * Tailwind v4 opacity compatibility note:
+     * Slash-syntax (bg-blue-500/50) compiles to direct CSS color values.
+     * Cannot override via CSS custom property manipulation.
+     * Components using transparency MUST use [data-transparent] attribute.
+     * See: /docs/theming/opacity-transparency-guide.md
+     */
+    [data-transparent],
+    [data-opacity],
+    [data-alpha] {
+      opacity: 1 !important;
+    }
+  }
+
+  /* ========================================================================
+     SECTION 5: CONTRAST PREFERENCES
+     WCAG 1.4.3 — Contrast Minimum (Level AA)
+     WCAG 1.4.11 — Non-text Contrast (Level AA)
+     ======================================================================== */
+
+  /* ── Increased Contrast ─────────────────────────────────────────────────── */
+
+  @media (prefers-contrast: more) {
+    :root {
+      --color-border: hsl(var(--color-foreground)); /* Maximum border contrast */
+      --color-ring: hsl(var(--color-foreground)); /* Maximum focus contrast  */
+      --opacity-muted: 1; /* Remove opacity dimming  */
+    }
+
+    /*
+     * Strengthen interactive element borders.
+     * Exclusions preserve semantic color for validation states:
+     * [aria-invalid] inputs keep their semantic border color.
+     */
+    button:not([data-state]),
+    input:not([aria-invalid]),
+    select:not([aria-invalid]),
+    textarea:not([aria-invalid]),
+    [role='button']:not([data-state]),
+    [role='combobox']:not([aria-invalid]),
+    [role='listbox']:not([aria-invalid]),
+    [role='textbox']:not([aria-invalid]) {
+      border-width: 2px;
+      border-style: solid;
+      border-color: currentColor;
+    }
+
+    /*
+     * Validation states: increase border WEIGHT, preserve semantic COLOR.
+     * Error=red, Success=green, Warning=orange must remain distinguishable.
+     * outline-offset: 1px — tighter with 3px border (prevents floating ring).
+     */
+    [aria-invalid='true'],
+    [data-state='error'],
+    [data-state='warning'],
+    .input-error,
+    .input-warning {
+      border-width: 3px;
+      outline: 2px solid currentColor;
+      outline-offset: 1px;
+    }
+
+    /* Error/warning messages: weight increase aids quick scanning */
+    [role='alert'],
+    [data-error-message],
+    [data-warning-message],
+    .field-error,
+    .field-warning {
+      font-weight: 700;
+    }
+
+    /* Placeholder: remove opacity dimming */
+    ::placeholder {
+      opacity: 1;
+      color: hsl(var(--color-foreground) / 0.7);
+    }
+
+    /* Glass effects: readability over aesthetics */
+    [class*='glass'],
+    [data-variant*='glass'] {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: hsl(var(--color-background));
+      border: 2px solid hsl(var(--color-foreground));
+    }
+  }
+
+  /* ── Reduced Contrast ───────────────────────────────────────────────────── */
+
+  /*
+   * Users who find standard contrast overwhelming.
+   * Common: photosensitivity, migraines, autism spectrum conditions.
+   *
+   * TOKEN CONTRACT: --color-border-less MUST be defined in tokens.css.
+   * Fallback chain prevents silent border disappearance if token missing.
+   * Validation: npm run tokens:validate
+   */
+  @media (prefers-contrast: less) {
+    :root {
+      --color-border: var(
+        --color-border-less,
+        var(
+          --color-border-base-reduced,
+          hsl(220 13% 80% / 0.4) /* Last resort — update if scale changes */
+        )
+      );
+    }
+  }
+
+  /* ========================================================================
+     SECTION 6: REDUCED DATA
+     CSS Media Queries Level 5 — prefers-reduced-data
+
+     CSS-side only: disables decorative features consuming rendering budget.
+     Complete data saving requires Service Worker + Save-Data HTTP header.
+     See: /docs/performance/data-saver-integration.md
+     ======================================================================== */
+
+  @media (prefers-reduced-data: reduce) {
+    /* Decorative backgrounds */
+    [data-decorative-bg],
+    .section-pattern,
+    [data-background='decorative'] {
+      background-image: none !important;
+    }
+
+    /* Expensive filter operations */
+    [class*='glass'],
+    [data-effect='blur'] {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      filter: none !important;
+    }
+
+    /* Gradient backgrounds → solid color */
+    [class*='gradient'],
+    [data-gradient] {
+      background-image: none !important;
+      background-color: hsl(var(--color-background)) !important;
+    }
+  }
+
+  /* ========================================================================
+     SECTION 7: FORCED COLORS — Windows High Contrast Mode
+     WCAG 1.4.6 — Contrast Enhanced (Level AAA)
+
+     KEY INSIGHT: hsl(var(--x)) chains are INVISIBLE to forced-colors engine.
+     System color keywords must be applied directly to CSS color properties.
+
+     RULE ORDER IS LOAD-BEARING — DO NOT REORDER:
+     1. :root auto — browser default
+     2. Standard elements (auto) — browser handles well
+     3. ARIA roles (color assignment by role semantics)
+     4. Custom components (forced-color-adjust: none — manual control)
+     5. Data/status components (border visibility)
+     6. Focus rings — LAST, universal override
+     7. Disabled states
+     8. SVG
+
+     Rationale: Later rules override earlier. Custom components (4) must
+     come after standard buttons (2) so .btn-primary[role="button"] gets
+     custom treatment, not auto treatment.
+     ======================================================================== */
+
+  @media (forced-colors: active) {
+    /* 1. Root default: browser manages forced colors */
+    :root {
+      forced-color-adjust: auto;
+    }
+
+    /* 2a. Native links — browser handles natively */
+    a:not([role='button']):not([data-variant]) {
+      color: LinkText;
+      forced-color-adjust: auto;
+    }
+
+    a:not([role='button']):not([data-variant]):visited {
+      color: VisitedText;
+    }
+
+    /* 2b. Standard buttons — browser handles natively */
+    button:not([data-variant]),
+    [role='button']:not([data-variant]) {
+      forced-color-adjust: auto;
+    }
+
+    /* 3. ARIA semantic roles — assign by role purpose */
+    [role='link']:not([data-variant]) {
+      color: LinkText;
+      forced-color-adjust: auto;
+      cursor: pointer;
+    }
+
+    /* Visited ARIA links — requires JS data attribute tracking */
+    [role='link'][data-visited='true']:not([data-variant]) {
+      color: VisitedText;
+    }
+
+    /* 4. Custom components — manual color control */
+    .btn-primary,
+    [data-variant='primary'] {
+      forced-color-adjust: none;
+      background-color: ButtonText;
+      color: ButtonFace;
+      border: 2px solid ButtonBorder;
+    }
+
+    /* 5. Data/status components — ensure border visibility */
+    .badge,
+    [data-badge],
+    .status-dot,
+    .status-indicator {
+      forced-color-adjust: none;
+      border: 1px solid ButtonBorder;
+    }
+
+    /* 6. Focus rings — universal, must be final override */
+    :focus-visible {
+      outline: 3px solid Highlight !important;
+      outline-offset: 2px !important;
+    }
+
+    [data-focus-ring='shadow']:focus-visible,
+    [data-focus-ring]:focus-visible,
+    .focus-ring:focus-visible {
+      outline: 3px solid Highlight !important;
+      outline-offset: 2px !important;
+      box-shadow: none !important;
+    }
+
+    /* 7. Disabled states — system GrayText keyword */
+    :disabled,
+    [aria-disabled='true'] {
+      color: GrayText;
+      border-color: GrayText;
+    }
+
+    /* 8. Decorative SVG — browser manages */
+    svg[aria-hidden='true'] {
+      forced-color-adjust: auto;
+    }
+  }
+
+  /* ========================================================================
+     SECTION 8: PRINT OPTIMIZATION
+     @page rules are at FILE TOP LEVEL (spec requirement — see above)
+
+     Strategy: Content-first printing.
+     Security: Allowlist URL model — default deny, opt-in per link.
+     Typography: Professional print standards (widows, orphans, hyphens).
+
+     Test protocol:
+     • Chrome Ctrl+P → Print Preview
+     • Firefox Ctrl+P → Print Preview
+     • Safari Cmd+P → Print Preview
+     • Duplex enterprise printer settings
+     • Verify URL security: no /api/ routes printed
+     ======================================================================== */
+
+  @media print {
+    /* ── Base Document ────────────────────────────────────────────────────── */
+
+    body {
+      background: #fff !important;
+      color: #000 !important;
+      font-size: var(--font-size-print-body, 11pt);
+      line-height: var(--line-height-print, 1.5);
+      /*
+       * Print font stack: Times New Roman optimized for print at small pt.
+       * Georgia is screen-optimized — acceptable fallback, not preferred.
+       */
+      font-family: var(
+        --font-family-print,
+        var(--font-family-body, 'Times New Roman', Times, Georgia, serif)
+      );
+      print-color-adjust: economy; /* Ink optimization default */
+      -webkit-print-color-adjust: economy;
+
+      /*
+       * Professional typography: prevents orphaned/widowed lines.
+       * orphans: min lines at page BOTTOM before break (3 = pub standard)
+       * widows: min lines at page TOP after break (3 = pub standard)
+       */
+      orphans: 3;
+      widows: 3;
+    }
+
+    /* Hyphenation for dense print body text */
+    p {
+      hyphens: auto;
+      hyphenate-limit-chars: 6 3 3; /* Min word: 6, before: 3, after: 3 */
+      hyphenate-limit-lines: 2; /* Max consecutive hyphenated lines */
+    }
+
+    /* Blockquote hanging punctuation */
+    blockquote {
+      hanging-punctuation: first last;
+    }
+
+    /* ── Global Resets ───────────────────────────────────────────────────── */
+
+    * {
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+
+    /* Glass effects → solid white */
+    [class*='glass'],
+    [data-variant*='glass'] {
+      background: #fff !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid #ccc !important;
+    }
+
+    /* ── Color Preservation ──────────────────────────────────────────────── */
+
+    /* Data visualization: preserve exact colors for charts, status, badges */
+    [data-print-color='preserve'],
+    .badge,
+    .status-indicator,
+    [role='status'],
+    .chart,
+    canvas,
+    [role='img'],
+    svg:not([aria-hidden='true']) {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    /* ── URL Printing (Allowlist Model) ─────────────────────────────────── */
+
+    /*
+     * SECURITY MODEL: Default-deny.
+     * No URLs print unless explicitly opted in with data-print-url="true".
+     * Restricted to https:// — http:// excluded (insecure connections).
+     * See: /docs/security/print-url-policy.md
+     */
+
+    /* Step 1: Suppress ALL URL printing */
+    a::after {
+      content: none !important;
+    }
+
+    /* Step 2: Allowlist opt-in — HTTPS external links only */
+    a[data-print-url='true'][href^='https://']::after {
+      content: ' (' attr(href) ')';
+      font-size: 0.75em;
+      color: #555;
+      word-break: break-all;
+    }
+
+    /* Phone numbers: always safe, print formatted */
+    a[href^='tel']::after {
+      content: ' (' attr(href) ')';
+      font-size: 0.75em;
+    }
+
+    /*
+     * Step 4: Belt-and-suspenders security blocklist.
+     * Covers common enterprise API and sensitive route patterns.
+     * Even if data-print-url="true" is mistakenly added to these — blocked.
+     */
+    a[href^='/api']::after,
+    a[href^='/v1/']::after,
+    a[href^='/v2/']::after,
+    a[href^='/v3/']::after,
+    a[href^='/graphql']::after,
+    a[href^='/internal/']::after,
+    a[href^='/admin/']::after,
+    a[href^='/auth/']::after,
+    a[href*='token']::after,
+    a[href*='secret']::after,
+    a[href*='key=']::after,
+    a[href*='password']::after,
+    a[href*='session']::after,
+    a[href*='refresh']::after,
+    a[data-sensitive]::after {
+      content: none !important;
+    }
+
+    /* ── Page Break Control ──────────────────────────────────────────────── */
+
+    /* Headings: never orphaned at page bottom */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      break-after: avoid;
+      break-inside: avoid;
+    }
+
+    /* Block content: prefer keeping intact */
+    .card,
+    .card-elevated,
+    figure,
+    pre,
+    blockquote {
+      break-inside: avoid;
+    }
+
+    /* Tables: row-level control (not whole-table — may span multiple pages) */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      display: table-header-group;
+    } /* Header repeats each page */
+    tfoot {
+      display: table-footer-group;
+    }
+
+    tr {
+      break-inside: avoid;
+    }
+
+    /* Small tables explicitly marked: keep fully intact */
+    table[data-print-keep-together] {
+      break-inside: avoid;
+    }
+
+    /* ── Hide Non-Content Elements ───────────────────────────────────────── */
+
+    /*
+     * POLICY: Never hide [aria-hidden="true"] — it's an accessibility-tree
+     * attribute, NOT a visual display directive. Use explicit print utilities.
+     *
+     * To hide in print: add class="print-hidden" or data-print="hidden"
+     * To keep visible: add data-print="visible" to override nav exclusion
+     */
+    .skip-to-content,
+    .print-hidden,
+    [data-print='hidden'],
+    [data-pwa-shell],
+    .pwa-navigation,
+    .pwa-toolbar,
+    nav:not([data-print='visible']),
+    nav[aria-label='Main navigation'],
+    nav[aria-label='Breadcrumb'],
+    [role='banner'] nav,
+    [role='complementary']:not([data-print='visible']),
+    button:not([data-print='visible']),
+    [role='button']:not([data-print='visible']),
+    .tooltip-trigger,
+    .hide-scrollbar {
+      display: none !important;
+    }
+  }
+} /* end @layer overrides */
